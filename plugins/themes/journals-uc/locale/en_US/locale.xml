@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE locale SYSTEM "../../../../../lib/pkp/dtd/locale.dtd">
+
+<!--
+  * plugins/themes/bootstrap3/locale/en_US/locale.xml
+  *
+  * Copyright (c) 2014-2017 Simon Fraser University Library
+  * Copyright (c) 2003-2017 John Willinsky
+  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+  *
+  * Localization strings
+  -->
+
+<locale name="en_US" full_name="U.S. English">
+	<message key="plugins.themes.journals-uc.name">Base UC Theme</message>
+	<message key="plugins.themes.journals-uc.description">The base theme with UC branding</message>
+	<message key="plugins.themes.journals-uc.accessible_menu.label">Quick jump to page content</message>
+	<message key="plugins.themes.journals-uc.accessible_menu.main_navigation">Main Navigation</message>
+	<message key="plugins.themes.journals-uc.accessible_menu.main_content">Main Content</message>
+	<message key="plugins.themes.journals-uc.accessible_menu.sidebar">Sidebar</message>
+	<message key="plugins.themes.journals-uc.article.sidebar">Article Sidebar</message>
+	<message key="plugins.themes.journals-uc.article.main">Main Article Content</message>
+	<message key="plugins.themes.journals-uc.article.details">Article Details</message>
+	<message key="plugins.themes.journals-uc.options.bootstrapTheme.label">UC Theme</message>
+	<message key="plugins.themes.journals-uc.options.bootstrapTheme.description"> </message>
+	<message key="plugins.themes.journals-uc.options.bootstrapTheme.bootstrap3">Default UC Theme</message>
+</locale>
