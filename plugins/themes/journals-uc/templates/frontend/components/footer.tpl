@@ -26,13 +26,25 @@
 	</div><!-- pkp_structure_content -->
 
 	<footer class="footer" role="contentinfo">
-
 		<div class="container">
-
 			<div class="row">
-				{if $pageFooter}
-					{$pageFooter}`
-				{/if}
+                <div class="col-sm-4">
+                    <p><a href="{$baseUrl}">Journals@UC Terms of Use</a></p>
+                    <p><a href="https://www.uc.edu/alert.html">UC Alerts</a></p>
+                    <p><a href="https://commercialization.uc.edu/copyright-infringement">Copyright Information &copy; 2017 University of Cincinnati</a></p>
+                </div>
+                <div class="col-sm-4 text-center">
+                    <p><a href="http://uc.edu/about/policies/non-discrimination.html">Notice of Non-Discrimination</a></p>
+                    <p><a href="https://www.uc.edu/publicsafety/clery/annual-security-report.html">Clery and HEOA Notice</a></p>
+                    <p><a href="https://www.uc.edu/ucit/community/accessibility/eAccessibility-form.html">eAccessibility Concern</a></p>
+                </div>
+                <div class="col-sm-4">
+                    <p>
+                        <a href="https://uc.edu">
+                            <img class="img-responsive footer-logo" src="{$baseUrl}/templates/images/uc/UC_ID_SecondaryWhite.png">
+                        </a>
+                    </p>
+                </div>
 			</div> <!-- .row -->
 		</div><!-- .container -->
 	</footer>

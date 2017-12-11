@@ -184,8 +184,18 @@ footer[role="contentinfo"] {
 
 footer[role="contentinfo"] a {
     color: #fff;
-    padding: 1em;
-    font-size: .75em;
+}
+
+.footer-logo {
+    height: 60%;
+    width: 60%;
+    margin: .25em auto;
+}
+
+@media (max-width: 768px) {
+    footer[role="contentinfo"] div {
+        text-align: center
+    }
 }
 
 // Style the PDF and HTML view
