@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE locale SYSTEM "../../../../../lib/pkp/dtd/locale.dtd">
+
+<!--
+  * plugins/themes/bootstrap3/locale/en_US/locale.xml
+  *
+  * Copyright (c) 2014-2017 Simon Fraser University Library
+  * Copyright (c) 2003-2017 John Willinsky
+  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+  *
+  * Localization strings
+  -->
+
+<locale name="en_US" full_name="U.S. English">
+	<message key="plugins.themes.journals.name">UC Themes for journals</message>
+	<message key="plugins.themes.journals.description">A Base theme for journals with many variations</message>
+	<message key="plugins.themes.journals.accessible_menu.label">Quick jump to page content</message>
+	<message key="plugins.themes.journals.accessible_menu.main_navigation">Main Navigation</message>
+	<message key="plugins.themes.journals.accessible_menu.main_content">Main Content</message>
+	<message key="plugins.themes.journals.accessible_menu.sidebar">Sidebar</message>
+	<message key="plugins.themes.journals.article.sidebar">Article Sidebar</message>
+	<message key="plugins.themes.journals.article.main">Main Article Content</message>
+	<message key="plugins.themes.journals.article.details">Article Details</message>
+	<message key="plugins.themes.journals.options.bootstrapTheme.label">UC Theme for Journals</message>
+	<message key="plugins.themes.journals.options.bootstrapTheme.bootstrap3">UC Theme</message>
+	<message key="plugins.themes.journals.options.bootstrapTheme.cerulean">Cerulean</message>
+	<message key="plugins.themes.journals.options.bootstrapTheme.cleanblog">Clean Blog</message>
+	<message key="plugins.themes.journals.options.bootstrapTheme.cosmo">Cosmo</message>
+	<message key="plugins.themes.journals.options.bootstrapTheme.cyborg">Cyborg</message>
+	<message key="plugins.themes.journals.options.bootstrapTheme.darkly">Darkly</message>
+	<message key="plugins.themes.journals.options.bootstrapTheme.flatly">Flatly</message>
+	<message key="plugins.themes.journals.options.bootstrapTheme.journal">Journal</message>
+	<message key="plugins.themes.journals.options.bootstrapTheme.lumen">Lumen</message>
+	<message key="plugins.themes.journals.options.bootstrapTheme.paper">Paper</message>
+	<message key="plugins.themes.journals.options.bootstrapTheme.readable">Readable</message>
+	<message key="plugins.themes.journals.options.bootstrapTheme.sandstone">Sandstone</message>
+	<message key="plugins.themes.journals.options.bootstrapTheme.simplex">Simplex</message>
+	<message key="plugins.themes.journals.options.bootstrapTheme.slate">Slate</message>
+	<message key="plugins.themes.journals.options.bootstrapTheme.spacelab">Spacelab</message>
+	<message key="plugins.themes.journals.options.bootstrapTheme.superhero">Superhero</message>
+	<message key="plugins.themes.journals.options.bootstrapTheme.united">United</message>
+	<message key="plugins.themes.journals.options.bootstrapTheme.yeti">Yeti</message>
+</locale>
