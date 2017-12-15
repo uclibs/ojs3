@@ -14,7 +14,7 @@
  */
 
 import('lib.pkp.classes.plugins.ThemePlugin');
-class JournalsUcThemePlugin extends ThemePlugin {
+class JournalsThemePlugin extends ThemePlugin {
 	/**
 	 * Initialize the theme
 	 *
@@ -24,10 +24,27 @@ class JournalsUcThemePlugin extends ThemePlugin {
 
 		// Register option for bootstrap themes
 		$this->addOption('bootstrapTheme', 'radio', array(
-			'label' => 'plugins.themes.bootstrap3.options.bootstrapTheme.label',
-			'description' => 'plugins.themes.bootstrap3.options.bootstrapTheme.description',
+			'label' => 'plugins.themes.journals.options.bootstrapTheme.label',
+			'description' => 'plugins.themes.journals.options.bootstrapTheme.description',
 			'options' => array(
-				'bootstrap3' => 'plugins.themes.bootstrap3.options.bootstrapTheme.bootstrap3',
+				'bootstrap3' => 'plugins.themes.journals.options.bootstrapTheme.bootstrap3',
+				'cerulean'   => 'plugins.themes.journals.options.bootstrapTheme.cerulean',
+				'cleanblog'  => 'plugins.themes.journals.options.bootstrapTheme.cleanblog',
+				'cosmo'      => 'plugins.themes.journals.options.bootstrapTheme.cosmo',
+				'cyborg'     => 'plugins.themes.journals.options.bootstrapTheme.cyborg',
+				'darkly'     => 'plugins.themes.journals.options.bootstrapTheme.darkly',
+				'flatly'     => 'plugins.themes.journals.options.bootstrapTheme.flatly',
+				'journal'    => 'plugins.themes.journals.options.bootstrapTheme.journal',
+				'lumen'      => 'plugins.themes.journals.options.bootstrapTheme.lumen',
+				'paper'      => 'plugins.themes.journals.options.bootstrapTheme.paper',
+				'readable'   => 'plugins.themes.journals.options.bootstrapTheme.readable',
+				'sandstone'  => 'plugins.themes.journals.options.bootstrapTheme.sandstone',
+				'simplex'    => 'plugins.themes.journals.options.bootstrapTheme.simplex',
+				'slate'      => 'plugins.themes.journals.options.bootstrapTheme.slate',
+				'spacelab'   => 'plugins.themes.journals.options.bootstrapTheme.spacelab',
+				'superhero'  => 'plugins.themes.journals.options.bootstrapTheme.superhero',
+				'united'     => 'plugins.themes.journals.options.bootstrapTheme.united',
+				'yeti'       => 'plugins.themes.journals.options.bootstrapTheme.yeti',
 			)
 		));
 
@@ -75,7 +92,7 @@ class JournalsUcThemePlugin extends ThemePlugin {
 	 * @return string
 	 */
 	function getDisplayName() {
-		return __('plugins.themes.journals-uc.name');
+		return __('plugins.themes.journals.name');
 	}
 
 	/**
@@ -83,6 +100,6 @@ class JournalsUcThemePlugin extends ThemePlugin {
 	 * @return string
 	 */
 	function getDescription() {
-		return __('plugins.themes.journals-uc.description');
+		return __('plugins.themes.journals.description');
 	}
 }
