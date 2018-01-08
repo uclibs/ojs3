@@ -7,9 +7,20 @@
   background: -ms-linear-gradient(left, rgba(255,255,255,1) 0%, rgba(255,255,255,1) 35%, rgba(0,102,153,1) 100%);
   background: linear-gradient(to right, rgba(255,255,255,1) 0%, rgba(255,255,255,1) 35%, rgba(0,102,153,1) 100%);
   filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#006699', GradientType=1 );
+  border: 0;
   border-bottom: 3px solid #006699;
 }
 
 .navbar-default .nav > li > a {
   color: #000;
 }
+
+.navbar-brand {
+  height: auto;
+}
+
+a {
+  color: #006699;
+}
+
+
