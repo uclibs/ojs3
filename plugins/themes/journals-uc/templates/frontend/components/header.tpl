@@ -41,7 +41,7 @@
     </nav>
 
     {* Header *}
-    <header class="navbar navbar-default" id="headerNavigationContainer" role="banner">
+    <header class="navbar navbar-default" id="headerNavigationContainer" role="banner" style="background: #e00122 url('{$baseUrl}/templates/images/uc/wavy-banner.png') no-repeat bottom center; background-size: 100%;">
 
         <div class="row">
             <div class="col-sm-6">
@@ -51,7 +51,7 @@
                              alt="University of Cincinnati Press Logo">
                     </a>
                     <a href="https://journals.uc.edu" class="navbar-brand navbar-brand-logo">
-                        <img src="{$baseUrl}/templates/images/uc/journals_uc_black_at.png"
+                        <img src="{$baseUrl}/templates/images/uc/journals-uc-white-at.png"
                              alt="Journals@UC Logo" class="journals-icon">
                     </a>
                 </div>
