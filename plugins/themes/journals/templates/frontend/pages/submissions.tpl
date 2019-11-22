@@ -37,6 +37,18 @@
 		</div>
 	{/if}
 
+	{* Author Guidelines *}
+	{if $currentJournal->getLocalizedSetting('authorGuidelines')}
+		<div class="author_guidelines">
+			<h2 class="page-header">
+				{translate key="about.authorGuidelines"}
+				{include file="frontend/components/editLink.tpl" page="management" op="settings" path="journal" anchor="guidelines" sectionTitleKey="about.authorGuidelines"}
+			</h2>
+			{$currentJournal->getLocalizedSetting('authorGuidelines')|nl2br}
+		</div>
+	{/if}
+	{* /Author Guidelines *}
+
 	{* Submission Checklist *}
 	{if $submissionChecklist}
 		<div class="submission_checklist">
@@ -61,18 +73,6 @@
 		</div>
 	{/if}
 	{* /Submission Checklist *}
-
-	{* Author Guidelines *}
-	{if $currentJournal->getLocalizedSetting('authorGuidelines')}
-		<div class="author_guidelines">
-			<h2 class="page-header">
-				{translate key="about.authorGuidelines"}
-				{include file="frontend/components/editLink.tpl" page="management" op="settings" path="journal" anchor="guidelines" sectionTitleKey="about.authorGuidelines"}
-			</h2>
-			{$currentJournal->getLocalizedSetting('authorGuidelines')|nl2br}
-		</div>
-	{/if}
-	{* /Author Guidelines *}
 
 	{* Copyright Notice *}
 	{if $currentJournal->getLocalizedSetting('copyrightNotice')}
