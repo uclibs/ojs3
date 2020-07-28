@@ -16,7 +16,7 @@
 
 	{* Sidebars *}
 	{if empty($isFullWidth)}
-		{call_hook|assign:"sidebarCode" name="Templates::Common::Sidebar"}
+		{capture assign="sidebarCode"}{call_hook name="Templates::Common::Sidebar"}{/capture}
 		{if $sidebarCode}
 			<aside id="sidebar" class="pkp_structure_sidebar left col-xs-12 col-sm-2 col-md-4" role="complementary" aria-label="{translate|escape key="common.navigation.sidebar"}">
 				{$sidebarCode}
@@ -37,9 +37,9 @@
 				{/if}
 
 				<div class="col-md-2" role="complementary">
-					<a href="{$pkpLink}">
-						<img class="img-responsive" alt="{translate key="common.publicKnowledgeProject"}" src="{$baseUrl}/{$brandImage}">
-					</a>
+					<a href="{url page="about" op="aboutThisPublishingSystem"}">
+                                                <img class="img-responsive" alt="{translate key="about.aboutThisPublishingSystem"}" src="{$baseUrl}/{$brandImage}">
+                                        </a>
 				</div>
 
 			</div> <!-- .row -->
