@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/settings/reviewForms/form/ReviewFormForm.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewFormForm
  * @ingroup controllers_grid_settings_reviewForms_form
@@ -43,12 +43,12 @@ class ReviewFormForm extends Form {
 
 	/**
 	 * Initialize form data from current settings.
-	 * @param $request PKPRequest
 	 */
-	function initData($request) {
+	function initData() {
 		if ($this->reviewFormId) {
+			$request = Application::get()->getRequest();
 			$context = $request->getContext();
-			$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO');
+			$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO'); /* @var $reviewFormDao ReviewFormDAO */
 			$reviewForm = $reviewFormDao->getById($this->reviewFormId, Application::getContextAssocType(), $context->getId());
 
 			$this->setData('title', $reviewForm->getTitle(null));
@@ -57,24 +57,24 @@ class ReviewFormForm extends Form {
 	}
 
 	/**
-	 * Display the form.
+	 * @copydoc Form::fetch
 	 */
-	function fetch($args, $request) {
+	function fetch($request, $template = null, $display = false) {
 		$json = new JSONMessage();
 
 		$templateMgr = TemplateManager::getManager($request);
 		$templateMgr->assign('reviewFormId', $this->reviewFormId);
 
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
-	 * Save review form.
-	 * @param $request PKPRequest
+	 * @copydoc Form::execute()
 	 */
-	function execute($request) {
+	function execute(...$functionArgs) {
+		$request = Application::get()->getRequest();
 		$context = $request->getContext();
-		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO');
+		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO'); /* @var $reviewFormDao ReviewFormDAO */
 
 		if ($this->reviewFormId) {
 			$reviewForm = $reviewFormDao->getById($this->reviewFormId, Application::getContextAssocType(), $context->getId());
@@ -96,6 +96,7 @@ class ReviewFormForm extends Form {
 			$this->reviewFormId = $reviewFormDao->insertObject($reviewForm);
 			$reviewFormDao->resequenceReviewForms(Application::getContextAssocType(), $context->getId());
 		}
+		parent::execute(...$functionArgs);
 	}
 
 	/**
@@ -103,9 +104,9 @@ class ReviewFormForm extends Form {
 	 * @return array
 	 */
 	function getLocaleFieldNames() {
-		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO');
+		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO'); /* @var $reviewFormDao ReviewFormDAO */
 		return $reviewFormDao->getLocaleFieldNames();
 	}
 }
 
-?>
+

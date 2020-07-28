@@ -1,9 +1,9 @@
 {**
  * templates/controllers/grid/navigationMenus/form/navigationMenuForm.tpl
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Form to read/create/edit NavigationMenus.
  *}
@@ -55,7 +55,7 @@
 							<div class="item">
 								<div class="item_title">
 									<span class="fa fa-sort"></span>
-									{$assignment->navigationMenuItem->getLocalizedTitle()}
+									{$assignment->navigationMenuItem->getLocalizedTitle()|escape}
 								</div>
 								<div class="item_buttons">
 									{if $hasConditionalDisplay}
@@ -81,7 +81,7 @@
 											<div class="item">
 												<div class="item_title">
 													<span class="fa fa-sort"></span>
-													{$childAssignment->navigationMenuItem->getLocalizedTitle()}
+													{$childAssignment->navigationMenuItem->getLocalizedTitle()|escape}
 												</div>
 												<div class="item_buttons">
 													{if $hasConditionalDisplay}
@@ -118,7 +118,7 @@
 							<div class="item">
 								<div class="item_title">
 									<span class="fa fa-sort"></span>
-									{$unassignedItem->getLocalizedTitle()}
+									{$unassignedItem->getLocalizedTitle()|escape}
 								</div>
 								<div class="item_buttons">
 									{if $hasConditionalDisplay}

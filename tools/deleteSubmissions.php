@@ -3,9 +3,9 @@
 /**
  * @file tools/deleteSubmissions.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class deleteSubmissions
  * @ingroup tools
@@ -46,18 +46,18 @@ class SubmissionDeletionTool extends CommandLineTool {
 	 * Delete submission data and associated files
 	 */
 	function execute() {
-		$articleDao = DAORegistry::getDAO('ArticleDAO');
+		$submissionDao = DAORegistry::getDAO('SubmissionDAO');
 		foreach($this->parameters as $articleId) {
-			$article = $articleDao->getById($articleId);
+			$article = $submissionDao->getById($articleId);
 			if(!isset($article)) {
 				printf("Error: Skipping $articleId. Unknown submission.\n");
 				continue;
 			}
-			$articleDao->deleteById($articleId);
+			$submissionDao->deleteById($articleId);
 		}
 	}
 }
 
 $tool = new SubmissionDeletionTool(isset($argv) ? $argv : array());
 $tool->execute();
-?>
+

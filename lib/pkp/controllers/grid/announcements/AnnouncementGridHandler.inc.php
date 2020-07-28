@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/announcements/AnnouncementGridHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class AnnouncementGridHandler
  * @ingroup controllers_grid_announcements
@@ -35,7 +35,7 @@ class AnnouncementGridHandler extends GridHandler {
 
 		// Ensure announcements are enabled.
 		$context = $request->getContext();
-		if ($requireAnnouncementsEnabled && !$context->getSetting('enableAnnouncements')) {
+		if ($requireAnnouncementsEnabled && !$context->getData('enableAnnouncements')) {
 			return false;
 		}
 
@@ -105,7 +105,7 @@ class AnnouncementGridHandler extends GridHandler {
 	 */
 	protected function loadData($request, $filter) {
 		$context = $request->getContext();
-		$announcementDao = DAORegistry::getDAO('AnnouncementDAO');
+		$announcementDao = DAORegistry::getDAO('AnnouncementDAO'); /* @var $announcementDao AnnouncementDAO */
 		$rangeInfo = $this->getGridRangeInfo($request, $this->getId());
 		return $announcementDao->getAnnouncementsNotExpiredByAssocId($context->getAssocType(), $context->getId(), $rangeInfo);
 	}
@@ -128,10 +128,10 @@ class AnnouncementGridHandler extends GridHandler {
 		import('lib.pkp.controllers.grid.announcements.form.AnnouncementForm');
 		$announcementForm = new AnnouncementForm($contextId, $announcementId, true);
 
-		$announcementForm->initData($args, $request);
+		$announcementForm->initData();
 
 		return new JSONMessage(true, $announcementForm->fetch($request));
 	}
 }
 
-?>
+

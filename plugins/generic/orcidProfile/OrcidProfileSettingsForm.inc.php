@@ -1,12 +1,12 @@
 <?php
 
 /**
- * @file plugins/generic/googleAnalytics/OrcidProfileSettingsForm.inc.php
+ * @file OrcidProfileSettingsForm.inc.php
  *
- * Copyright (c) 2015-2016 University of Pittsburgh
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2015-2019 University of Pittsburgh
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class OrcidProfileSettingsForm
  * @ingroup plugins_generic_orcidProfile
@@ -19,6 +19,14 @@ import('lib.pkp.classes.form.Form');
 
 class OrcidProfileSettingsForm extends Form {
 
+	const CONFIG_VARS = array(
+		'orcidProfileAPIPath' => 'string',
+		'orcidClientId' => 'string',
+		'orcidClientSecret' => 'string',
+		'sendMailToAuthorsOnPublication' => 'bool',
+		'logLevel' => 'string',
+		'isSandBox' => 'bool'
+	);
 	/** @var $contextId int */
 	var $contextId;
 
@@ -34,10 +42,12 @@ class OrcidProfileSettingsForm extends Form {
 		$this->contextId = $contextId;
 		$this->plugin =& $plugin;
 
-		parent::__construct($plugin->getTemplatePath() . 'settingsForm.tpl');
+		parent::__construct($plugin->getTemplateResource('settingsForm.tpl'));
 
-		$this->addCheck(new FormValidator($this, 'orcidProfileAPIPath', 'required', 'plugins.generic.orcidProfile.manager.settings.orcidAPIPathRequired'));
-
+		if(!$this->plugin->isGloballyConfigured()) {
+			$this->addCheck(new FormValidator($this, 'orcidProfileAPIPath', 'required',
+				'plugins.generic.orcidProfile.manager.settings.orcidAPIPathRequired'));
+		}
 		$this->addCheck(new FormValidatorPost($this));
 		$this->addCheck(new FormValidatorCSRF($this));
 	}
@@ -48,44 +58,49 @@ class OrcidProfileSettingsForm extends Form {
 	function initData() {
 		$contextId = $this->contextId;
 		$plugin =& $this->plugin;
-
-		$this->_data = array(
-			'orcidProfileAPIPath' => $plugin->getSetting($contextId, 'orcidProfileAPIPath'),
-			'orcidClientId' => $plugin->getSetting($contextId, 'orcidClientId'),
-			'orcidClientSecret' => $plugin->getSetting($contextId, 'orcidClientSecret'),
-		);
+		$this->_data = array();
+		foreach (self::CONFIG_VARS as $configVar => $type) {
+			$this->_data[$configVar] = $plugin->getSetting($contextId, $configVar);
+		}
 	}
 
 	/**
 	 * Assign form data to user-submitted data.
 	 */
 	function readInputData() {
-		$this->readUserVars(array('orcidProfileAPIPath'));
-		$this->readUserVars(array('orcidClientId'));
-		$this->readUserVars(array('orcidClientSecret'));
+		$this->readUserVars(array_keys(self::CONFIG_VARS));
 	}
 
 	/**
 	 * Fetch the form.
 	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$templateMgr = TemplateManager::getManager($request);
+		$templateMgr->assign('globallyConfigured', $this->plugin->isGloballyConfigured());
 		$templateMgr->assign('pluginName', $this->plugin->getName());
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
-	 * Save settings.
+	 * @copydoc Form::execute()
 	 */
-	function execute() {
+	function execute(...$functionArgs) {
 		$plugin =& $this->plugin;
 		$contextId = $this->contextId;
+		foreach (self::CONFIG_VARS as $configVar => $type) {
+			if ($configVar === 'orcidProfileAPIPath') {
+				$plugin->updateSetting($contextId, $configVar, trim($this->getData($configVar), "\"\';"), $type);
+			}
+			else {
+				$plugin->updateSetting($contextId, $configVar, $this->getData($configVar), $type);
+			}
+		}
+		if (strpos($this->getData("orcidProfileAPIPath"), "sandbox.orcid.org") == true) {
+			$plugin->updateSetting($contextId, "isSandBox", true, "bool");
+		}
 
-		$plugin->updateSetting($contextId, 'orcidProfileAPIPath', trim($this->getData('orcidProfileAPIPath'), "\"\';"), 'string');
-		$plugin->updateSetting($contextId, 'orcidClientId', $this->getData('orcidClientId'), 'string');
-		$plugin->updateSetting($contextId, 'orcidClientSecret', $this->getData('orcidClientSecret'), 'string');
+		parent::execute(...$functionArgs);
 	}
 }
 
-?>

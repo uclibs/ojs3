@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/query/QueryNoteFilesGridHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class QueryNoteFilesGridHandler
  * @ingroup controllers_grid_files_query
@@ -22,7 +22,7 @@ class QueryNoteFilesGridHandler extends FileListGridHandler {
 	 */
 	function __construct() {
 		// import app-specific grid data provider for access policies.
-		$request = Application::getRequest();
+		$request = Application::get()->getRequest();
 		$stageId = $request->getUservar('stageId'); // authorized in authorize() method.
 		import('lib.pkp.controllers.grid.files.query.QueryNoteFilesGridDataProvider');
 		parent::__construct(
@@ -32,7 +32,7 @@ class QueryNoteFilesGridHandler extends FileListGridHandler {
 		);
 
 		$this->addRoleAssignment(
-			array(ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR, ROLE_ID_ASSISTANT, ROLE_ID_AUTHOR),
+			array(ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR, ROLE_ID_ASSISTANT, ROLE_ID_REVIEWER, ROLE_ID_AUTHOR),
 			array('fetchGrid', 'fetchRow', 'selectFiles')
 		);
 
@@ -79,9 +79,9 @@ class QueryNoteFilesGridHandler extends FileListGridHandler {
 
 		import('lib.pkp.controllers.grid.files.query.form.ManageQueryNoteFilesForm');
 		$manageQueryNoteFilesForm = new ManageQueryNoteFilesForm($submission->getId(), $query->getId(), $request->getUserVar('noteId'), $this->getRequestArgs());
-		$manageQueryNoteFilesForm->initData($args, $request);
+		$manageQueryNoteFilesForm->initData();
 		return new JSONMessage(true, $manageQueryNoteFilesForm->fetch($request));
 	}
 }
 
-?>
+

@@ -2,9 +2,9 @@
 /**
  * @file classes/security/authorization/RestrictedSiteAccessPolicy.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class RestrictedSiteAccessPolicy
  * @ingroup security_authorization
@@ -41,7 +41,7 @@ class RestrictedSiteAccessPolicy extends AuthorizationPolicy {
 	 */
 	function applies() {
 		$context = $this->_router->getContext($this->_request);
-		return ( $context && $context->getSetting('restrictSiteAccess'));
+		return ( $context && $context->getData('restrictSiteAccess'));
 	}
 
 	/**
@@ -75,4 +75,4 @@ class RestrictedSiteAccessPolicy extends AuthorizationPolicy {
 	}
 }
 
-?>
+

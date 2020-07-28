@@ -3,9 +3,9 @@
 /**
  * @file classes/navigationMenu/NavigationMenuItemAssignmentDAO.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class NavigationMenuItemAssignment
  * @ingroup navigationMenuItem
@@ -180,6 +180,9 @@ class NavigationMenuItemAssignmentDAO extends DAO {
 			)
 		);
 		$this->updateLocaleFields($navigationMenuItemAssignment);
+
+		$this->unCacheRelatedNavigationMenus($navigationMenuItemAssignment->getId());
+
 		return $returner;
 	}
 
@@ -203,13 +206,16 @@ class NavigationMenuItemAssignmentDAO extends DAO {
 		);
 
 		// Add default title (of the navigationMenuItem)
-		$navigationMenuItemDao = DAORegistry::getDAO('NavigationMenuItemDAO');
+		$navigationMenuItemDao = DAORegistry::getDAO('NavigationMenuItemDAO'); /* @var $navigationMenuItemDao NavigationMenuItemDAO */
 		$navigationMenuItem = $navigationMenuItemDao->getById($assignment->getMenuItemId());
 
 		$assignment->setTitle($navigationMenuItem->getTitle(null), null);
 
 		$assignment->setId($this->getInsertId());
 		$this->updateLocaleFields($assignment);
+
+		$this->unCacheRelatedNavigationMenus($assignment->getId());
+
 		return $assignment->getId();
 	}
 
@@ -256,6 +262,8 @@ class NavigationMenuItemAssignmentDAO extends DAO {
 	 * @return boolean
 	 */
 	function deleteById($navigationMenuItemAssignmentId) {
+		$this->unCacheRelatedNavigationMenus($navigationMenuItemAssignmentId);
+
 		$this->update('DELETE FROM navigation_menu_item_assignment_settings WHERE navigation_menu_item_assignment_id = ?', (int) $navigationMenuItemAssignmentId);
 		$this->update('DELETE FROM navigation_menu_item_assignments WHERE navigation_menu_item_assignment_id = ?', (int) $navigationMenuItemAssignmentId);
 	}
@@ -285,6 +293,19 @@ class NavigationMenuItemAssignmentDAO extends DAO {
 			'navigation_menu_item_assignment_id' => $navigationMenuItemAssignment->getId()
 		));
 	}
+
+	/**
+	 * Uncache the related NMs to the NMIA with $id
+	 * @param mixed $id
+	 */
+	function unCacheRelatedNavigationMenus($id) {
+		$navigationMenuItemAssignment = $this->getById($id);
+		if ($navigationMenuItemAssignment) {
+			$navigationMenuDao = \DAORegistry::getDAO('NavigationMenuDAO');
+			$cache = $navigationMenuDao->getCache($navigationMenuItemAssignment->getMenuId());
+			if ($cache) $cache->flush();
+		}
+	}
 }
 
-?>
+

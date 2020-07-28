@@ -1,15 +1,15 @@
 {**
  * templates/workflow/review.tpl
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Review workflow stage.
  *}
 
 {* Help tab *}
-{help file="editorial-workflow/review.md" class="pkp_help_tab"}
+{help file="editorial-workflow/review" class="pkp_help_tab"}
 
 <script type="text/javascript">
 	// Attach the JS file tab handler.
@@ -41,7 +41,7 @@
 		</ul>
 	</div>
 
-	{url|assign:queriesGridUrl router=$smarty.const.ROUTE_COMPONENT component="grid.queries.QueriesGridHandler" op="fetchGrid" submissionId=$submission->getId() stageId=$stageId escape=false}
+	{capture assign=queriesGridUrl}{url router=$smarty.const.ROUTE_COMPONENT component="grid.queries.QueriesGridHandler" op="fetchGrid" submissionId=$submission->getId() stageId=$stageId escape=false}{/capture}
 	{load_url_in_div id="queriesGrid" url=$queriesGridUrl}
 {else}
 	<p>{translate key="editor.review.notInitiated"}</p>

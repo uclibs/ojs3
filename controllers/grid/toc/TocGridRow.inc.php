@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/toc/TocGridRow.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class TocGridRow
  * @ingroup controllers_grid_settings_issue
@@ -32,11 +32,10 @@ class TocGridRow extends GridRow {
 	// Overridden template methods
 	//
 	/*
-	 * Configure the grid row
-	 * @param $request PKPRequest
+	 * @copydoc GridRow::initialize
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $template = null) {
+		parent::initialize($request, $template);
 
 		$dispatcher = $request->getDispatcher();
 		import('lib.pkp.classes.linkAction.request.RedirectAction');
@@ -69,4 +68,4 @@ class TocGridRow extends GridRow {
 	}
 }
 
-?>
+

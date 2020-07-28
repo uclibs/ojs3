@@ -3,9 +3,9 @@
 /**
  * @file plugins/reports/views/ViewReportPlugin.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ViewReportPlugin
  * @ingroup plugins_reports_views
@@ -18,13 +18,10 @@ import('lib.pkp.classes.plugins.ReportPlugin');
 
 class ViewReportPlugin extends ReportPlugin {
 	/**
-	 * Called as a plugin is registered to the registry
-	 * @param $category String Name of category plugin was registered to
-	 * @return boolean True if plugin initialized successfully; if false,
-	 * 	the plugin will not be registered.
+	 * @copydoc Plugin::register()
 	 */
-	function register($category, $path) {
-		$success = parent::register($category, $path);
+	function register($category, $path, $mainContextId = null) {
+		$success = parent::register($category, $path, $mainContextId);
 		$this->addLocaleData();
 		return $success;
 	}
@@ -50,7 +47,7 @@ class ViewReportPlugin extends ReportPlugin {
 	 * @copydoc ReportPlugin::display()
 	 */
 	function display($args, $request) {
-		$journal = $request->getJournal();
+		$context = $request->getContext();
 
 		$columns = array(
 			__('plugins.reports.views.articleId'),
@@ -69,17 +66,19 @@ class ViewReportPlugin extends ReportPlugin {
 		$articleTitles = array();
 		$articleIssueIdentificationMap = array();
 
-		$issueDao = DAORegistry::getDAO('IssueDAO');
-		$publishedArticleDao = DAORegistry::getDAO('PublishedArticleDAO');
-
-		$publishedArticles =& $publishedArticleDao->getPublishedArticlesByJournalId($journal->getId());
-		while ($publishedArticle = $publishedArticles->next()) {
-			$articleId = $publishedArticle->getId();
-			$issueId = $publishedArticle->getIssueId();
-			$articleTitles[$articleId] = $publishedArticle->getLocalizedTitle();
+		import('lib.pkp.classes.submission.PKPSubmission'); // STATUS_PUBLISHED
+		$issueDao = DAORegistry::getDAO('IssueDAO'); /* @var $issueDao IssueDAO */
+		$submissionsIterator = Services::get('submission')->getMany([
+			'contextId' => $context->getId(),
+			'status' => STATUS_PUBLISHED,
+		]);
+		foreach ($submissionsIterator as $submission) {
+			$articleId = $submission->getId();
+			$issueId = $submission->getCurrentPublication()->getData('issueId');
+			$articleTitles[$articleId] = PKPString::regexp_replace( "/\r|\n/", "", $submission->getLocalizedTitle() );
 
 			// Store the abstract view count
-			$abstractViewCounts[$articleId] = $publishedArticle->getViews();
+			$abstractViewCounts[$articleId] = $submission->getViews();
 			// Make sure we get the issue identification
 			$articleIssueIdentificationMap[$articleId] = $issueId;
 			if (!isset($issueIdentifications[$issueId])) {
@@ -90,7 +89,7 @@ class ViewReportPlugin extends ReportPlugin {
 			}
 
 			// For each galley, store the label and the count
-			$galleys = $publishedArticle->getGalleys();
+			$galleys = $submission->getGalleys();
 			$galleyViews[$articleId] = array();
 			$galleyViewTotals[$articleId] = 0;
 			foreach ($galleys as $galley) {
@@ -114,6 +113,8 @@ class ViewReportPlugin extends ReportPlugin {
 		header('content-type: text/comma-separated-values');
 		header('content-disposition: attachment; filename=views-' . date('Ymd') . '.csv');
 		$fp = fopen('php://output', 'wt');
+		//Add BOM (byte order mark) to fix UTF-8 in Excel
+		fprintf($fp, chr(0xEF).chr(0xBB).chr(0xBF));
 		fputcsv($fp, array_merge($columns, $galleyLabels));
 
 		ksort($abstractViewCounts);
@@ -135,4 +136,4 @@ class ViewReportPlugin extends ReportPlugin {
 	}
 }
 
-?>
+

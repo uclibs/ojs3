@@ -8,9 +8,9 @@
 /**
  * @file classes/announcement/Announcement.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Announcement
  * @ingroup announcement
@@ -77,7 +77,7 @@ class Announcement extends DataObject {
 	 * @return string
 	 */
 	function getAnnouncementTypeName() {
-		$announcementTypeDao = DAORegistry::getDAO('AnnouncementTypeDAO');
+		$announcementTypeDao = DAORegistry::getDAO('AnnouncementTypeDAO'); /* @var $announcementTypeDao AnnouncementTypeDAO */
 		return $announcementTypeDao->getAnnouncementTypeName($this->getData('typeId'));
 	}
 
@@ -223,4 +223,4 @@ class Announcement extends DataObject {
 	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file api/v1/issues/IssueHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class IssueHandler
  * @ingroup api_v1_issues
@@ -15,7 +15,7 @@
  */
 
 import('lib.pkp.classes.handler.APIHandler');
-import('classes.core.ServicesContainer');
+import('classes.core.Services');
 
 class IssueHandler extends APIHandler {
 
@@ -29,17 +29,17 @@ class IssueHandler extends APIHandler {
 			'GET' => array (
 				array(
 					'pattern' => $this->getEndpointPattern(),
-					'handler' => array($this, 'getIssueList'),
+					'handler' => array($this, 'getMany'),
 					'roles' => $roles
 				),
 				array(
 					'pattern' => $this->getEndpointPattern().  '/current',
-					'handler' => array($this, 'getCurrentIssue'),
+					'handler' => array($this, 'getCurrent'),
 					'roles' => $roles
 				),
 				array(
 					'pattern' => $this->getEndpointPattern().  '/{issueId}',
-					'handler' => array($this, 'getIssue'),
+					'handler' => array($this, 'get'),
 					'roles' => $roles
 				),
 			)
@@ -61,10 +61,13 @@ class IssueHandler extends APIHandler {
 		import('lib.pkp.classes.security.authorization.ContextRequiredPolicy');
 		$this->addPolicy(new ContextRequiredPolicy($request));
 
+		import('lib.pkp.classes.security.authorization.ContextAccessPolicy');
+		$this->addPolicy(new ContextAccessPolicy($request, $roleAssignments));
+
 		import('classes.security.authorization.OjsJournalMustPublishPolicy');
 		$this->addPolicy(new OjsJournalMustPublishPolicy($request));
 
-		if ($routeName === 'getIssue') {
+		if ($routeName === 'get') {
 			import('classes.security.authorization.OjsIssueRequiredPolicy');
 			$this->addPolicy(new OjsIssueRequiredPolicy($request, $args));
 		}
@@ -82,33 +85,103 @@ class IssueHandler extends APIHandler {
 	 * @param array $args arguments
 	 * @return Response
 	 */
-	public function getIssueList($slimRequest, $response, $args) {
-
+	public function getMany($slimRequest, $response, $args) {
 		$request = $this->getRequest();
+		$currentUser = $request->getUser();
 		$context = $request->getContext();
-		$data = array();
 
-		$volume = $this->getParameter('volume', null);
-		$number = $this->getParameter('number', null);
-		$year = $this->getParameter('year', null);
-
-		if (($volume && !ctype_digit($volume))
-				|| ($number && !is_string($number))
-				|| ($year && !ctype_digit($year))) {
-			return $response->withStatus(400)->withJsonError('api.submissions.400.invalidIssueIdentifiers');
+		if (!$context) {
+			return $response->withStatus(404)->withJsonError('api.404.resourceNotFound');
 		}
 
-		$issueDao = DAORegistry::getDAO('IssueDAO');
-		$issues = $issueDao->getPublishedIssuesByNumber($context->getId(), $volume, $number, $year);
+		$defaultParams = array(
+			'count' => 20,
+			'offset' => 0,
+		);
 
-		while ($issue = $issues->next()) {
-			$data[] = ServicesContainer::instance()
-					->get('issue')
-					->getSummaryProperties($issue, array(
-						'request' => $request,
-						'slimRequest' => $slimRequest,
-					));
+		$requestParams = array_merge($defaultParams, $slimRequest->getQueryParams());
+
+		$params = array();
+
+		// Process query params to format incoming data as needed
+		foreach ($requestParams as $param => $val) {
+			switch ($param) {
+
+				case 'orderBy':
+					if (in_array($val, array('datePublished', 'lastModified', 'seq'))) {
+						$params[$param] = $val;
+					}
+					break;
+
+				case 'orderDirection':
+					$params[$param] = $val === 'ASC' ? $val : 'DESC';
+					break;
+
+				// Enforce a maximum count to prevent the API from crippling the
+				// server
+				case 'count':
+					$params[$param] = min(100, (int) $val);
+					break;
+
+				case 'offset':
+					$params[$param] = (int) $val;
+					break;
+
+				// Always convert volume, number and year values to array
+				case 'volumes':
+				case 'volume':
+				case 'numbers':
+				case 'number':
+				case 'years':
+				case 'year':
+
+					// Support deprecated `year`, `number` and `volume` params
+					if (substr($param, -1) !== 's') {
+						$param .= 's';
+					}
+
+					if (is_string($val) && strpos($val, ',') > -1) {
+						$val = explode(',', $val);
+					} elseif (!is_array($val)) {
+						$val = array($val);
+					}
+					$params[$param] = array_map('intval', $val);
+					break;
+
+				case 'isPublished':
+					$params[$param] = $val ? true : false;
+					break;
+			}
 		}
+
+		$params['contextId'] = $context->getId();
+
+		\HookRegistry::call('API::issues::params', array(&$params, $slimRequest));
+
+		// You must be a manager or site admin to access unpublished Issues
+		$isAdmin = $currentUser->hasRole(array(ROLE_ID_MANAGER), $context->getId()) || $currentUser->hasRole(array(ROLE_ID_SITE_ADMIN), CONTEXT_SITE);
+		if (isset($params['isPublished']) && !$params['isPublished'] && !$isAdmin) {
+			return $response->withStatus(403)->withJsonError('api.submissions.403.unpublishedIssues');
+		} elseif (!$isAdmin) {
+			$params['isPublished'] = true;
+		}
+
+		$items = array();
+		$issuesIterator = Services::get('issue')->getMany($params);
+		if (count($issuesIterator)) {
+			$propertyArgs = array(
+				'request' => $request,
+				'slimRequest' => $slimRequest,
+			);
+			foreach ($issuesIterator as $issue) {
+				$items[] = Services::get('issue')->getSummaryProperties($issue, $propertyArgs);
+			}
+		}
+
+		$data = array(
+			'itemsMax' => Services::get('issue')->getMax($params),
+			'items' => $items,
+		);
 
 		return $response->withJson($data, 200);
 	}
@@ -122,24 +195,22 @@ class IssueHandler extends APIHandler {
 	 *
 	 * @return Response
 	 */
-	public function getCurrentIssue($slimRequest, $response, $args) {
+	public function getCurrent($slimRequest, $response, $args) {
 
 		$request = $this->getRequest();
 		$context = $request->getContext();
 
-		$issueDao = DAORegistry::getDAO('IssueDAO');
+		$issueDao = DAORegistry::getDAO('IssueDAO'); /* @var $issueDao IssueDAO */
 		$issue = $issueDao->getCurrent($context->getId());
 
 		if (!$issue) {
-			return $response->withStatus(404)->withJsonError('api.submissions.404.resourceNotFound');
+			return $response->withStatus(404)->withJsonError('api.404.resourceNotFound');
 		}
 
-		$data = ServicesContainer::instance()
-			->get('issue')
-			->getFullProperties($issue, array(
-				'request' => $request,
-				'slimRequest' => $slimRequest,
-			));
+		$data = Services::get('issue')->getFullProperties($issue, array(
+			'request' => $request,
+			'slimRequest' => $slimRequest,
+		));
 
 		return $response->withJson($data, 200);
 	}
@@ -153,20 +224,18 @@ class IssueHandler extends APIHandler {
 	 *
 	 * @return Response
 	 */
-	public function getIssue($slimRequest, $response, $args) {
+	public function get($slimRequest, $response, $args) {
 		$request = $this->getRequest();
 		$issue = $this->getAuthorizedContextObject(ASSOC_TYPE_ISSUE);
 
 		if (!$issue) {
-			return $response->withStatus(404)->withJsonError('api.submissions.404.resourceNotFound');
+			return $response->withStatus(404)->withJsonError('api.404.resourceNotFound');
 		}
 
-		$data = ServicesContainer::instance()
-				->get('issue')
-				->getFullProperties($issue, array(
-					'request' => $request,
-					'slimRequest' => $slimRequest,
-				));
+		$data = Services::get('issue')->getFullProperties($issue, array(
+			'request' => $request,
+			'slimRequest' => $slimRequest,
+		));
 
 		return $response->withJson($data, 200);
 	}

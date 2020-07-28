@@ -3,9 +3,9 @@
 /**
  * @file controllers/modals/editorDecision/EditorDecisionHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class EditorDecisionHandler
  * @ingroup controllers_modals_editorDecision
@@ -32,7 +32,21 @@ class PKPEditorDecisionHandler extends Handler {
 		import('lib.pkp.classes.security.authorization.internal.ReviewRoundRequiredPolicy');
 		$this->addPolicy(new ReviewRoundRequiredPolicy($request, $args, 'reviewRoundId', $reviewRoundOps));
 
-		return parent::authorize($request, $args, $roleAssignments);
+		if (!parent::authorize($request, $args, $roleAssignments)) return false;
+
+		// Prevent editors who are also assigned as authors from accessing the
+		// review stage operations
+		$operation = $request->getRouter()->getRequestedOp($request);
+		if (in_array($operation, $reviewRoundOps)) {
+			$userAccessibleStages = $this->getAuthorizedContextObject(ASSOC_TYPE_ACCESSIBLE_WORKFLOW_STAGES);
+			foreach ($userAccessibleStages as $stageId => $roles) {
+				if (in_array(ROLE_ID_AUTHOR, $roles)) {
+					return false;
+				}
+			}
+		}
+
+		return true;
 	}
 
 	/**
@@ -42,6 +56,7 @@ class PKPEditorDecisionHandler extends Handler {
 		AppLocale::requireComponents(
 			LOCALE_COMPONENT_APP_COMMON,
 			LOCALE_COMPONENT_APP_EDITOR,
+			LOCALE_COMPONENT_APP_SUBMISSION,
 			LOCALE_COMPONENT_PKP_EDITOR,
 			LOCALE_COMPONENT_PKP_SUBMISSION
 		);
@@ -186,10 +201,10 @@ class PKPEditorDecisionHandler extends Handler {
 		$reviewRound = $this->getAuthorizedContextObject(ASSOC_TYPE_REVIEW_ROUND);
 
 		// Retrieve peer reviews.
-		$reviewAssignmentDao = DAORegistry::getDAO('ReviewAssignmentDAO');
-		$submissionCommentDao = DAORegistry::getDAO('SubmissionCommentDAO');
-		$reviewFormResponseDao = DAORegistry::getDAO('ReviewFormResponseDAO');
-		$reviewFormElementDao = DAORegistry::getDAO('ReviewFormElementDAO');
+		$reviewAssignmentDao = DAORegistry::getDAO('ReviewAssignmentDAO'); /* @var $reviewAssignmentDao ReviewAssignmentDAO */
+		$submissionCommentDao = DAORegistry::getDAO('SubmissionCommentDAO'); /* @var $submissionCommentDao SubmissionCommentDAO */
+		$reviewFormResponseDao = DAORegistry::getDAO('ReviewFormResponseDAO'); /* @var $reviewFormResponseDao ReviewFormResponseDAO */
+		$reviewFormElementDao = DAORegistry::getDAO('ReviewFormElementDAO'); /* @var $reviewFormElementDao ReviewFormElementDAO */
 
 		$reviewAssignments = $reviewAssignmentDao->getBySubmissionId($submission->getId(), $reviewRound->getId());
 		$reviewIndexes = $reviewAssignmentDao->getReviewIndexesForRound($submission->getId(), $reviewRound->getId());
@@ -217,6 +232,11 @@ class PKPEditorDecisionHandler extends Handler {
 						$body .= PKPString::stripUnsafeHtml($comment->getComments());
 					}
 				}
+
+				// Add reviewer recommendation
+				$recommendation = $reviewAssignment->getLocalizedRecommendation();
+				$body .= __('submission.recommendation', array('recommendation' => $recommendation)) . "<br>\n";
+
 				$body .= "<br>$textSeparator<br><br>";
 
 				if ($reviewFormId = $reviewAssignment->getReviewFormId()) {
@@ -290,7 +310,7 @@ class PKPEditorDecisionHandler extends Handler {
 		// Form handling
 		import('lib.pkp.controllers.modals.editorDecision.form.RecommendationForm');
 		$editorRecommendationForm = new RecommendationForm($submission, $stageId, $reviewRound);
-		$editorRecommendationForm->initData($request);
+		$editorRecommendationForm->initData();
 		return new JSONMessage(true, $editorRecommendationForm->fetch($request));
 	}
 
@@ -313,7 +333,7 @@ class PKPEditorDecisionHandler extends Handler {
 		$editorRecommendationForm = new RecommendationForm($submission, $stageId, $reviewRound);
 		$editorRecommendationForm->readInputData();
 		if ($editorRecommendationForm->validate()) {
-			$editorRecommendationForm->execute($request);
+			$editorRecommendationForm->execute();
 			$json = new JSONMessage(true);
 			$json->setGlobalEvent('decisionActionUpdated');
 			return $json;
@@ -398,7 +418,7 @@ class PKPEditorDecisionHandler extends Handler {
 
 		// Form handling
 		$editorDecisionForm = $this->_getEditorDecisionForm($formName, $decision);
-		$editorDecisionForm->initData($args, $request);
+		$editorDecisionForm->initData();
 
 		return new JSONMessage(true, $editorDecisionForm->fetch($request));
 	}
@@ -423,11 +443,11 @@ class PKPEditorDecisionHandler extends Handler {
 		$editorDecisionForm = $this->_getEditorDecisionForm($formName, $decision);
 		$editorDecisionForm->readInputData();
 		if ($editorDecisionForm->validate()) {
-			$editorDecisionForm->execute($args, $request);
+			$editorDecisionForm->execute();
 
 			// Get a list of author user IDs
 			$authorUserIds = array();
-			$stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');
+			$stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO'); /* @var $stageAssignmentDao StageAssignmentDAO */
 			$submitterAssignments = $stageAssignmentDao->getBySubmissionAndRoleId($submission->getId(), ROLE_ID_AUTHOR);
 			while ($assignment = $submitterAssignments->next()) {
 				$authorUserIds[] = $assignment->getUserId();
@@ -473,8 +493,15 @@ class PKPEditorDecisionHandler extends Handler {
 				$redirectUrl = $dispatcher->url($request, ROUTE_PAGE, null, 'workflow', $redirectOp, array($submission->getId()));
 				return $request->redirectUrlJson($redirectUrl);
 			} else {
-				// Needed to update review round status notifications.
-				return DAO::getDataChangedEvent();
+				if (in_array($decision, [SUBMISSION_EDITOR_DECISION_DECLINE, SUBMISSION_EDITOR_DECISION_INITIAL_DECLINE])) {
+					$dispatcher = $this->getDispatcher();
+					$redirectUrl = $dispatcher->url($request, ROUTE_PAGE, null, 'workflow', 'access', array($submission->getId()));
+					return $request->redirectUrlJson($redirectUrl);
+
+				} else {
+					// Needed to update review round status notifications.
+					return DAO::getDataChangedEvent();
+				}
 			}
 		} else {
 			return new JSONMessage(false);
@@ -498,4 +525,4 @@ class PKPEditorDecisionHandler extends Handler {
 	}
 }
 
-?>
+

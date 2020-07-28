@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/settings/user/form/UserEmailForm.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class UserEmailForm
  * @ingroup controllers_grid_settings_user_form
@@ -47,12 +47,10 @@ class UserEmailForm extends Form {
 	}
 
 	/**
-	 * Display the form.
-	 * @param $args array
-	 * @param $request PKPRequest
+	 * @copydoc Form::Fetch
 	 */
-	function fetch($args, $request) {
-		$userDao = DAORegistry::getDAO('UserDAO');
+	function fetch($request, $template = null, $display = false) {
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$user = $userDao->getById($this->userId);
 
 		$templateMgr = TemplateManager::getManager($request);
@@ -62,17 +60,17 @@ class UserEmailForm extends Form {
 			'userEmail' => $user->getEmail(),
 		));
 
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
 	 * Send the email
-	 * @param $args array
-	 * @param $request PKPRequest
+	 * @copydoc Form::execute()
 	 */
-	function execute($args, $request) {
-		$userDao = DAORegistry::getDAO('UserDAO');
+	function execute(...$functionArgs) {
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$toUser = $userDao->getById($this->userId);
+		$request = Application::get()->getRequest();
 		$fromUser = $request->getUser();
 
 		import('lib.pkp.classes.mail.MailTemplate');
@@ -83,8 +81,15 @@ class UserEmailForm extends Form {
 		$email->setSubject($this->getData('subject'));
 		$email->setBody($this->getData('message'));
 		$email->assignParams();
-		$email->send();
+
+		parent::execute(...$functionArgs);
+
+		if (!$email->send()) {
+			import('classes.notification.NotificationManager');
+			$notificationMgr = new NotificationManager();
+			$notificationMgr->createTrivialNotification($request->getUser()->getId(), NOTIFICATION_TYPE_ERROR, array('contents' => __('email.compose.error')));
+		}
 	}
 }
 
-?>
+

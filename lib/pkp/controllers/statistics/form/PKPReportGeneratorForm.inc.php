@@ -3,9 +3,9 @@
 /**
  * @file controllers/statistics/form/PKPReportGeneratorForm.inc.php
  *
- * Copyright (c) 2013-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2013-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPReportGeneratorForm
  * @ingroup controllers_statistics_form
@@ -77,7 +77,7 @@ abstract class PKPReportGeneratorForm extends Form {
 	/**
 	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$router = $request->getRouter();
 		$context = $router->getContext($request);
 		$columns = $this->_columns;
@@ -205,7 +205,7 @@ abstract class PKPReportGeneratorForm extends Form {
 		$this->setData('columnsOptions', $columnsOptions);
 		$this->setData('optionalColumns', $this->_optionalColumns);
 
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
@@ -219,10 +219,11 @@ abstract class PKPReportGeneratorForm extends Form {
 	}
 
 	/**
-	 * @see Form::execute()
+	 * @copydoc Form::execute()
 	 */
-	function execute($request) {
-		parent::execute();
+	function execute(...$functionArgs) {
+		parent::execute(...$functionArgs);
+		$request = Application::get()->getRequest();
 		$router = $request->getRouter(); /* @var $router PageRouter */
 		$context = $router->getContext($request);
 		$statsHelper = new StatisticsHelper();
@@ -341,4 +342,4 @@ abstract class PKPReportGeneratorForm extends Form {
 	abstract function getFileAssocTypes();
 }
 
-?>
+

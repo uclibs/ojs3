@@ -2,9 +2,9 @@
 /**
  * @file controllers/grid/files/attachment/ReviewerReviewAttachmentGridDataProvider.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewerReviewAttachmentGridDataProvider
  * @ingroup controllers_grid_files_attachment
@@ -81,8 +81,8 @@ class ReviewerReviewAttachmentGridDataProvider extends SubmissionFilesGridDataPr
 	function loadData($filter = array()) {
 		// Get all review files assigned to this submission.
 		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
-		$submissionFiles = $submissionFileDao->getAllRevisionsByAssocId(
-			ASSOC_TYPE_REVIEW_ASSIGNMENT, $this->_getReviewId(), $this->getFileStage()
+		$submissionFiles = $submissionFileDao->getLatestRevisionsByAssocId(
+			ASSOC_TYPE_REVIEW_ASSIGNMENT, $this->_getReviewId(), $this->getSubmission()->getId(), $this->getFileStage()
 		);
 		return $this->prepareSubmissionFileData($submissionFiles, false, $filter);
 	}
@@ -97,12 +97,12 @@ class ReviewerReviewAttachmentGridDataProvider extends SubmissionFilesGridDataPr
 		import('lib.pkp.controllers.api.file.linkAction.AddFileLinkAction');
 		$submission = $this->getSubmission();
 
-		$reviewAssignmentDao = DAORegistry::getDAO('ReviewAssignmentDAO');
+		$reviewAssignmentDao = DAORegistry::getDAO('ReviewAssignmentDAO'); /* @var $reviewAssignmentDao ReviewAssignmentDAO */
 		$reviewAssignment = $reviewAssignmentDao->getById($this->_getReviewId());
 
 		return new AddFileLinkAction(
 			$request, $submission->getId(), $this->getStageId(),
-			$this->getUploaderRoles(), null, $this->getFileStage(),
+			$this->getUploaderRoles(), $this->getFileStage(),
 			ASSOC_TYPE_REVIEW_ASSIGNMENT, $this->_getReviewId(),
 			$reviewAssignment->getReviewRoundId()
 		);
@@ -120,4 +120,4 @@ class ReviewerReviewAttachmentGridDataProvider extends SubmissionFilesGridDataPr
 	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file classes/search/SearchHelperParser.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SearchHelperParser
  * @ingroup search
@@ -30,7 +30,7 @@ class SearchHelperParser extends SearchFileParser {
 		$prog = Config::getVar('search', 'index[' . $this->type . ']');
 
 		if (isset($prog)) {
-			$exec = sprintf($prog, escapeshellcmd($this->getFilePath()));
+			$exec = sprintf($prog, escapeshellarg($this->getFilePath()));
 			$this->fp = @popen($exec, 'r');
 			return $this->fp ? true : false;
 		}
@@ -43,4 +43,4 @@ class SearchHelperParser extends SearchFileParser {
 	}
 }
 
-?>
+

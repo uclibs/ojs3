@@ -6,9 +6,9 @@
 /**
  * @file classes/user/form/RegistrationForm.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class RegistrationForm
  * @ingroup user_form
@@ -19,6 +19,9 @@
 import('lib.pkp.classes.form.Form');
 
 class RegistrationForm extends Form {
+
+	/** @var User The user object being created (available to hooks during registrationform::execute hook) */
+	var $user;
 
 	/** @var boolean user is already registered with another context */
 	var $existingUser;
@@ -36,15 +39,18 @@ class RegistrationForm extends Form {
 		parent::__construct('frontend/pages/userRegister.tpl');
 
 		// Validation checks for this form
+		$form = $this;
 		$this->addCheck(new FormValidatorCustom($this, 'username', 'required', 'user.register.form.usernameExists', array(DAORegistry::getDAO('UserDAO'), 'userExistsByUsername'), array(), true));
 		$this->addCheck(new FormValidator($this, 'username', 'required', 'user.profile.form.usernameRequired'));
 		$this->addCheck(new FormValidator($this, 'password', 'required', 'user.profile.form.passwordRequired'));
 		$this->addCheck(new FormValidatorUsername($this, 'username', 'required', 'user.register.form.usernameAlphaNumeric'));
 		$this->addCheck(new FormValidatorLength($this, 'password', 'required', 'user.register.form.passwordLengthRestriction', '>=', $site->getMinPasswordLength()));
-		$this->addCheck(new FormValidatorCustom($this, 'password', 'required', 'user.register.form.passwordsDoNotMatch', create_function('$password,$form', 'return $password == $form->getData(\'password2\');'), array(&$this)));
+		$this->addCheck(new FormValidatorCustom($this, 'password', 'required', 'user.register.form.passwordsDoNotMatch', function($password) use ($form) {
+			return $password == $form->getData('password2');
+		}));
 
-		$this->addCheck(new FormValidator($this, 'firstName', 'required', 'user.profile.form.firstNameRequired'));
-		$this->addCheck(new FormValidator($this, 'lastName', 'required', 'user.profile.form.lastNameRequired'));
+		$this->addCheck(new FormValidator($this, 'givenName', 'required', 'user.profile.form.givenNameRequired'));
+
 		$this->addCheck(new FormValidator($this, 'country', 'required', 'user.profile.form.countryRequired'));
 
 		// Email checks
@@ -53,13 +59,22 @@ class RegistrationForm extends Form {
 
 		$this->captchaEnabled = Config::getVar('captcha', 'captcha_on_register') && Config::getVar('captcha', 'recaptcha');
 		if ($this->captchaEnabled) {
-			$this->addCheck(new FormValidatorReCaptcha($this, Request::getRemoteAddr(), 'common.captcha.error.invalid-input-response'));
+			$request = Application::get()->getRequest();
+			$this->addCheck(new FormValidatorReCaptcha($this, $request->getRemoteAddr(), 'common.captcha.error.invalid-input-response', $request->getServerHost()));
 		}
 
-		$authDao = DAORegistry::getDAO('AuthSourceDAO');
+		$authDao = DAORegistry::getDAO('AuthSourceDAO'); /* @var $authDao AuthSourceDAO */
 		$this->defaultAuth = $authDao->getDefaultPlugin();
 		if (isset($this->defaultAuth)) {
-			$this->addCheck(new FormValidatorCustom($this, 'username', 'required', 'user.register.form.usernameExists', create_function('$username,$form,$auth', 'return (!$auth->userExists($username) || $auth->authenticate($username, $form->getData(\'password\')));'), array(&$this, $this->defaultAuth)));
+			$auth = $this->defaultAuth;
+			$this->addCheck(new FormValidatorCustom($this, 'username', 'required', 'user.register.form.usernameExists', function($username) use ($form, $auth) {
+				return (!$auth->userExists($username) || $auth->authenticate($username, $form->getData('password')));
+			}));
+		}
+
+		$context = Application::get()->getRequest()->getContext();
+		if ($context && $context->getData('privacyStatement')) {
+			$this->addCheck(new FormValidator($this, 'privacyConsent', 'required', 'user.profile.form.privacyConsentRequired'));
 		}
 
 		$this->addCheck(new FormValidatorPost($this));
@@ -83,15 +98,13 @@ class RegistrationForm extends Form {
 			));
 		}
 
-		$countryDao = DAORegistry::getDAO('CountryDAO');
-		$countries = $countryDao->getCountries();
+		$isoCodes = new \Sokil\IsoCodes\IsoCodesFactory();
+		$countries = array();
+		foreach ($isoCodes->getCountries() as $country) {
+			$countries[$country->getAlpha2()] = $country->getLocalName();
+		}
+		asort($countries);
 		$templateMgr->assign('countries', $countries);
-
-		$userDao = DAORegistry::getDAO('UserDAO');
-		$templateMgr->assign('genderOptions', $userDao->getGenderOptions());
-
-		$site = $request->getSite();
-		$templateMgr->assign('availableLocales', $site->getSupportedLocaleNames());
 
 		import('lib.pkp.classes.user.form.UserFormHelper');
 		$userFormHelper = new UserFormHelper();
@@ -100,6 +113,8 @@ class RegistrationForm extends Form {
 		$templateMgr->assign(array(
 			'source' =>$request->getUserVar('source'),
 			'minPasswordLength' => $site->getMinPasswordLength(),
+			'enableSiteWidePrivacyStatement' => Config::getVar('general', 'sitewide_privacy_statement'),
+			'siteWidePrivacyStatement' => $site->getData('privacyStatement'),
 		));
 
 		return parent::fetch($request, $template, $display);
@@ -107,30 +122,11 @@ class RegistrationForm extends Form {
 
 	/**
 	 * @copydoc Form::initData()
-	 * @param $request Request
 	 */
-	function initData($request) {
-		$userGroupIds = array();
-
-		// If a context exists, opt the user into reader and author roles in
-		// that context by default.
-		if (($context = $request->getContext()) && !$context->getSetting('disableUserReg')) {
-			$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
-
-			$readerUserGroups = $userGroupDao->getByRoleId($context->getId(), ROLE_ID_READER);
-			while ($userGroup = $readerUserGroups->next()) {
-				if ($userGroup->getPermitSelfRegistration()) $userGroupIds[] = $userGroup->getId();
-			}
-
-			$authorUserGroups = $userGroupDao->getByRoleId($context->getId(), ROLE_ID_AUTHOR);
-			while ($userGroup = $authorUserGroups->next()) {
-				if ($userGroup->getPermitSelfRegistration()) $userGroupIds[] = $userGroup->getId();
-			}
-		}
-
+	function initData() {
 		$this->_data = array(
 			'userLocales' => array(),
-			'userGroupIds' => $userGroupIds,
+			'userGroupIds' => array(),
 		);
 	}
 
@@ -144,16 +140,16 @@ class RegistrationForm extends Form {
 			'username',
 			'password',
 			'password2',
-			'firstName',
-			'middleName',
-			'lastName',
+			'givenName',
+			'familyName',
 			'affiliation',
 			'email',
 			'country',
 			'interests',
-			'reviewerGroup',
-			'authorGroup',
+			'emailConsent',
+			'privacyConsent',
 			'readerGroup',
+			'reviewerGroup',
 		));
 
 		if ($this->captchaEnabled) {
@@ -164,48 +160,86 @@ class RegistrationForm extends Form {
 
 		// Collect the specified user group IDs into a single piece of data
 		$this->setData('userGroupIds', array_merge(
-			array_keys((array) $this->getData('reviewerGroup')),
-			array_keys((array) $this->getData('authorGroup')),
-			array_keys((array) $this->getData('readerGroup'))
+			array_keys((array) $this->getData('readerGroup')),
+			array_keys((array) $this->getData('reviewerGroup'))
 		));
 	}
 
 	/**
-	 * Validate the form
+	 * @copydoc Form::validate()
 	 */
-	function validate() {
-		if (	count((array) $this->getData('reviewerGroup')) == 0 &&
-			count((array) $this->getData('authorGroup')) == 0 &&
-			count((array) $this->getData('readerGroup')) == 0
-		) {
-			$this->addError('userGroups', __('user.register.form.userGroupRequired'));
+	function validate($callHooks = true) {
+		$request = Application::get()->getRequest();
+
+		// Ensure the consent checkbox has been completed for the site and any user
+		// group signups if we're in the site-wide registration form
+		if (!$request->getContext()) {
+
+			if ($request->getSite()->getData('privacyStatement')) {
+				$privacyConsent = $this->getData('privacyConsent');
+				if (!is_array($privacyConsent) || !array_key_exists(CONTEXT_ID_NONE, $privacyConsent)) {
+					$this->addError('privacyConsent[' . CONTEXT_ID_NONE . ']', __('user.register.form.missingSiteConsent'));
+				}
+			}
+
+			if (!Config::getVar('general', 'sitewide_privacy_statement')) {
+				$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
+				$contextIds = array();
+				foreach ($this->getData('userGroupIds') as $userGroupId) {
+					$userGroup = $userGroupDao->getById($userGroupId);
+					$contextIds[] = $userGroup->getContextId();
+				}
+
+				$contextIds = array_unique($contextIds);
+				if (!empty($contextIds)) {
+					$contextDao = Application::getContextDao();
+					$privacyConsent = (array) $this->getData('privacyConsent');
+					foreach ($contextIds as $contextId) {
+						$context = $contextDao->getById($contextId);
+						if ($context->getData('privacyStatement') && !array_key_exists($contextId, $privacyConsent)) {
+							$this->addError('privacyConsent[' . $contextId . ']', __('user.register.form.missingContextConsent'));
+							break;
+						}
+					}
+				}
+			}
 		}
 
-		return parent::validate();
+		return parent::validate($callHooks);
 	}
 
 	/**
 	 * Register a new user.
-	 * @param $request PKPRequest
 	 * @return int|null User ID, or false on failure
 	 */
-	function execute($request) {
+	function execute(...$functionArgs) {
 		$requireValidation = Config::getVar('email', 'require_validation');
-		$userDao = DAORegistry::getDAO('UserDAO');
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 
 		// New user
-		$user = $userDao->newDataObject();
+		$this->user = $user = $userDao->newDataObject();
 
 		$user->setUsername($this->getData('username'));
 
+		// The multilingual user data (givenName, familyName and affiliation) will be saved
+		// in the current UI locale and copied in the site's primary locale too
+		$request = Application::get()->getRequest();
+		$site = $request->getSite();
+		$sitePrimaryLocale = $site->getPrimaryLocale();
+		$currentLocale = AppLocale::getLocale();
+
 		// Set the base user fields (name, etc.)
-		$user->setFirstName($this->getData('firstName'));
-		$user->setMiddleName($this->getData('middleName'));
-		$user->setLastName($this->getData('lastName'));
-		$user->setInitials($this->getData('initials'));
+		$user->setGivenName($this->getData('givenName'), $currentLocale);
+		$user->setFamilyName($this->getData('familyName'), $currentLocale);
 		$user->setEmail($this->getData('email'));
 		$user->setCountry($this->getData('country'));
-		$user->setAffiliation($this->getData('affiliation'), null); // Localized
+		$user->setAffiliation($this->getData('affiliation'), $currentLocale);
+
+		if ($sitePrimaryLocale != $currentLocale) {
+			$user->setGivenName($this->getData('givenName'), $sitePrimaryLocale);
+			$user->setFamilyName($this->getData('familyName'), $sitePrimaryLocale);
+			$user->setAffiliation($this->getData('affiliation'), $sitePrimaryLocale);
+		}
 
 		$user->setDateRegistered(Core::getCurrentDate());
 		$user->setInlineHelp(1); // default new users to having inline help visible.
@@ -225,7 +259,7 @@ class RegistrationForm extends Form {
 			$user->setDisabledReason(__('user.login.accountNotValidated', array('email' => $this->getData('email'))));
 		}
 
-		parent::execute($user);
+		parent::execute(...$functionArgs);
 
 		$userDao->insertObject($user);
 		$userId = $user->getId();
@@ -238,10 +272,39 @@ class RegistrationForm extends Form {
 		$session = $sessionManager->getUserSession();
 		$session->setSessionVar('username', $user->getUsername());
 
-		// Save the roles
-		import('lib.pkp.classes.user.form.UserFormHelper');
-		$userFormHelper = new UserFormHelper();
-		$userFormHelper->saveRoleContent($this, $user);
+		// Save the selected roles or assign the Reader role if none selected
+		if ($request->getContext() && !$this->getData('reviewerGroup')) {
+			$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
+			$defaultReaderGroup = $userGroupDao->getDefaultByRoleId($request->getContext()->getId(), ROLE_ID_READER);
+			if ($defaultReaderGroup) $userGroupDao->assignUserToGroup($user->getId(), $defaultReaderGroup->getId(), $request->getContext()->getId());
+		} else {
+			import('lib.pkp.classes.user.form.UserFormHelper');
+			$userFormHelper = new UserFormHelper();
+			$userFormHelper->saveRoleContent($this, $user);
+		}
+
+		// Save the email notification preference
+		if ($request->getContext() && !$this->getData('emailConsent')) {
+
+			// Get the public notification types
+			import('classes.notification.form.NotificationSettingsForm');
+			$notificationSettingsForm = new NotificationSettingsForm();
+			$notificationCategories = $notificationSettingsForm->getNotificationSettingCategories();
+			foreach ($notificationCategories as $notificationCategory) {
+				if ($notificationCategory['categoryKey'] === 'notification.type.public') {
+					$publicNotifications = $notificationCategory['settings'];
+				}
+			}
+			if (isset($publicNotifications)) {
+				$notificationSubscriptionSettingsDao = DAORegistry::getDAO('NotificationSubscriptionSettingsDAO'); /* @var $notificationSubscriptionSettingsDao NotificationSubscriptionSettingsDAO */
+				$notificationSubscriptionSettingsDao->updateNotificationSubscriptionSettings(
+					'blocked_emailed_notification',
+					$publicNotifications,
+					$user->getId(),
+					$request->getContext()->getId()
+				);
+			}
+		}
 
 		// Insert the user interests
 		import('lib.pkp.classes.user.InterestManager');
@@ -262,10 +325,15 @@ class RegistrationForm extends Form {
 			$contextPath = $context ? $context->getPath() : null;
 			$mail->assignParams(array(
 				'userFullName' => $user->getFullName(),
+				'contextName' => $context ? $context->getLocalizedName() : $site->getLocalizedTitle(),
 				'activateUrl' => $request->url($contextPath, 'user', 'activateUser', array($this->getData('username'), $accessKey))
 			));
 			$mail->addRecipient($user->getEmail(), $user->getFullName());
-			$mail->send();
+			if (!$mail->send()) {
+				import('classes.notification.NotificationManager');
+				$notificationMgr = new NotificationManager();
+				$notificationMgr->createTrivialNotification($user->getId(), NOTIFICATION_TYPE_ERROR, array('contents' => __('email.compose.error')));
+			}
 			unset($mail);
 		}
 		return $userId;
@@ -281,12 +349,10 @@ class RegistrationForm extends Form {
 		$context = $request->getContext();
 
 		// Set the sender based on the current context
-		if ($context && $context->getSetting('supportEmail')) {
-			$mail->setReplyTo($context->getSetting('supportEmail'), $context->getSetting('supportName'));
+		if ($context && $context->getData('supportEmail')) {
+			$mail->setReplyTo($context->getData('supportEmail'), $context->getData('supportName'));
 		} else {
 			$mail->setReplyTo($site->getLocalizedContactEmail(), $site->getLocalizedContactName());
 		}
 	}
 }
-
-?>

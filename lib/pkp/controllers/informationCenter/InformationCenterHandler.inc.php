@@ -3,9 +3,9 @@
 /**
  * @file controllers/informationCenter/InformationCenterHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class InformationCenterHandler
  * @ingroup controllers_informationCenter
@@ -27,7 +27,7 @@ abstract class InformationCenterHandler extends Handler {
 	function __construct() {
 		parent::__construct();
 		$this->addRoleAssignment(
-			array(ROLE_ID_SUB_EDITOR, ROLE_ID_MANAGER, ROLE_ID_ASSISTANT),
+			array(ROLE_ID_SUB_EDITOR, ROLE_ID_MANAGER),
 			array(
 				'viewInformationCenter',
 				'viewHistory',
@@ -53,10 +53,9 @@ abstract class InformationCenterHandler extends Handler {
 	/**
 	 * Fetch and store away objects
 	 * @param $request PKPRequest
-	 * @param $args array optional
 	 */
-	function initialize($request, $args = null) {
-		parent::initialize($request, $args);
+	function initialize($request) {
+		parent::initialize($request);
 
 		// Fetch the submission and file to display information about
 		$this->_submission = $this->getAuthorizedContextObject(ASSOC_TYPE_SUBMISSION);
@@ -102,7 +101,7 @@ abstract class InformationCenterHandler extends Handler {
 		$this->setupTemplate($request);
 
 		$noteId = (int) $request->getUserVar('noteId');
-		$noteDao = DAORegistry::getDAO('NoteDAO');
+		$noteDao = DAORegistry::getDAO('NoteDAO'); /* @var $noteDao NoteDAO */
 		$note = $noteDao->getById($noteId);
 
 		if (!$request->checkCSRF() || !$note || $note->getAssocType() != $this->_getAssocType() || $note->getAssocId() != $this->_getAssocId()) fatalError('Invalid note!');
@@ -129,7 +128,7 @@ abstract class InformationCenterHandler extends Handler {
 		$this->setupTemplate($request);
 
 		$templateMgr = TemplateManager::getManager($request);
-		$noteDao = DAORegistry::getDAO('NoteDAO');
+		$noteDao = DAORegistry::getDAO('NoteDAO'); /* @var $noteDao NoteDAO */
 		$templateMgr->assign('notes', $noteDao->getByAssoc($this->_getAssocType(), $this->_getAssocId()));
 
 		$user = $request->getUser();
@@ -217,4 +216,4 @@ abstract class InformationCenterHandler extends Handler {
 	abstract function _getAssocType();
 }
 
-?>
+

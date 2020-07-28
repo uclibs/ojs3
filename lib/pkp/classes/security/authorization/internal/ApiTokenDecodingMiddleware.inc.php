@@ -3,9 +3,9 @@
 /**
  * @file classes/security/authorization/internal/ApiTokenDecodingMiddleware.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ApiTokenDecodingMiddleware
  * @ingroup security_authorization
@@ -38,7 +38,7 @@ class ApiTokenDecodingMiddleware {
 		$secret = Config::getVar('security', 'api_key_secret', '');
 		if ($secret !== '' && !is_null($jwt = $slimRequest->getQueryParam('apiToken'))) {
 			try {
-				$apiToken = json_decode(JWT::decode($jwt, $secret, array('HS256')));
+				$apiToken = JWT::decode($jwt, $secret, array('HS256'));
 				$this->_handler->setApiToken($apiToken);
 				return true;
 			} catch (Exception $e) {
@@ -84,4 +84,4 @@ class ApiTokenDecodingMiddleware {
 	}
 }
 
-?>
+

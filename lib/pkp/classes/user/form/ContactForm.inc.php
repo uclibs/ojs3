@@ -3,9 +3,9 @@
 /**
  * @file classes/user/form/ContactForm.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ContactForm
  * @ingroup user_form
@@ -19,35 +19,39 @@ class ContactForm extends BaseProfileForm {
 
 	/**
 	 * Constructor.
-	 * @param $user PKPUser
+	 * @param $user User
 	 */
 	function __construct($user) {
 		parent::__construct('user/contactForm.tpl', $user);
 
 		// Validation checks for this form
+		$this->addCheck(new FormValidatorEmail($this, 'email', 'required', 'user.profile.form.emailRequired'));
 		$this->addCheck(new FormValidator($this, 'country', 'required', 'user.profile.form.countryRequired'));
 		$this->addCheck(new FormValidatorCustom($this, 'email', 'required', 'user.register.form.emailExists', array(DAORegistry::getDAO('UserDAO'), 'userExistsByEmail'), array($user->getId(), true), true));
 	}
 
 	/**
-	 * Fetch the form.
-	 * @param $request PKPRequest
-	 * @return string JSON-encoded form contents.
+	 * @copydoc BaseProfileForm::fetch
 	 */
-	function fetch($request) {
-		$templateMgr = TemplateManager::getManager($request);
+	function fetch($request, $template = null, $display = false) {
 		$site = $request->getSite();
-		$countryDao = DAORegistry::getDAO('CountryDAO');
+		$isoCodes = new \Sokil\IsoCodes\IsoCodesFactory();
+		$countries = array();
+		foreach ($isoCodes->getCountries() as $country) {
+			$countries[$country->getAlpha2()] = $country->getLocalName();
+		}
+		asort($countries);
+		$templateMgr = TemplateManager::getManager($request);
 		$templateMgr->assign(array(
-			'countries' => $countryDao->getCountries(),
+			'countries' => $countries,
 			'availableLocales' => $site->getSupportedLocaleNames(),
 		));
 
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
-	 * @copydoc Form::initData()
+	 * @copydoc BaseProfileForm::initData()
 	 */
 	function initData() {
 		$user = $this->getUser();
@@ -80,10 +84,9 @@ class ContactForm extends BaseProfileForm {
 	}
 
 	/**
-	 * Save contact settings.
-	 * @param $request PKPRequest
+	 * @copydoc Form::execute()
 	 */
-	function execute($request) {
+	function execute(...$functionArgs) {
 		$user = $this->getUser();
 
 		$user->setCountry($this->getData('country'));
@@ -93,6 +96,7 @@ class ContactForm extends BaseProfileForm {
 		$user->setMailingAddress($this->getData('mailingAddress'));
 		$user->setAffiliation($this->getData('affiliation'), null); // Localized
 
+		$request = Application::get()->getRequest();
 		$site = $request->getSite();
 		$availableLocales = $site->getSupportedLocales();
 		$locales = array();
@@ -103,8 +107,8 @@ class ContactForm extends BaseProfileForm {
 		}
 		$user->setLocales($locales);
 
-		parent::execute($request, $user);
+		parent::execute(...$functionArgs);
 	}
 }
 
-?>
+

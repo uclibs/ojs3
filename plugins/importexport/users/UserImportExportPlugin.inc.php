@@ -3,9 +3,9 @@
 /**
  * @file plugins/importexport/users/UserImportExportPlugin.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class UserImportExportPlugin
  * @ingroup plugins_importexport_user
@@ -18,14 +18,10 @@ import('lib.pkp.plugins.importexport.users.PKPUserImportExportPlugin');
 class UserImportExportPlugin extends PKPUserImportExportPlugin {
 
 	/**
-	 * Called as a plugin is registered to the registry
-	 * @param $category String Name of category plugin was registered to
-	 * @param $path string
-	 * @return boolean True iff plugin initialized successfully; if false,
-	 * 	the plugin will not be registered.
+	 * @copydoc Plugin::register()
 	 */
-	function register($category, $path) {
-		return parent::register($category, $path);
+	function register($category, $path, $mainContextId = null) {
+		return parent::register($category, $path, $mainContextId);
 	}
 
 	/**
@@ -52,8 +48,8 @@ class UserImportExportPlugin extends PKPUserImportExportPlugin {
 
 		AppLocale::requireComponents(LOCALE_COMPONENT_APP_MANAGER);
 
-		$journalDao = DAORegistry::getDAO('JournalDAO');
-		$userDao = DAORegistry::getDAO('UserDAO');
+		$journalDao = DAORegistry::getDAO('JournalDAO'); /* @var $journalDao JournalDAO */
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 
 		$journal = $journalDao->getByPath($journalPath);
 
@@ -97,4 +93,4 @@ class UserImportExportPlugin extends PKPUserImportExportPlugin {
 	}
 }
 
-?>
+

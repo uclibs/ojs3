@@ -3,9 +3,9 @@
 /**
  * @file pages/navigationMenu/NavigationMenuItemHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class NavigationMenuItemHandler
  * @ingroup pages_navigationMenu
@@ -16,6 +16,9 @@
 import('classes.handler.Handler');
 
 class NavigationMenuItemHandler extends Handler {
+
+	/** @var NavigationMenuItem The nmi to view */
+	static $nmi;
 
 	//
 	// Implement methods from Handler.
@@ -55,22 +58,25 @@ class NavigationMenuItemHandler extends Handler {
 		$templateMgr = TemplateManager::getManager($request);
 		$this->setupTemplate($request);
 
-		$navigationMenuItemDao = DAORegistry::getDAO('NavigationMenuItemDAO');
+		$navigationMenuItemDao = DAORegistry::getDAO('NavigationMenuItemDAO'); /* @var $navigationMenuItemDao NavigationMenuItemDAO */
 
 		$navigationMenuItem = $navigationMenuItemDao->newDataObject();
 		$navigationMenuItem->setContent((array) $request->getUserVar('content'), null);
 		$navigationMenuItem->setTitle((array) $request->getUserVar('title'), null);
+
+		import('classes.core.Services');
+		Services::get('navigationMenu')->transformNavMenuItemTitle($templateMgr, $navigationMenuItem);
 
 		$templateMgr->assign('title', $navigationMenuItem->getLocalizedTitle());
 
 		$vars = array();
 		if ($context) {
 			$vars = array(
-				'{$contactName}' => $context->getSetting('contactName'),
-				'{$contactEmail}' => $context->getSetting('contactEmail'),
-				'{$supportName}' => $context->getSetting('supportName'),
-				'{$supportPhone}' => $context->getSetting('supportPhone'),
-				'{$supportEmail}' => $context->getSetting('supportEmail'),
+				'{$contactName}' => $context->getData('contactName'),
+				'{$contactEmail}' => $context->getData('contactEmail'),
+				'{$supportName}' => $context->getData('supportName'),
+				'{$supportPhone}' => $context->getData('supportPhone'),
+				'{$supportEmail}' => $context->getData('supportEmail'),
 			);
 		}
 
@@ -98,22 +104,22 @@ class NavigationMenuItemHandler extends Handler {
 		$templateMgr = TemplateManager::getManager($request);
 		$this->setupTemplate($request);
 
-		$navigationMenuItemDao = DAORegistry::getDAO('NavigationMenuItemDAO');
+		$navigationMenuItemDao = DAORegistry::getDAO('NavigationMenuItemDAO'); /* @var $navigationMenuItemDao NavigationMenuItemDAO */
 
 		$navigationMenuItem = $navigationMenuItemDao->getByPath($contextId, $path);
 
-		if (isset($navigationMenuItem)) {
-			$templateMgr->assign('title', $navigationMenuItem->getLocalizedTitle());
+		if (isset(self::$nmi)) {
+			$templateMgr->assign('title', self::$nmi->getLocalizedTitle());
 
 			$vars = array();
 			if ($context) $vars = array(
-				'{$contactName}' => $context->getSetting('contactName'),
-				'{$contactEmail}' => $context->getSetting('contactEmail'),
-				'{$supportName}' => $context->getSetting('supportName'),
-				'{$supportPhone}' => $context->getSetting('supportPhone'),
-				'{$supportEmail}' => $context->getSetting('supportEmail'),
+				'{$contactName}' => $context->getData('contactName'),
+				'{$contactEmail}' => $context->getData('contactEmail'),
+				'{$supportName}' => $context->getData('supportName'),
+				'{$supportPhone}' => $context->getData('supportPhone'),
+				'{$supportEmail}' => $context->getData('supportEmail'),
 			);
-			$templateMgr->assign('content', strtr($navigationMenuItem->getLocalizedContent(), $vars));
+			$templateMgr->assign('content', strtr(self::$nmi->getLocalizedContent(), $vars));
 
 			$templateMgr->display('frontend/pages/navigationMenuItemViewContent.tpl');
 		} else {
@@ -121,6 +127,21 @@ class NavigationMenuItemHandler extends Handler {
 		}
 
 	}
-}
 
-?>
+	/**
+	 * Handle index request (redirect to "view")
+	 * @param $args array Arguments array.
+	 * @param $request PKPRequest Request object.
+	 */
+	function index($args, $request) {
+		$request->redirect(null, null, 'view', $request->getRequestedOp());
+	}
+
+	/**
+	 * Set a $nmi to view.
+	 * @param $nmi NavigationMenuItem
+	 */
+	static function setPage($nmi) {
+		self::$nmi = $nmi;
+	}
+}

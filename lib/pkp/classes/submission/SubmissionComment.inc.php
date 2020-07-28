@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/SubmissionComment.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionComment
  * @ingroup submission
@@ -112,7 +112,7 @@ class SubmissionComment extends DataObject {
 		$authorFullName =& $this->getData('authorFullName');
 
 		if(!isset($authorFullName)) {
-			$userDao = DAORegistry::getDAO('UserDAO');
+			$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 			$authorFullName = $userDao->getUserFullName($this->getAuthorId(), true);
 		}
 
@@ -128,7 +128,7 @@ class SubmissionComment extends DataObject {
 		$authorEmail =& $this->getData('authorEmail');
 
 		if(!isset($authorEmail)) {
-			$userDao = DAORegistry::getDAO('UserDAO');
+			$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 			$authorEmail = $userDao->getUserEmail($this->getAuthorId(), true);
 		}
 
@@ -216,4 +216,4 @@ class SubmissionComment extends DataObject {
 	}
 }
 
-?>
+

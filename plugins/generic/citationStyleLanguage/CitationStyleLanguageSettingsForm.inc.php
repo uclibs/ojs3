@@ -2,9 +2,9 @@
 /**
  * @file CitationStyleLanguageSettingsForm.inc.inc.php
  *
- * Copyright (c) 2017 Simon Fraser University
- * Copyright (c) 2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2017-2020 Simon Fraser University
+ * Copyright (c) 2017-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class CitationStyleLanguageSettingsForm.inc
  * @ingroup plugins_generic_citationStyleLanguage
@@ -25,7 +25,7 @@ class CitationStyleLanguageSettingsForm extends Form {
 	 * @param $plugin object
 	 */
 	public function __construct($plugin) {
-		parent::__construct($plugin->getTemplatePath() . 'settings.tpl');
+		parent::__construct($plugin->getTemplateResource('settings.tpl'));
 		$this->plugin = $plugin;
 		$this->addCheck(new FormValidatorPost($this));
 		$this->addCheck(new FormValidatorCSRF($this));
@@ -34,12 +34,14 @@ class CitationStyleLanguageSettingsForm extends Form {
 	/**
 	* @copydoc Form::init
 	*/
-	public function initData($request) {
+	public function initData() {
+		$request = Application::get()->getRequest();
 		$context = $request->getContext();
 		$contextId = $context ? $context->getId() : 0;
 		$this->setData('primaryCitationStyle', $this->plugin->getSetting($contextId, 'primaryCitationStyle'));
 		$this->setData('enabledCitationStyles', array_keys($this->plugin->getEnabledCitationStyles($contextId)));
 		$this->setData('enabledCitationDownloads', $this->plugin->getEnabledCitationDownloads($contextId));
+		$this->setData('publisherLocation', $this->plugin->getSetting($contextId, 'publisherLocation'));
 	}
 
 	/**
@@ -50,90 +52,62 @@ class CitationStyleLanguageSettingsForm extends Form {
 			'primaryCitationStyle',
 			'enabledCitationStyles',
 			'enabledCitationDownloads',
+			'publisherLocation',
 		));
 	}
 
 	/**
-	 * Fetch the form.
 	 * @copydoc Form::fetch()
 	 */
-	public function fetch($request) {
+	public function fetch($request, $template = null, $display = false) {
 		$context = $request->getContext();
 		$contextId = $context ? $context->getId() : 0;
 
-		$baseCitationStyles = $this->plugin->getCitationStyles();
+		$primaryCitationStyles = new PKP\components\listPanels\ListPanel('primaryCitationStyles', __('plugins.generic.citationStyleLanguage.settings.citationFormatsPrimary'), array(
+			'description' => __('plugins.generic.citationStyleLanguage.settings.citationFormatsPrimaryDescription'),
+			'canSelect' => true,
+			'selectorName' => 'primaryCitationStyle',
+			'selectorType' => 'radio',
+			'selected' => $this->getData('primaryCitationStyle'),
+			'items' => $this->plugin->getCitationStyles(),
+		));
 
-		$primaryCitationStyle = $this->getData('primaryCitationStyle');
-		$primaryCitationStyles = $baseCitationStyles;
-		if (!empty($primaryCitationStyle)) {
-			$primaryCitationStyles = array_map(function($citation) use ($primaryCitationStyle) {
-				$citation['_initializeSelected'] = $citation['id'] === $primaryCitationStyle;
-				return $citation;
-			}, $baseCitationStyles);
-		}
+		$citationStyles = new PKP\components\listPanels\ListPanel('citationStyles', __('plugins.generic.citationStyleLanguage.settings.citationFormats'), array(
+			'description' => __('plugins.generic.citationStyleLanguage.settings.citationFormatsDescription'),
+			'canSelect' => true,
+			'selectorName' => 'enabledCitationStyles[]',
+			'selected' => $this->plugin->mapCitationIds($this->plugin->getEnabledCitationStyles($contextId)),
+			'items' => $this->plugin->getCitationStyles(),
+		));
 
-		$primaryCitationStyleListData = array(
-			'inputName' => 'primaryCitationStyle',
-			'inputType' => 'radio',
-			'collection' => array(
-				'items' => $primaryCitationStyles,
-			),
-			'i18n' => array(
-				'title' => __('plugins.generic.citationStyleLanguage.settings.citationFormatsPrimary'),
-				'notice' => __('plugins.generic.citationStyleLanguage.settings.citationFormatsPrimaryDescription'),
-			),
-		);
-
-		$enabledCitationStyleIds = $this->plugin->mapCitationIds($this->plugin->getEnabledCitationStyles($contextId));
-		$citationStyles = array_map(function($citation) use ($enabledCitationStyleIds) {
-			$citation['_initializeSelected'] = in_array($citation['id'], $enabledCitationStyleIds);
-			return $citation;
-		}, $baseCitationStyles);
-
-		$citationStylesListData = array(
-			'inputName' => 'enabledCitationStyles[]',
-			'collection' => array(
-				'items' => $citationStyles,
-			),
-			'i18n' => array(
-				'title' => __('plugins.generic.citationStyleLanguage.settings.citationFormats'),
-				'notice' => __('plugins.generic.citationStyleLanguage.settings.citationFormatsDescription'),
-			),
-		);
-
-		$citationDownloads = $this->plugin->getCitationDownloads();
-		$enabledCitationDownloadIds = $this->plugin->mapCitationIds($this->plugin->getEnabledCitationDownloads($contextId));
-		$citationDownloads = array_map(function($citation) use ($enabledCitationDownloadIds) {
-			$citation['_initializeSelected'] = in_array($citation['id'], $enabledCitationDownloadIds);
-			return $citation;
-		}, $citationDownloads);
-
-		$citationDownloadsListData = array(
-			'inputName' => 'enabledCitationDownloads[]',
-			'collection' => array(
-				'items' => $citationDownloads,
-			),
-			'i18n' => array(
-				'title' => __('plugins.generic.citationStyleLanguage.settings.citationDownloads'),
-				'notice' => __('plugins.generic.citationStyleLanguage.settings.citationDownloadsDescription'),
-			),
-		);
+		$citationDownloads = new PKP\components\listPanels\ListPanel('citationDownloads', __('plugins.generic.citationStyleLanguage.settings.citationDownloads'), array(
+			'description' => __('plugins.generic.citationStyleLanguage.settings.citationDownloadsDescription'),
+			'canSelect' => true,
+			'selectorName' => 'enabledCitationDownloads[]',
+			'selected' => $this->plugin->mapCitationIds($this->plugin->getEnabledCitationDownloads($contextId)),
+			'items' => $this->plugin->getCitationDownloads(),
+		));
 
 		$templateMgr = TemplateManager::getManager($request);
 		$templateMgr->assign(array(
 			'pluginName' => $this->plugin->getName(),
-			'primaryCitationStyleListData' => json_encode($primaryCitationStyleListData),
-			'citationStylesListData' => json_encode($citationStylesListData),
-			'citationDownloadsListData' => json_encode($citationDownloadsListData),
+			'settingsData' => [
+				'components' => [
+					'primaryCitationStyles' => $primaryCitationStyles->getConfig(),
+					'citationStyles' => $citationStyles->getConfig(),
+					'citationDownloads' => $citationDownloads->getConfig(),
+				]
+			]
 		));
 
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
-	 * Save settings.
+	 * @copydoc Form::execute()
 	 */
-	public function execute($request) {
+	public function execute(...$functionArgs) {
+		$request = Application::get()->getRequest();
 		$context = $request->getContext();
 		$contextId = $context ? $context->getId() : 0;
 		$this->plugin->updateSetting($contextId, 'primaryCitationStyle', $this->getData('primaryCitationStyle'));
@@ -141,14 +115,14 @@ class CitationStyleLanguageSettingsForm extends Form {
 		$this->plugin->updateSetting($contextId, 'enabledCitationStyles', $enabledCitationStyles);
 		$enabledCitationDownloads = $this->getData('enabledCitationDownloads') ? $this->getData('enabledCitationDownloads') : array();
 		$this->plugin->updateSetting($contextId, 'enabledCitationDownloads', $enabledCitationDownloads);
+		$this->plugin->updateSetting($contextId, 'publisherLocation', $this->getData('publisherLocation'));
 
 		import('classes.notification.NotificationManager');
 		$notificationMgr = new NotificationManager();
 		$user = $request->getUser();
 		$notificationMgr->createTrivialNotification($user->getId(), NOTIFICATION_TYPE_SUCCESS, array('contents' => __('common.changesSaved')));
 
-		return parent::execute();
+		return parent::execute(...$functionArgs);
 	}
 }
 
-?>

@@ -3,9 +3,9 @@
 /**
  * @file pages/user/PKPUserHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPUserHandler
  * @ingroup pages_user
@@ -40,6 +40,11 @@ class PKPUserHandler extends Handler {
 		if (AppLocale::isLocaleValid($setLocale) && (!isset($contextSupportedLocales) || in_array($setLocale, $contextSupportedLocales)) && in_array($setLocale, $site->getSupportedLocales())) {
 			$session = $request->getSession();
 			$session->setSessionVar('currentLocale', $setLocale);
+		}
+
+		$source = $request->getUserVar('source');
+		if (preg_match('#^/\w#', $source) === 1) {
+			$request->redirectUrl($source);
 		}
 
 		if(isset($_SERVER['HTTP_REFERER'])) {
@@ -79,7 +84,7 @@ class PKPUserHandler extends Handler {
 		$user = $request->getUser();
 		$user->setInlineHelp($user->getInlineHelp() ? 0 : 1);
 
-		$userDao = DAORegistry::getDAO('UserDAO');
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$userDao->updateObject($user);
 
 		import('lib.pkp.classes.core.JSONMessage');
@@ -110,4 +115,4 @@ class PKPUserHandler extends Handler {
 	}
 }
 
-?>
+

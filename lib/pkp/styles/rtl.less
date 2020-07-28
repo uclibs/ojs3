@@ -1,9 +1,9 @@
 /**
  * styles/rtl.less
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Stylesheet for flipping content to RTL (e.g. for Arabic, Persian and Hebrew)
  *
@@ -19,7 +19,8 @@ body[dir="rtl"] {
 		right: 0;
 	}
 
-	.pkp_nav_context {
+	.pkp_nav_context,
+	.pkp_nav_tasks {
 		float: right;
 	}
 
@@ -105,7 +106,7 @@ body[dir="rtl"] {
 	// Tasks
 	.pkp_tasks .panel {
 		left: auto;
-		right: 100%;
+		right: 0;
 	}
 
 	#notificationsGrid thead {
@@ -118,6 +119,28 @@ body[dir="rtl"] {
 	.pkp_help_modal {
 		right: auto;
 		left: @double;
+	}
+
+	.pkp_form {
+
+		[data-pkp-editable] {
+
+			[data-pkp-editable-view="input"],
+			[data-pkp-editable-view="input"] label:not(.error),
+			&.isEditing [data-pkp-editable-view="display"] {
+				position: absolute;
+				top: auto;
+				left: auto;
+				right: -9999px;
+			}
+
+			[data-pkp-editable-view="display"],
+			&.isEditing [data-pkp-editable-view="input"] {
+				position: relative;
+				top: auto;
+				right: auto;
+			}
+		}
 	}
 
 	.pkp_help_panel {
@@ -192,8 +215,6 @@ body[dir="rtl"] {
 	.ui-datepicker-prev > span,
 	.ui-datepicker-next > span,
 	.pkp_controllers_grid thead th:first-child:last-child,
-	.pkp_controllers_rangeSlider .toggle label .label,
-	.pkp_controllers_rangeSlider.is_enabled .toggle label,
 	[id^="reviewersGrid"] thead {
 		left: auto;
 		right: -2000px;

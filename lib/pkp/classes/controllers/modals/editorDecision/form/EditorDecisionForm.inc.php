@@ -3,9 +3,9 @@
 /**
  * @file controllers/modals/editorDecision/form/EditorDecisionForm.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class EditorDecisionForm
  * @ingroup controllers_modals_editorDecision_form
@@ -99,9 +99,9 @@ class EditorDecisionForm extends Form {
 
 
 	/**
-	 * @see Form::fetch()
+	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$submission = $this->getSubmission();
 
 		$reviewRound = $this->getReviewRound();
@@ -112,14 +112,14 @@ class EditorDecisionForm extends Form {
 		$this->setData('stageId', $this->getStageId());
 
 		$templateMgr = TemplateManager::getManager($request);
-		$stageDecisions = EditorDecisionActionsManager::getStageDecisions($request->getContext(), $this->getStageId());
+		$stageDecisions = (new EditorDecisionActionsManager())->getStageDecisions($request->getContext(), $this->getStageId());
 		$templateMgr->assign(array(
 			'decisionData' => $stageDecisions[$this->getDecision()],
 			'submissionId' => $submission->getId(),
 			'submission' => $submission,
 		));
 
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 
@@ -152,7 +152,7 @@ class EditorDecisionForm extends Form {
 		$reviewRound = $reviewRoundDao->build($submission->getId(), $stageId, $newRound, $status);
 
 		// Check for a notification already in place for the current review round.
-		$notificationDao = DAORegistry::getDAO('NotificationDAO');
+		$notificationDao = DAORegistry::getDAO('NotificationDAO'); /* @var $notificationDao NotificationDAO */
 		$notificationFactory = $notificationDao->getByAssoc(
 			ASSOC_TYPE_REVIEW_ROUND,
 			$reviewRound->getId(),
@@ -199,4 +199,4 @@ class EditorDecisionForm extends Form {
 	}
 }
 
-?>
+

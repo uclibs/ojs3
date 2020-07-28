@@ -1,9 +1,9 @@
 {**
  * templates/frontend/components/navigationMenu.tpl
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @brief Primary navigation menu list for OJS
  *
@@ -17,13 +17,13 @@
 	<ul id="{$id|escape}" class="{$ulClass|escape} pkp_nav_list">
 		{foreach key=field item=navigationMenuItemAssignment from=$navigationMenu->menuTree}
 			{if !$navigationMenuItemAssignment->navigationMenuItem->getIsDisplayed()}
-				{php}continue;{/php}
+				{continue}
 			{/if}
 			<li class="{$liClass|escape}">
 				<a href="{$navigationMenuItemAssignment->navigationMenuItem->getUrl()}">
 					{$navigationMenuItemAssignment->navigationMenuItem->getLocalizedTitle()}
 				</a>
-				{if !empty($navigationMenuItemAssignment->children)}
+				{if $navigationMenuItemAssignment->navigationMenuItem->getIsChildVisible()}
 					<ul>
 						{foreach key=childField item=childNavigationMenuItemAssignment from=$navigationMenuItemAssignment->children}
 							{if $childNavigationMenuItemAssignment->navigationMenuItem->getIsDisplayed()}

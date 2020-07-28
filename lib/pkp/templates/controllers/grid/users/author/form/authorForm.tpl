@@ -1,16 +1,15 @@
 {**
  * templates/controllers/grid/users/author/form/authorForm.tpl
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Submission Contributor grid form
  *
  *}
 
 <script>
-	// Attach the Information Center handler.
 	$(function() {ldelim}
 		$('#editAuthor').pkpHandler(
 			'$.pkp.controllers.form.AjaxFormHandler'
@@ -28,7 +27,6 @@
 		disableAuthSourceSection=true
 		disablePasswordSection=true
 		disableSendNotifySection=true
-		disableGenderSection=true
 		disableSalutationSection=true
 		disableInitialsSection=true
 		disablePhoneSection=true
@@ -50,11 +48,15 @@
 		{fbvFormSection list="true"}
 			{fbvElement type="checkbox" label="submission.submit.selectPrincipalContact" id="primaryContact" checked=$primaryContact}
 			{fbvElement type="checkbox" label="submission.submit.includeInBrowse" id="includeInBrowse" checked=$includeInBrowse}
+			{$additionalCheckboxes}
 		{/fbvFormSection}
 	{/fbvFormArea}
 
 	{if $submissionId}
 		<input type="hidden" name="submissionId" value="{$submissionId|escape}" />
+	{/if}
+	{if $publicationId}
+		<input type="hidden" name="publicationId" value="{$publicationId|escape}" />
 	{/if}
 	{if $gridId}
 		<input type="hidden" name="gridId" value="{$gridId|escape}" />

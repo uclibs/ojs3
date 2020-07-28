@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/issues/form/IssueForm.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class IssueForm
  * @ingroup controllers_grid_issues_form
@@ -30,10 +30,22 @@ class IssueForm extends Form {
 	 */
 	function __construct($issue = null) {
 		parent::__construct('controllers/grid/issues/form/issueForm.tpl');
-		$this->addCheck(new FormValidatorCustom($this, 'showVolume', 'optional', 'editor.issues.volumeRequired', create_function('$showVolume, $form', 'return !$showVolume || $form->getData(\'volume\') ? true : false;'), array($this)));
-		$this->addCheck(new FormValidatorCustom($this, 'showNumber', 'optional', 'editor.issues.numberRequired', create_function('$showNumber, $form', 'return !$showNumber || $form->getData(\'number\') ? true : false;'), array($this)));
-		$this->addCheck(new FormValidatorCustom($this, 'showYear', 'optional', 'editor.issues.yearRequired', create_function('$showYear, $form', 'return !$showYear || $form->getData(\'year\') ? true : false;'), array($this)));
-		$this->addCheck(new FormValidatorCustom($this, 'showTitle', 'optional', 'editor.issues.titleRequired', create_function('$showTitle, $form', 'return !$showTitle || implode(\'\', $form->getData(\'title\'))!=\'\' ? true : false;'), array($this)));
+
+		$form = $this;
+		$this->addCheck(new FormValidatorRegExp($this, 'volume', 'optional', 'editor.issues.volumeRequired', '/^[0-9]+$/i'));
+		$this->addCheck(new FormValidatorCustom($this, 'showVolume', 'optional', 'editor.issues.volumeRequired', function($showVolume) use ($form) {
+			return !$showVolume || $form->getData('volume') ? true : false;
+		}));
+		$this->addCheck(new FormValidatorCustom($this, 'showNumber', 'optional', 'editor.issues.numberRequired', function($showNumber) use ($form) {
+			return !$showNumber || $form->getData('number') ? true : false;
+		}));
+		$this->addCheck(new FormValidatorCustom($this, 'showYear', 'optional', 'editor.issues.yearRequired', function($showYear) use ($form) {
+			return !$showYear || $form->getData('year') ? true : false;
+		}));
+		$this->addCheck(new FormValidatorCustom($this, 'showTitle', 'optional', 'editor.issues.titleRequired', function($showTitle) use ($form) {
+			return !$showTitle || implode('', $form->getData('title'))!='' ? true : false;
+		}));
+		$this->addCheck(new FormValidatorRegExp($this, 'urlPath', 'optional', 'validator.alpha_dash', '/^[-_a-z0-9]*$/'));
 		$this->addCheck(new FormValidatorPost($this));
 		$this->addCheck(new FormValidatorCSRF($this));
 		$this->issue = $issue;
@@ -44,14 +56,14 @@ class IssueForm extends Form {
 	 * @return array
 	 */
 	function getLocaleFieldNames() {
-		$issueDao = DAORegistry::getDAO('IssueDAO');
+		$issueDao = DAORegistry::getDAO('IssueDAO'); /* @var $issueDao IssueDAO */
 		return $issueDao->getLocaleFieldNames();
 	}
 
 	/**
 	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		if ($this->issue) {
 			$templateMgr = TemplateManager::getManager($request);
 			$templateMgr->assign(array(
@@ -81,16 +93,17 @@ class IssueForm extends Form {
 			);
 		}
 
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
 	 * @copydoc Form::validate()
 	 */
-	function validate($request) {
+	function validate($callHooks = true) {
 		if ($temporaryFileId = $this->getData('temporaryFileId')) {
+			$request = Application::get()->getRequest();
 			$user = $request->getUser();
-			$temporaryFileDao = DAORegistry::getDAO('TemporaryFileDAO');
+			$temporaryFileDao = DAORegistry::getDAO('TemporaryFileDAO'); /* @var $temporaryFileDao TemporaryFileDAO */
 			$temporaryFile = $temporaryFileDao->getTemporaryFile($temporaryFileId, $user->getId());
 
 			import('classes.file.PublicFileManager');
@@ -100,13 +113,30 @@ class IssueForm extends Form {
 			}
 		}
 
-		return parent::validate();
+		// Check if urlPath is already being used
+		if ($this->getData('urlPath')) {
+			if (ctype_digit((string) $this->getData('urlPath'))) {
+				$this->addError('urlPath', __('publication.urlPath.numberInvalid'));
+				$this->addErrorField('urlPath');
+			} else {
+				$issueDao = DAORegistry::getDAO('IssueDAO'); /* @var $issueDao IssueDAO */
+				$issue = $issueDao->getByBestId($this->getData('urlPath'), Application::get()->getRequest()->getContext()->getId());
+				if ($issue &&
+					(!$this->issue || $this->issue->getId() !== $issue->getId())
+				) {
+					$this->addError('urlPath', __('publication.urlPath.duplicate'));
+					$this->addErrorField('urlPath');
+				}
+			}
+		}
+
+		return parent::validate($callHooks);
 	}
 
 	/**
 	 * @copydoc Form::initData()
 	 */
-	function initData($request) {
+	function initData() {
 		if (isset($this->issue)) {
 			$locale = AppLocale::getLocale();
 			$this->_data = array(
@@ -122,6 +152,7 @@ class IssueForm extends Form {
 				'showTitle' => $this->issue->getShowTitle(),
 				'coverImage' => $this->issue->getCoverImage($locale),
 				'coverImageAltText' => $this->issue->getCoverImageAltText($locale),
+				'urlPath' => $this->issue->getData('urlPath'),
 			);
 			parent::initData();
 		} else {
@@ -151,26 +182,31 @@ class IssueForm extends Form {
 			'temporaryFileId',
 			'coverImageAltText',
 			'datePublished',
+			'urlPath',
 		));
 
-		$this->addCheck(new FormValidatorCustom($this, 'issueForm', 'required', 'editor.issues.issueIdentificationRequired', create_function('$showVolume, $showNumber, $showYear, $showTitle', 'return $showVolume || $showNumber || $showYear || $showTitle ? true : false;'), array($this->getData('showNumber'), $this->getData('showYear'), $this->getData('showTitle'))));
-
+		$form = $this;
+		$this->addCheck(new FormValidatorCustom($this, 'issueForm', 'required', 'editor.issues.issueIdentificationRequired', function() use ($form) {
+			return $form->getData('showVolume') || $form->getData('showNumber') || $form->getData('showYear') || $form->getData('showTitle');
+		}));
 	}
 
 	/**
 	 * Save issue settings.
-	 * @param $request PKPRequest
 	 */
-	function execute($request) {
+	function execute(...$functionArgs) {
+		parent::execute(...$functionArgs);
+
+		$request = Application::get()->getRequest();
 		$journal = $request->getJournal();
 
-		$issueDao = DAORegistry::getDAO('IssueDAO');
+		$issueDao = DAORegistry::getDAO('IssueDAO'); /* @var $issueDao IssueDAO */
 		if ($this->issue) {
 			$isNewIssue = false;
 			$issue = $this->issue;
 		} else {
 			$issue = $issueDao->newDataObject();
-			switch ($journal->getSetting('publishingMode')) {
+			switch ($journal->getData('publishingMode')) {
 				case PUBLISHING_MODE_SUBSCRIPTION:
 				case PUBLISHING_MODE_NONE:
 					$issue->setAccessStatus(ISSUE_ACCESS_SUBSCRIPTION);
@@ -188,9 +224,9 @@ class IssueForm extends Form {
 
 		$issue->setJournalId($journal->getId());
 		$issue->setTitle($this->getData('title'), null); // Localized
-		$issue->setVolume(empty($volume) ? 0 : $volume);
-		$issue->setNumber(empty($number) ? 0 : $number);
-		$issue->setYear(empty($year) ? 0 : $year);
+		$issue->setVolume(empty($volume) ? null : $volume);
+		$issue->setNumber(empty($number) ? null : $number);
+		$issue->setYear(empty($year) ? null : $year);
 		if (!$isNewIssue) {
 			$issue->setDatePublished($this->getData('datePublished'));
 		}
@@ -199,6 +235,7 @@ class IssueForm extends Form {
 		$issue->setShowNumber($this->getData('showNumber'));
 		$issue->setShowYear($this->getData('showYear'));
 		$issue->setShowTitle($this->getData('showTitle'));
+		$issue->setData('urlPath', $this->getData('urlPath'));
 
 		// If it is a new issue, first insert it, then update the cover
 		// because the cover name needs an issue id.
@@ -212,14 +249,14 @@ class IssueForm extends Form {
 		// Copy an uploaded cover file for the issue, if there is one.
 		if ($temporaryFileId = $this->getData('temporaryFileId')) {
 			$user = $request->getUser();
-			$temporaryFileDao = DAORegistry::getDAO('TemporaryFileDAO');
+			$temporaryFileDao = DAORegistry::getDAO('TemporaryFileDAO'); /* @var $temporaryFileDao TemporaryFileDAO */
 			$temporaryFile = $temporaryFileDao->getTemporaryFile($temporaryFileId, $user->getId());
 
 			import('classes.file.PublicFileManager');
 			$publicFileManager = new PublicFileManager();
 			$newFileName = 'cover_issue_' . $issue->getId() . '_' . $locale . $publicFileManager->getImageExtension($temporaryFile->getFileType());
 			$journal = $request->getJournal();
-			$publicFileManager->copyJournalFile($journal->getId(), $temporaryFile->getFilePath(), $newFileName);
+			$publicFileManager->copyContextFile($journal->getId(), $temporaryFile->getFilePath(), $newFileName);
 			$issue->setCoverImage($newFileName, $locale);
 			$issueDao->updateObject($issue);
 		}
@@ -232,4 +269,4 @@ class IssueForm extends Form {
 	}
 }
 
-?>
+

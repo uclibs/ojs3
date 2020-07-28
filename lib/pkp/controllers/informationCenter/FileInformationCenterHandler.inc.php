@@ -3,9 +3,9 @@
 /**
  * @file controllers/informationCenter/FileInformationCenterHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FileInformationCenterHandler
  * @ingroup controllers_informationCenter
@@ -29,6 +29,14 @@ class FileInformationCenterHandler extends InformationCenterHandler {
 	 */
 	function __construct() {
 		parent::__construct();
+		$this->addRoleAssignment(
+			array(ROLE_ID_ASSISTANT),
+			array(
+				'viewInformationCenter',
+				'viewHistory',
+				'viewNotes', 'listNotes', 'saveNote', 'deleteNote',
+			)
+		);
 	}
 
 	/**
@@ -43,12 +51,10 @@ class FileInformationCenterHandler extends InformationCenterHandler {
 	}
 
 	/**
-	 * Fetch and store away objects
-	 * @param $request PKPRequest
-	 * @param $args array optional
+	 * @copydoc InformationCenterHandler::initialize
 	 */
-	function initialize($request, $args = null) {
-		parent::initialize($request, $args);
+	function initialize($request) {
+		parent::initialize($request);
 
 		$this->_stageId = $this->getAuthorizedContextObject(ASSOC_TYPE_WORKFLOW_STAGE);
 
@@ -107,11 +113,11 @@ class FileInformationCenterHandler extends InformationCenterHandler {
 		$this->setupTemplate($request);
 
 		$templateMgr = TemplateManager::getManager($request);
-		$noteDao = DAORegistry::getDAO('NoteDAO');
+		$noteDao = DAORegistry::getDAO('NoteDAO'); /* @var $noteDao NoteDAO */
 
 		$submissionFile = $this->submissionFile;
 		$notes = array();
-		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
+		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
 		while (true) {
 			$submissionFile = $submissionFileDao->getRevision($submissionFile->getSourceFileId(), $submissionFile->getSourceRevision());
 			if (!$submissionFile) break;
@@ -146,7 +152,7 @@ class FileInformationCenterHandler extends InformationCenterHandler {
 		$notesForm->readInputData();
 
 		if ($notesForm->validate()) {
-			$notesForm->execute($request);
+			$notesForm->execute();
 
 			// Save to event log
 			$this->_logEvent($request, $this->submissionFile, SUBMISSION_LOG_NOTE_POSTED, 'SubmissionFileLog');
@@ -223,14 +229,14 @@ class FileInformationCenterHandler extends InformationCenterHandler {
 		$templateMgr = TemplateManager::getManager($request);
 
 		// Get the latest history item to display in the header
-		$submissionEventLogDao = DAORegistry::getDAO('SubmissionFileEventLogDAO');
+		$submissionEventLogDao = DAORegistry::getDAO('SubmissionFileEventLogDAO'); /* @var $submissionEventLogDao SubmissionFileEventLogDAO */
 		$fileEvents = $submissionEventLogDao->getByFileId($this->submissionFile->getFileId());
 		$lastEvent = $fileEvents->next();
 		if(isset($lastEvent)) {
 			$templateMgr->assign('lastEvent', $lastEvent);
 
 			// Get the user who created the last event.
-			$userDao = DAORegistry::getDAO('UserDAO');
+			$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 			$user = $userDao->getById($lastEvent->getUserId());
 			$templateMgr->assign('lastEventUser', $user);
 		}
@@ -239,4 +245,4 @@ class FileInformationCenterHandler extends InformationCenterHandler {
 	}
 }
 
-?>
+

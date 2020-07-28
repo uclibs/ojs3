@@ -1,9 +1,9 @@
 {**
  * lib/pkp/templates/frontend/components/header.tpl
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @brief Common frontend site header.
  *
@@ -20,70 +20,78 @@
 {/strip}
 <!DOCTYPE html>
 <html lang="{$currentLocale|replace:"_":"-"}" xml:lang="{$currentLocale|replace:"_":"-"}">
-{if !$pageTitleTranslated}{translate|assign:"pageTitleTranslated" key=$pageTitle}{/if}
+{if !$pageTitleTranslated}{capture assign="pageTitleTranslated"}{translate key=$pageTitle}{/capture}{/if}
 {include file="frontend/components/headerHead.tpl"}
 <body class="pkp_page_{$requestedPage|escape|default:"index"} pkp_op_{$requestedOp|escape|default:"index"}{if $showingLogo} has_site_logo{/if}" dir="{$currentLocaleLangDir|escape|default:"ltr"}">
 
-	<div class="cmp_skip_to_content">
-		<a href="#pkp_content_main">{translate key="navigation.skip.main"}</a>
-		<a href="#pkp_content_nav">{translate key="navigation.skip.nav"}</a>
-		<a href="#pkp_content_footer">{translate key="navigation.skip.footer"}</a>
-	</div>
 	<div class="pkp_structure_page">
 
 		{* Header *}
 		<header class="pkp_structure_head" id="headerNavigationContainer" role="banner">
+			{* Skip to content nav links *}
+			{include file="frontend/components/skipLinks.tpl"}
+
 			<div class="pkp_head_wrapper">
 
 				<div class="pkp_site_name_wrapper">
-					{* Logo or site title. Only use <h1> heading on the homepage.
-					   Otherwise that should go to the page title. *}
-					{if $requestedOp == 'index'}
-						<h1 class="pkp_site_name">
-					{else}
-						<div class="pkp_site_name">
-					{/if}
-						{if $currentContext && $multipleContexts}
-							{url|assign:"homeUrl" journal="index" router=$smarty.const.ROUTE_PAGE}
-						{else}
-							{url|assign:"homeUrl" page="index" router=$smarty.const.ROUTE_PAGE}
-						{/if}
-						{if $displayPageHeaderLogo && is_array($displayPageHeaderLogo)}
-							<a href="{$homeUrl}" class="is_img">
-								<img src="{$publicFilesDir}/{$displayPageHeaderLogo.uploadName|escape:"url"}" width="{$displayPageHeaderLogo.width|escape}" height="{$displayPageHeaderLogo.height|escape}" {if $displayPageHeaderLogo.altText != ''}alt="{$displayPageHeaderLogo.altText|escape}"{else}alt="{translate key="common.pageHeaderLogo.altText"}"{/if} />
-							</a>
-						{elseif $displayPageHeaderTitle && !$displayPageHeaderLogo && is_string($displayPageHeaderTitle)}
-							<a href="{$homeUrl}" class="is_text">{$displayPageHeaderTitle}</a>
-						{elseif $displayPageHeaderTitle && !$displayPageHeaderLogo && is_array($displayPageHeaderTitle)}
-							<a href="{$homeUrl}" class="is_img">
-								<img src="{$publicFilesDir}/{$displayPageHeaderTitle.uploadName|escape:"url"}" alt="{$displayPageHeaderTitle.altText|escape}" width="{$displayPageHeaderTitle.width|escape}" height="{$displayPageHeaderTitle.height|escape}" />
-							</a>
-						{else}
-							<a href="{$homeUrl}" class="is_img">
-								<img src="{$baseUrl}/templates/images/structure/logo.png" alt="{$applicationName|escape}" title="{$applicationName|escape}" width="180" height="90" />
-							</a>
-						{/if}
-					{if $requestedOp == 'index'}
+					<button class="pkp_site_nav_toggle">
+						<span>Open Menu</span>
+					</button>
+					{if !$requestedPage || $requestedPage === 'index'}
+						<h1 class="pkp_screen_reader">
+							{if $currentContext}
+								{$displayPageHeaderTitle|escape}
+							{else}
+								{$siteTitle|escape}
+							{/if}
 						</h1>
-					{else}
-						</div>
 					{/if}
+					<div class="pkp_site_name">
+					{capture assign="homeUrl"}
+						{url page="index" router=$smarty.const.ROUTE_PAGE}
+					{/capture}
+					{if $displayPageHeaderLogo && is_array($displayPageHeaderLogo)}
+						<a href="{$homeUrl}" class="is_img">
+							<img src="{$publicFilesDir}/{$displayPageHeaderLogo.uploadName|escape:"url"}" width="{$displayPageHeaderLogo.width|escape}" height="{$displayPageHeaderLogo.height|escape}" {if $displayPageHeaderLogo.altText != ''}alt="{$displayPageHeaderLogo.altText|escape}"{/if} />
+						</a>
+					{elseif $displayPageHeaderTitle && !$displayPageHeaderLogo && is_string($displayPageHeaderTitle)}
+						<a href="{$homeUrl}" class="is_text">{$displayPageHeaderTitle|escape}</a>
+					{elseif $displayPageHeaderTitle && !$displayPageHeaderLogo && is_array($displayPageHeaderTitle)}
+						<a href="{$homeUrl}" class="is_img">
+							<img src="{$publicFilesDir}/{$displayPageHeaderTitle.uploadName|escape:"url"}" alt="{$displayPageHeaderTitle.altText|escape}" width="{$displayPageHeaderTitle.width|escape}" height="{$displayPageHeaderTitle.height|escape}" />
+						</a>
+					{else}
+						<a href="{$homeUrl}" class="is_img">
+							<img src="{$baseUrl}/templates/images/structure/logo.png" alt="{$applicationName|escape}" title="{$applicationName|escape}" width="180" height="90" />
+						</a>
+					{/if}
+					</div>
 				</div>
 
-				{* Primary site navigation *}
-				{if $currentContext}
-					<nav class="pkp_navigation_primary_row" aria-label="{translate|escape key="common.navigation.site"}">
+				{capture assign="primaryMenu"}
+					{load_menu name="primary" id="navigationPrimary" ulClass="pkp_navigation_primary"}
+				{/capture}
+
+				<nav class="pkp_site_nav_menu" aria-label="{translate|escape key="common.navigation.site"}">
+					<a id="siteNav"></a>
+					<div class="pkp_navigation_primary_row">
 						<div class="pkp_navigation_primary_wrapper">
 							{* Primary navigation menu for current application *}
-							{load_menu name="primary" id="navigationPrimary" ulClass="pkp_navigation_primary"}
+							{$primaryMenu}
 
 							{* Search form *}
-							{include file="frontend/components/searchForm_simple.tpl"}
+							{if $currentContext}
+								{include file="frontend/components/searchForm_simple.tpl" className="pkp_search_desktop"}
+							{/if}
 						</div>
-					</nav>
-				{/if}
-				<nav class="pkp_navigation_user_wrapper" id="navigationUserWrapper" aria-label="{translate|escape key="common.navigation.user"}">
-					{load_menu name="user" id="navigationUser" ulClass="pkp_navigation_user" liClass="profile"}
+					</div>
+					<div class="pkp_navigation_user_wrapper" id="navigationUserWrapper">
+						{load_menu name="user" id="navigationUser" ulClass="pkp_navigation_user" liClass="profile"}
+					</div>
+					{* Search form *}
+					{if $currentContext}
+						{include file="frontend/components/searchForm_simple.tpl" className="pkp_search_mobile"}
+					{/if}
 				</nav>
 			</div><!-- .pkp_head_wrapper -->
 		</header><!-- .pkp_structure_head -->
@@ -93,4 +101,5 @@
 			{assign var=hasSidebar value=0}
 		{/if}
 		<div class="pkp_structure_content{if $hasSidebar} has_sidebar{/if}">
-			<div id="pkp_content_main" class="pkp_structure_main" role="main">
+			<div class="pkp_structure_main" role="main">
+				<a id="pkp_content_main"></a>

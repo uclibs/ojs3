@@ -3,9 +3,9 @@
 /**
  * @file plugins/generic/acron/PKPAcronPlugin.inc.php
  *
- * Copyright (c) 2013-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2013-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPAcronPlugin
  * @ingroup plugins_generic_acron
@@ -29,10 +29,10 @@ class PKPAcronPlugin extends GenericPlugin {
 	var $_tasksToRun;
 
 	/**
-	 * @copydoc LazyLoadPlugin::register()
+	 * @copydoc Plugin::register()
 	 */
-	function register($category, $path) {
-		$success = parent::register($category, $path);
+	function register($category, $path, $mainContextId = null) {
+		$success = parent::register($category, $path, $mainContextId);
 		HookRegistry::register('Installer::postInstall', array(&$this, 'callbackPostInstall'));
 
 		if (!Config::getVar('general', 'installed') || defined('RUNNING_UPGRADE')) return $success;
@@ -75,8 +75,8 @@ class PKPAcronPlugin extends GenericPlugin {
 	}
 
 	/**
-	* @copydoc Plugin::getInstallSitePluginSettingsFile()
-	*/
+	 * @copydoc Plugin::getInstallSitePluginSettingsFile()
+	 */
 	function getInstallSitePluginSettingsFile() {
 		return PKP_LIB_PATH . DIRECTORY_SEPARATOR . $this->getPluginPath() . '/settings.xml';
 	}
@@ -140,7 +140,7 @@ class PKPAcronPlugin extends GenericPlugin {
 	 * @see PKPPageRouter::loadHandler() for the hook call.
 	 */
 	function callbackLoadHandler($hookName, $args) {
-		$request = Application::getRequest();
+		$request = Application::get()->getRequest();
 		$router = $request->getRouter();
 		// Avoid controllers requests because of the shutdown function usage.
 		if (!is_a($router, 'PKPPageRouter')) return false;
@@ -223,7 +223,7 @@ class PKPAcronPlugin extends GenericPlugin {
 		// http://www.php.net/manual/en/function.register-shutdown-function.php#92657
 		chdir($this->_workingDir);
 
-		$taskDao =& DAORegistry::getDao('ScheduledTaskDAO');
+		$taskDao = DAORegistry::getDAO('ScheduledTaskDAO');
 		foreach($this->_tasksToRun as $task) {
 			// Strip off the package name(s) to get the base class name
 			$className = $task['className'];
@@ -286,9 +286,6 @@ class PKPAcronPlugin extends GenericPlugin {
 			$tree = $xmlParser->parse($filePath);
 
 			if (!$tree) {
-				$xmlParser->destroy();
-
-				// TODO: graceful error handling
 				fatalError('Error parsing scheduled tasks XML file: ' . $filePath);
 			}
 
@@ -319,8 +316,6 @@ class PKPAcronPlugin extends GenericPlugin {
 					'args' => $args
 				);
 			}
-
-			$xmlParser->destroy();
 		}
 
 		// Store the object.
@@ -336,7 +331,7 @@ class PKPAcronPlugin extends GenericPlugin {
 		$isEnabled = $this->getSetting(0, 'enabled');
 
 		if($isEnabled) {
-			$taskDao =& DAORegistry::getDao('ScheduledTaskDAO');
+			$taskDao = DAORegistry::getDAO('ScheduledTaskDAO');
 
 			// Grab the scheduled scheduled tree
 			$scheduledTasks = $this->getSetting(0, 'crontab');
@@ -360,4 +355,4 @@ class PKPAcronPlugin extends GenericPlugin {
 		return $tasksToRun;
 	}
 }
-?>
+

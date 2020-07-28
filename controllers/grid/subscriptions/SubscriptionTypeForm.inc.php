@@ -3,9 +3,9 @@
 /**
  * @file classes/subscription/form/SubscriptionTypeForm.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubscriptionTypeForm
  * @ingroup manager_form
@@ -43,23 +43,25 @@ class SubscriptionTypeForm extends Form {
 			SUBSCRIPTION_TYPE_FORMAT_PRINT_ONLINE => __('subscriptionTypes.format.printOnline')
 		);
 
-		$currencyDao = DAORegistry::getDAO('CurrencyDAO');
-		$currencies = $currencyDao->getCurrencies();
+		$isoCodes = new \Sokil\IsoCodes\IsoCodesFactory();
 		$this->validCurrencies = array();
-		while (list(, $currency) = each($currencies)) {
-			$this->validCurrencies[$currency->getCodeAlpha()] = $currency->getName() . ' (' . $currency->getCodeAlpha() . ')';
+		foreach ($isoCodes->getCurrencies() as $currency) {
+			$this->validCurrencies[$currency->getLetterCode()] = $currency->getLocalName() . ' (' . $currency->getLetterCode() . ')';
 		}
+		asort($this->validCurrencies);
 
 		$this->typeId = isset($typeId) ? (int) $typeId : null;
 
-		parent::__construct('subscriptions/subscriptionTypeForm.tpl');
+		parent::__construct('payments/subscriptionTypeForm.tpl');
 
 		// Type name is provided
 		$this->addCheck(new FormValidatorLocale($this, 'name', 'required', 'manager.subscriptionTypes.form.typeNameRequired'));
 
 		// Cost	is provided and is numeric and positive
 		$this->addCheck(new FormValidator($this, 'cost', 'required', 'manager.subscriptionTypes.form.costRequired'));
-		$this->addCheck(new FormValidatorCustom($this, 'cost', 'required', 'manager.subscriptionTypes.form.costNumeric', create_function('$cost', 'return (is_numeric($cost) && $cost >= 0);')));
+		$this->addCheck(new FormValidatorCustom($this, 'cost', 'required', 'manager.subscriptionTypes.form.costNumeric', function($cost) {
+			return (is_numeric($cost) && $cost >= 0);
+		}));
 
 		// Currency is provided and is valid value
 		$this->addCheck(new FormValidator($this, 'currency', 'required', 'manager.subscriptionTypes.form.currencyRequired'));
@@ -72,11 +74,6 @@ class SubscriptionTypeForm extends Form {
 		// Institutional flag is valid value
 		$this->addCheck(new FormValidatorInSet($this, 'institutional', 'optional', 'manager.subscriptionTypes.form.institutionalValid', array('0', '1')));
 
-		// Membership flag is valid value
-		$this->addCheck(new FormValidatorInSet($this, 'membership', 'optional', 'manager.subscriptionTypes.form.membershipValid', array('1')));
-
-		// Public flag is valid value
-		$this->addCheck(new FormValidatorInSet($this, 'disable_public_display', 'optional', 'manager.subscriptionTypes.form.publicValid', array('1')));
 		$this->addCheck(new FormValidatorPost($this));
 		$this->addCheck(new FormValidatorCSRF($this));
 	}
@@ -86,22 +83,21 @@ class SubscriptionTypeForm extends Form {
 	 * @return array
 	 */
 	function getLocaleFieldNames() {
-		$subscriptionTypeDao = DAORegistry::getDAO('SubscriptionTypeDAO');
+		$subscriptionTypeDao = DAORegistry::getDAO('SubscriptionTypeDAO'); /* @var $subscriptionTypeDao SubscriptionTypeDAO */
 		return $subscriptionTypeDao->getLocaleFieldNames();
 	}
 
 	/**
-	 * Fetch the form.
-	 * @param $request PKPRequest
+	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$templateMgr = TemplateManager::getManager($request);
 		$templateMgr->assign(array(
 			'typeId' =>$this->typeId,
 			'validCurrencies' => $this->validCurrencies,
 			'validFormats' => $this->validFormats,
 		));
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
@@ -109,7 +105,7 @@ class SubscriptionTypeForm extends Form {
 	 */
 	function initData() {
 		if (isset($this->typeId)) {
-			$subscriptionTypeDao = DAORegistry::getDAO('SubscriptionTypeDAO');
+			$subscriptionTypeDao = DAORegistry::getDAO('SubscriptionTypeDAO'); /* @var $subscriptionTypeDao SubscriptionTypeDAO */
 			$subscriptionType = $subscriptionTypeDao->getById($this->typeId, $this->journalId);
 
 			if ($subscriptionType != null) {
@@ -137,14 +133,16 @@ class SubscriptionTypeForm extends Form {
 	function readInputData() {
 		$this->readUserVars(array('name', 'description', 'cost', 'currency', 'duration', 'format', 'institutional', 'membership', 'disable_public_display'));
 
-		$this->addCheck(new FormValidatorCustom($this, 'duration', 'optional', 'manager.subscriptionTypes.form.durationNumeric', create_function('$duration', 'return (is_numeric($duration) && $duration >= 0);')));
+		$this->addCheck(new FormValidatorCustom($this, 'duration', 'optional', 'manager.subscriptionTypes.form.durationNumeric', function($duration) {
+			return (is_numeric($duration) && $duration >= 0);
+		}));
 	}
 
 	/**
-	 * Save subscription type.
+	 * @copydoc Form::execute()
 	 */
-	function execute() {
-		$subscriptionTypeDao = DAORegistry::getDAO('SubscriptionTypeDAO');
+	function execute(...$functionArgs) {
+		$subscriptionTypeDao = DAORegistry::getDAO('SubscriptionTypeDAO'); /* @var $subscriptionTypeDao SubscriptionTypeDAO */
 
 		if (isset($this->typeId)) {
 			$subscriptionType = $subscriptionTypeDao->getById($this->typeId, $this->journalId);
@@ -155,7 +153,8 @@ class SubscriptionTypeForm extends Form {
 			$subscriptionType->setInstitutional($this->getData('institutional') == null ? 0 : $this->getData('institutional'));
 		}
 
-		$journal = Request::getJournal();
+		$request = Application::get()->getRequest();
+		$journal = $request->getJournal();
 		$subscriptionType->setJournalId($journal->getId());
 		$subscriptionType->setName($this->getData('name'), null); // Localized
 		$subscriptionType->setDescription($this->getData('description'), null); // Localized
@@ -163,8 +162,10 @@ class SubscriptionTypeForm extends Form {
 		$subscriptionType->setCurrencyCodeAlpha($this->getData('currency'));
 		$subscriptionType->setDuration(($duration=$this->getData('duration'))?(int) $duration:null);
 		$subscriptionType->setFormat($this->getData('format'));
-		$subscriptionType->setMembership($this->getData('membership') == null ? 0 : $this->getData('membership'));
-		$subscriptionType->setDisablePublicDisplay($this->getData('disable_public_display') == null ? 0 : $this->getData('disable_public_display'));
+		$subscriptionType->setMembership((int) $this->getData('membership'));
+		$subscriptionType->setDisablePublicDisplay((int) $this->getData('disable_public_display'));
+
+		parent::execute(...$functionArgs);
 
 		// Update or insert subscription type
 		if ($subscriptionType->getId() != null) {
@@ -179,4 +180,4 @@ class SubscriptionTypeForm extends Form {
 	}
 }
 
-?>
+

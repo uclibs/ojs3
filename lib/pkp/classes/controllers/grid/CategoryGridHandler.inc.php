@@ -3,9 +3,9 @@
 /**
  * @file classes/controllers/grid/CategoryGridHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class CategoryGridHandler
  * @ingroup controllers_grid
@@ -194,7 +194,7 @@ class CategoryGridHandler extends GridHandler {
 	 * @return string the serialized row JSON message or a flag
 	 *  that indicates that the row has not been found.
 	 */
-	function fetchCategory(&$args, $request) {
+	function fetchCategory($args, $request) {
 		// Instantiate the requested row (includes a
 		// validity check on the row id).
 		$row = $this->getRequestedCategoryRow($request, $args);
@@ -269,9 +269,9 @@ class CategoryGridHandler extends GridHandler {
 	}
 
 	/**
-	 * @see GridHandler::doSpecificFetchGridActions($args, $request)
+	 * @see GridHandler::doSpecificFetchGridActions()
 	 */
-	protected function doSpecificFetchGridActions($args, $request, &$templateMgr) {
+	protected function doSpecificFetchGridActions($args, $request, $templateMgr) {
 		// Render the body elements (category groupings + rows inside a <tbody>)
 		$gridBodyParts = $this->_renderCategoriesInternally($request);
 		$templateMgr->assign('gridBodyParts', $gridBodyParts);
@@ -492,4 +492,4 @@ class CategoryGridHandler extends GridHandler {
 	}
 }
 
-?>
+

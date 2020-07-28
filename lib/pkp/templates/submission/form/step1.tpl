@@ -1,16 +1,16 @@
 {**
  * templates/submission/form/step1.tpl
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Step 1 of author submission process.
  *}
 <script type="text/javascript">
 	$(function() {ldelim}
 		// Attach the form handler.
-		$('#submitStep1Form').pkpHandler('$.pkp.controllers.form.AjaxFormHandler');
+		$('#submitStep1Form').pkpHandler('$.pkp.pages.submission.SubmissionStep1FormHandler');
 	{rdelim});
 </script>
 
@@ -22,40 +22,20 @@
 {include file="controllers/notification/inPlaceNotification.tpl" notificationId="submitStep1FormNotification"}
 
 {fbvFormArea id="submissionStep1"}
-	<!-- Author user group selection (only appears if user has > 1 author user groups) -->
-	{if count($authorUserGroupOptions) > 1}
-		{fbvFormSection label="submission.submit.userGroup" description="submission.submit.userGroupDescription"}
-			{fbvElement type="select" id="authorUserGroupId" from=$authorUserGroupOptions translate=false size=$fbvStyles.size.SMALL}
-		{/fbvFormSection}
-	{elseif count($authorUserGroupOptions) == 1}
-		{foreach from=$authorUserGroupOptions key="key" item="authorUserGroupName"}{assign var=authorUserGroupId value=$key}{/foreach}
-		{fbvElement type="hidden" id="authorUserGroupId" value=$authorUserGroupId}
-	{else}
-		<div class="pkp_notification">
-			{include file="controllers/notification/inPlaceNotificationContent.tpl" notificationId=submit notificationStyleClass=notifyError notificationTitle="common.warning"|translate notificationContents="author.submit.userGroupRequired"|translate}
-		</div>
-	{/if}
-
-	{if $copyrightNoticeAgree}
-		{fbvFormSection title="submission.submit.copyrightNoticeAgreementLabel"}
-			{$copyrightNotice}
-			{fbvFormSection list="true"}
-				{fbvElement type="checkbox" id="copyrightNoticeAgree" required=true value=1 label="submission.submit.copyrightNoticeAgree" checked=$submissionId}
-			{/fbvFormSection}
-		{/fbvFormSection}
-	{/if}
 
 	{$additionalFormContent1}
 
-	{include file="core:submission/submissionLocale.tpl"}
+	{include file="submission/submissionLocale.tpl"}
 
 	{$additionalFormContent2}
 
+	{include file="submission/form/categories.tpl"}
+
 	{* Submission checklist *}
-	{if $currentContext->getLocalizedSetting('submissionChecklist')}
+	{if $currentContext->getLocalizedData('submissionChecklist')}
 		{fbvFormSection list="true" label="submission.submit.submissionChecklist" description="submission.submit.submissionChecklistDescription" id="pkp_submissionChecklist"}
-			{foreach name=checklist from=$currentContext->getLocalizedSetting('submissionChecklist') key=checklistId item=checklistItem}
-				{fbvElement type="checkbox" id="checklist-$checklistId" required=true value=1 label=$checklistItem.content translate=false checked=false}
+			{foreach name=checklist from=$currentContext->getLocalizedData('submissionChecklist') key=checklistId item=checklistItem}
+				{fbvElement type="checkbox" id="checklist-$checklistId" required=true value=1 label=$checklistItem.content|strip_unsafe_html translate=false checked=false}
 			{/foreach}
 		{/fbvFormSection}
 	{/if}
@@ -65,10 +45,61 @@
 		{fbvElement type="textarea" name="commentsToEditor" id="commentsToEditor" value=$commentsToEditor rich=true}
 	{/fbvFormSection}
 
+	{* Submitting in which role? *}
+	{if $noExistingRoles}
+		{if count($userGroupOptions) > 1}
+			{fbvFormSection label="submission.submit.availableUserGroups" description="submission.submit.availableUserGroupsDescription" list=true required=true}
+				{foreach from=$userGroupOptions key="userGroupId" item="userGroupName"}
+					{if $defaultGroup->getId() == $userGroupId}{assign var="checked" value=true}{else}{assign var="checked" value=false}{/if}
+					{fbvElement type="radio" id="userGroup"|concat:$userGroupId name="userGroupId" value=$userGroupId checked=$checked label=$userGroupName translate=false}
+				{/foreach}
+			{/fbvFormSection}
+		{else}
+			{foreach from=$userGroupOptions key="userGroupId" item="userGroupName"}
+				{capture assign="onlyUserGroupId"}{$userGroupId}{/capture}
+			{/foreach}
+			{fbvFormSection label="submission.submit.contactConsent" list=true required=true}
+				{fbvElement type="checkbox" id="userGroupId" required=true value=$onlyUserGroupId label="submission.submit.contactConsentDescription"}
+			{/fbvFormSection}
+		{/if}
+
+	{* If user has existing roles, show available roles or automatically select single role *}
+	{else}
+		{if count($userGroupOptions) > 1}
+			{fbvFormSection label="submission.submit.availableUserGroups" list=true required=true}
+				{if $managerGroups}
+					{translate key='submission.submit.userGroupDescriptionManagers' managerGroups=$managerGroups}
+				{else}
+					{translate key='submission.submit.userGroupDescription'}
+				{/if}
+				{foreach from=$userGroupOptions key="userGroupId" item="userGroupName"}
+					{if $defaultGroup->getId() == $userGroupId}{assign var="checked" value=true}{else}{assign var="checked" value=false}{/if}
+					{fbvElement type="radio" id="userGroup"|concat:$userGroupId name="userGroupId" value=$userGroupId checked=$checked label=$userGroupName translate=false}
+				{/foreach}
+			{/fbvFormSection}
+		{elseif count($userGroupOptions) == 1}
+			{foreach from=$userGroupOptions key="userGroupId" item="authorUserGroupName"}{assign var=userGroupId value=$userGroupId}{/foreach}
+			{fbvElement type="hidden" id="userGroupId" value=$userGroupId}
+		{/if}
+	{/if}
+
+	{if $copyrightNotice}
+		{fbvFormSection title="submission.submit.copyrightNoticeAgreementLabel"}
+			{$copyrightNotice}
+			{fbvFormSection list="true"}
+				{fbvElement type="checkbox" id="copyrightNoticeAgree" required=true value=1 label="submission.submit.copyrightNoticeAgree" checked=$submissionId}
+			{/fbvFormSection}
+		{/fbvFormSection}
+	{/if}
+
 	{* Privacy Statement *}
-	{fbvFormSection for="privacyStatement" title="submission.submit.privacyStatement"}
-		{fbvElement type="textarea" name="privacyStatement" id="privacyStatement" disabled=true value=$currentContext->getLocalizedSetting('privacyStatement') rich=true}
-	{/fbvFormSection}
+	{if $hasPrivacyStatement}
+		{fbvFormSection list="true"}
+			{capture assign="privacyUrl"}{url router=$smarty.const.ROUTE_PAGE page="about" op="privacy"}{/capture}
+			{capture assign="privacyLabel"}{translate key="user.register.form.privacyConsent" privacyUrl=$privacyUrl}{/capture}
+			{fbvElement type="checkbox" id="privacyConsent" required=true value=1 label=$privacyLabel translate=false checked=$privacyConsent}
+		{/fbvFormSection}
+	{/if}
 
 	{* Buttons *}
 	{fbvFormButtons id="step1Buttons" submitText="common.saveAndContinue"}

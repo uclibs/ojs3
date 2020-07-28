@@ -3,9 +3,9 @@
 /**
  * @file plugins/importexport/users/filter/PKPUserUserXmlFilter.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPUserUserXmlFilter
  * @ingroup plugins_importexport_users
@@ -72,7 +72,7 @@ class PKPUserUserXmlFilter extends NativeExportFilter {
 	/**
 	 * Create and return a user node.
 	 * @param $doc DOMDocument
-	 * @param $user PKPUser
+	 * @param $user User
 	 * @return DOMElement
 	 */
 	function createPKPUserNode($doc, $user) {
@@ -83,13 +83,9 @@ class PKPUserUserXmlFilter extends NativeExportFilter {
 		$userNode = $doc->createElementNS($deployment->getNamespace(), 'user');
 
 		// Add metadata
-		$userNode->appendChild($doc->createElementNS($deployment->getNamespace(), 'firstname', htmlspecialchars($user->getFirstName(), ENT_COMPAT, 'UTF-8')));
-		$this->createOptionalNode($doc, $userNode, 'middlename', $user->getMiddleName());
-		$userNode->appendChild($doc->createElementNS($deployment->getNamespace(), 'lastname', htmlspecialchars($user->getLastName(), ENT_COMPAT, 'UTF-8')));
-
-		if (is_array($user->getAffiliation(null))) {
-			$this->createLocalizedNodes($doc, $userNode, 'affiliation', $user->getAffiliation(null));
-		}
+		$this->createLocalizedNodes($doc, $userNode, 'givenname', $user->getGivenName(null));
+		$this->createLocalizedNodes($doc, $userNode, 'familyname', $user->getFamilyName(null));
+		$this->createLocalizedNodes($doc, $userNode, 'affiliation', $user->getAffiliation(null));
 
 		$this->createOptionalNode($doc, $userNode, 'country', $user->getCountry());
 		$userNode->appendChild($doc->createElementNS($deployment->getNamespace(), 'email', htmlspecialchars($user->getEmail(), ENT_COMPAT, 'UTF-8')));
@@ -101,9 +97,8 @@ class PKPUserUserXmlFilter extends NativeExportFilter {
 
 		$userNode->appendChild($doc->createElementNS($deployment->getNamespace(), 'username', htmlspecialchars($user->getUsername(), ENT_COMPAT, 'UTF-8')));
 
-		if (is_array($user->getGossip(null))) {
-			$this->createLocalizedNodes($doc, $userNode, 'gossip', $user->getGossip(null));
-		}
+		$this->createOptionalNode($doc, $userNode, 'gossip', $user->getGossip());
+
 		if (is_array($user->getSignature(null))) {
 			$this->createLocalizedNodes($doc, $userNode, 'signature', $user->getSignature(null));
 		}
@@ -116,10 +111,6 @@ class PKPUserUserXmlFilter extends NativeExportFilter {
 
 		$userNode->appendChild($passwordNode);
 
-		$this->createOptionalNode($doc, $userNode, 'salutation', $user->getSalutation());
-		$this->createOptionalNode($doc, $userNode, 'initials', $user->getInitials());
-		$this->createOptionalNode($doc, $userNode, 'suffix', $user->getSuffix());
-		$this->createOptionalNode($doc, $userNode, 'gender', $user->getGender());
 		$this->createOptionalNode($doc, $userNode, 'date_registered', $user->getDateRegistered());
 		$this->createOptionalNode($doc, $userNode, 'date_last_login', $user->getDateLastLogin());
 		$this->createOptionalNode($doc, $userNode, 'date_last_email', $user->getDateLastEmail());
@@ -135,8 +126,8 @@ class PKPUserUserXmlFilter extends NativeExportFilter {
 			$this->createOptionalNode($doc, $userNode, 'disabled_reason', $user->getDisabledReason());
 		}
 
-		$userGroupAssignmentDao = DAORegistry::getDAO('UserGroupAssignmentDAO');
-		$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
+		$userGroupAssignmentDao = DAORegistry::getDAO('UserGroupAssignmentDAO'); /* @var $userGroupAssignmentDao UserGroupAssignmentDAO */
+		$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
 		$assignedGroups = $userGroupAssignmentDao->getByUserId($user->getId(), $context->getId());
 		while ($assignedGroup = $assignedGroups->next()) {
 			$userGroup = $userGroupDao->getById($assignedGroup->getUserGroupId());
@@ -159,15 +150,16 @@ class PKPUserUserXmlFilter extends NativeExportFilter {
 		$context = $deployment->getContext();
 		$userGroupsNode = $doc->createElementNS($deployment->getNamespace(), 'user_groups');
 
-		$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
+		$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
 		$userGroups = $userGroupDao->getByContextId($context->getId());
-		$filterDao = DAORegistry::getDAO('FilterDAO');
+		$filterDao = DAORegistry::getDAO('FilterDAO'); /* @var $filterDao FilterDAO */
 		$userGroupExportFilters = $filterDao->getObjectsByGroup('usergroup=>user-xml');
 		assert(count($userGroupExportFilters)==1); // Assert only a single serialization filter
 		$exportFilter = array_shift($userGroupExportFilters);
 		$exportFilter->setDeployment($this->getDeployment());
 
-		$userGroupsDoc = $exportFilter->execute($userGroups->toArray());
+		$userGroupsArray = $userGroups->toArray();
+		$userGroupsDoc = $exportFilter->execute($userGroupsArray);
 		if ($userGroupsDoc->documentElement instanceof DOMElement) {
 			$clone = $doc->importNode($userGroupsDoc->documentElement, true);
 			$rootNode->appendChild($clone);
@@ -175,4 +167,4 @@ class PKPUserUserXmlFilter extends NativeExportFilter {
 	}
 }
 
-?>
+

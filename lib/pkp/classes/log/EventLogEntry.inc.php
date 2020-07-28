@@ -3,9 +3,9 @@
 /**
  * @file classes/log/EventLogEntry.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class EventLogEntry
  * @ingroup log
@@ -54,22 +54,6 @@ class EventLogEntry extends DataObject {
 	 */
 	function setDateLogged($dateLogged) {
 		$this->setData('dateLogged', $dateLogged);
-	}
-
-	/**
-	 * Get IP address of user that initiated the event.
-	 * @return string
-	 */
-	function getIPAddress() {
-		return $this->getData('ipAddress');
-	}
-
-	/**
-	 * Set IP address of user that initiated the event.
-	 * @param $ipAddress string
-	 */
-	function setIPAddress($ipAddress) {
-		$this->setData('ipAddress', $ipAddress);
 	}
 
 	/**
@@ -155,8 +139,10 @@ class EventLogEntry extends DataObject {
 	/**
 	 * Get translated message, translating it if necessary.
 	 * @param $locale string optional
+	 * @param $hideReviewerName boolean optional Don't reveal reviewer names in
+	 *  log descriptions.
 	 */
-	function getTranslatedMessage($locale = null) {
+	function getTranslatedMessage($locale = null, $hideReviewerName = false) {
 		$message = $this->getMessage();
 		// If it's already translated, just return the message.
 		if ($this->getIsTranslated()) return $message;
@@ -166,6 +152,46 @@ class EventLogEntry extends DataObject {
 
 		$params = array_merge($this->_data, $this->getParams());
 		unset($params['params']); // Clean up for translate call
+
+		if ($hideReviewerName) {
+			$reviewAssignmentDao = DAORegistry::getDAO('ReviewAssignmentDAO'); /* @var $reviewAssignmentDao ReviewAssignmentDAO */
+			// Reviewer activity log entries (assigning, accepting, declining)
+			if (isset($params['reviewerName'])) {
+				$blindAuthor = true;
+				if (isset($params['reviewAssignmentId'])) {
+					$reviewAssignment = $reviewAssignmentDao->getById($params['reviewAssignmentId']);
+					if ($reviewAssignment && !in_array($reviewAssignment->getReviewMethod(), array(SUBMISSION_REVIEW_METHOD_BLIND, SUBMISSION_REVIEW_METHOD_DOUBLEBLIND))) {
+						$blindAuthor = false;
+					}
+				}
+				if ($blindAuthor) {
+					$params['reviewerName'] = __('editor.review.anonymousReviewer');
+				}
+			}
+			// Files submitted by reviewers
+			if (isset($params['fileStage']) && $params['fileStage'] === SUBMISSION_FILE_REVIEW_ATTACHMENT) {
+				assert(isset($params['fileId']) && isset($params['submissionId']));
+				$blindAuthor = true;
+				$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
+				$submissionFile = $submissionFileDao->getLatestRevision($params['fileId']);
+				if ($submissionFile && $submissionFile->getAssocType() === ASSOC_TYPE_REVIEW_ASSIGNMENT) {
+					$reviewAssignment = $reviewAssignmentDao->getById($submissionFile->getAssocId());
+					if ($reviewAssignment && !in_array($reviewAssignment->getReviewMethod(), array(SUBMISSION_REVIEW_METHOD_BLIND, SUBMISSION_REVIEW_METHOD_DOUBLEBLIND))) {
+						$blindAuthor = false;
+					}
+				}
+				if (isset($params['username']) && $blindAuthor) {
+					if (isset($params['username'])) {
+						$params['username'] = __('editor.review.anonymousReviewer');
+					}
+					if (isset($params['originalFileName'])) {
+						$params['originalFileName'] = '';
+					}
+				}
+			}
+		}
+
+
 		return __($message, $params, $locale);
 	}
 
@@ -192,7 +218,7 @@ class EventLogEntry extends DataObject {
 	function getUserFullName() {
 		$userFullName =& $this->getData('userFullName');
 		if(!isset($userFullName)) {
-			$userDao = DAORegistry::getDAO('UserDAO');
+			$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 			$userFullName = $userDao->getUserFullName($this->getUserId(), true);
 		}
 
@@ -207,7 +233,7 @@ class EventLogEntry extends DataObject {
 		$userEmail =& $this->getData('userEmail');
 
 		if(!isset($userEmail)) {
-			$userDao = DAORegistry::getDAO('UserDAO');
+			$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 			$userEmail = $userDao->getUserEmail($this->getUserId(), true);
 		}
 
@@ -215,4 +241,4 @@ class EventLogEntry extends DataObject {
 	}
 }
 
-?>
+

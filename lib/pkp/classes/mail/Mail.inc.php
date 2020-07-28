@@ -8,9 +8,9 @@
 /**
  * @file classes/mail/Mail.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Mail
  * @ingroup mail
@@ -322,8 +322,23 @@ class Mail extends DataObject {
 	 */
 	function setReplyTo($email, $name = '') {
 		if ($email === null) $this->setData('replyTo', null);
-		$this->setData('replyTo', array('name' => $name, 'email' => $email));
+		$this->setData('replyTo', array(array('name' => $name, 'email' => $email)));
 	}
+
+	/**
+	* Add a reply-to for the message.
+	* @param $email string
+	* @param $name string optional
+	*/
+	function addReplyTo($email, $name = '') {
+		if (($replyTos = $this->getData('replyTo')) == null) {
+			$replyTos = array();
+		}
+		array_push($replyTos, array('name' => $name, 'email' => $email));
+
+		$this->setData('replyTo', $replyTo);
+	}
+
 
 	/**
 	 * Get the reply-to of the message.
@@ -334,16 +349,11 @@ class Mail extends DataObject {
 	}
 
 	/**
-	 * Return a string containing the reply-to address.
+	 * Return a string containing the reply-to addresses.
 	 * @return string
 	 */
 	function getReplyToString($send = false) {
-		$replyTo = $this->getReplyTo();
-		if (!array_key_exists('email', $replyTo) || $replyTo['email'] == null) {
-			return null;
-		} else {
-			return (self::encodeDisplayName($replyTo['name'], $send) . ' <'.$replyTo['email'].'>');
-		}
+		return $this->getAddressArrayString($this->getReplyTo(), true, $send);
 	}
 
 	/**
@@ -408,7 +418,7 @@ class Mail extends DataObject {
 					$addressString .= ', ';
 				}
 
-				if (Core::isWindows() || empty($address['name']) || !$includeNames) {
+				if (empty($address['name']) || !$includeNames) {
 					$addressString .= $address['email'];
 
 				} else {
@@ -450,7 +460,7 @@ class Mail extends DataObject {
 	 * @return boolean
 	 */
 	function send() {
-		if (HookRegistry::call('Mail::send', array($this))) return;
+		if (HookRegistry::call('Mail::send', array($this))) return true;
 
 		// Replace all the private parameters for this message.
 		$mailBody = $this->getBody();
@@ -460,8 +470,9 @@ class Mail extends DataObject {
 			}
 		}
 
-		$mailer = new PHPMailer();
+		$mailer = new \PHPMailer\PHPMailer\PHPMailer();
 		$mailer->IsHTML(true);
+		$mailer->Encoding = 'base64';
 		if (Config::getVar('email', 'smtp')) {
 			$mailer->IsSMTP();
 			$mailer->Port = Config::getVar('email', 'smtp_port');
@@ -477,19 +488,57 @@ class Mail extends DataObject {
 				$mailer->SMTPDebug = 3;
 				$mailer->Debugoutput = 'error_log';
 			}
+			if (Config::getVar('email', 'smtp_suppress_cert_check')) {
+				// disabling the SMTP certificate check.
+				$mailer->SMTPOptions = array(
+					'ssl' => array(
+						'verify_peer' => false,
+						'verify_peer_name' => false,
+						'allow_self_signed' => true
+					)
+				);
+			}
 		}
 		$mailer->CharSet = Config::getVar('i18n', 'client_charset');
 		if (($t = $this->getContentType()) != null) $mailer->ContentType = $t;
-		$mailer->XMailer = 'Public Knowledge Project Suite v2';
+		$mailer->XMailer = 'Public Knowledge Project Suite v3';
 		$mailer->WordWrap = MAIL_WRAP;
 		foreach ((array) $this->getHeaders() as $header) {
 			$mailer->AddCustomHeader($header['key'], $mailer->SecureHeader($header['content']));
 		}
-		if (($s = $this->getEnvelopeSender()) != null) $mailer->Sender = $s;
+		$request = Application::get()->getRequest();
 		if (($f = $this->getFrom()) != null) {
+			if (Config::getVar('email', 'force_default_envelope_sender') && Config::getVar('email', 'default_envelope_sender') && Config::getVar('email', 'force_dmarc_compliant_from')) {
+				/* If a DMARC compliant RFC5322.From was requested we need to promote the original RFC5322.From into a Reply-to header
+				 * and then munge the RFC5322.From */
+				$alreadyExists = false;
+				foreach ((array) $this->getReplyTo() as $r) {
+					if ($r['email'] === $f['email']) {
+						$alreadyExists = true;
+					}
+				}
+				if (!$alreadyExists) {
+					$mailer->AddReplyTo($f['email'], $f['name']);
+				}
+
+				$site = $request->getSite();
+
+				// Munge the RFC5322.From
+				if (Config::getVar('email', 'dmarc_compliant_from_displayname')) {
+					$patterns = array('#%n#', '#%s#');
+					$replacements = array($f['name'], $site->getLocalizedTitle());
+					$f['name'] = preg_replace($patterns, $replacements, Config::getVar('email', 'dmarc_compliant_from_displayname'));
+				} else {
+					$f['name'] = '';
+				}
+				$f['email'] = Config::getVar('email', 'default_envelope_sender');
+			}
+			// this sets both the envelope sender (RFC5321.MailFrom) and the From: header (RFC5322.From)
 			$mailer->SetFrom($f['email'], $f['name']);
 		}
-		if (($r = $this->getReplyTo()) != null) {
+		// Set the envelope sender (RFC5321.MailFrom)
+		if (($s = $this->getEnvelopeSender()) != null) $mailer->Sender = $s;
+		foreach ((array) $this->getReplyTo() as $r) {
 			$mailer->AddReplyTo($r['email'], $r['name']);
 		}
 		foreach ((array) $this->getRecipients() as $recipientInfo) {
@@ -505,7 +554,7 @@ class Mail extends DataObject {
 		$mailer->Body = $mailBody;
 		$mailer->AltBody = PKPString::html2text($mailBody);
 
-		$remoteAddr = $mailer->SecureHeader(Request::getRemoteAddr());
+		$remoteAddr = $mailer->SecureHeader($request->getRemoteAddr());
 		if ($remoteAddr != '') $mailer->AddCustomHeader("X-Originating-IP: $remoteAddr");
 
 		foreach ((array) $this->getAttachments() as $attachmentInfo) {
@@ -550,4 +599,4 @@ class Mail extends DataObject {
 	}
 }
 
-?>
+
