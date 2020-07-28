@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/plugins/form/UploadPluginForm.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class UploadPluginForm
  * @ingroup controllers_grid_plugins_form
@@ -50,7 +50,7 @@ class UploadPluginForm extends Form {
 	/**
 	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$templateMgr = TemplateManager::getManager($request);
 		$templateMgr->assign(array(
 			'function' => $this->_function,
@@ -58,57 +58,70 @@ class UploadPluginForm extends Form {
 			'plugin' => $request->getUserVar('plugin'),
 		));
 
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
 	 * @copydoc Form::execute()
 	 */
-	function execute($request) {
-		parent::execute($request);
+	function execute(...$functionArgs) {
+		parent::execute(...$functionArgs);
+
+		$request = Application::get()->getRequest();
+		$user = $request->getUser();
+		$pluginHelper = new PluginHelper();
+		$notificationMgr = new NotificationManager();
 
 		// Retrieve the temporary file.
-		$user = $request->getUser();
-		$temporaryFileId = $this->getData('temporaryFileId');
-		$temporaryFileDao = DAORegistry::getDAO('TemporaryFileDAO');
-		$temporaryFile = $temporaryFileDao->getTemporaryFile($temporaryFileId, $user->getId());
+		import('lib.pkp.classes.file.TemporaryFileManager');
+		$temporaryFileManager = new TemporaryFileManager();
+		$temporaryFileDao = DAORegistry::getDAO('TemporaryFileDAO'); /* @var $temporaryFileDao TemporaryFileDAO */
+		$temporaryFile = $temporaryFileDao->getTemporaryFile($this->getData('temporaryFileId'), $user->getId());
 
-		$pluginHelper = new PluginHelper();
-		$errorMsg = null;
-		$pluginDir = $pluginHelper->extractPlugin($temporaryFile->getFilePath(), $temporaryFile->getOriginalFileName(), $errorMsg);
-		$notificationMgr = new NotificationManager();
-		if ($pluginDir) {
-			if ($this->_function == PLUGIN_ACTION_UPLOAD) {
-				$pluginVersion = $pluginHelper->installPlugin($pluginDir, $errorMsg);
-				if ($pluginVersion) $notificationMgr->createTrivialNotification(
-					$user->getId(),
-					NOTIFICATION_TYPE_SUCCESS,
-					array('contents' =>
-						__('manager.plugins.installSuccessful', array('versionNumber' => $pluginVersion->getVersionString(false))))
-				);
-			} else if ($this->_function == PLUGIN_ACTION_UPGRADE) {
-				$plugin = PluginRegistry::getPlugin($request->getUserVar('category'), $request->getUserVar('plugin'));
-				$pluginVersion = $pluginHelper->upgradePlugin(
-					$request->getUserVar('category'),
-					basename($plugin->getPluginPath()),
-					$pluginDir,
-					$errorMsg
-				);
-				if ($pluginVersion) {
-					$notificationMgr->createTrivialNotification($user->getId(), NOTIFICATION_TYPE_SUCCESS, array('contents' => __('manager.plugins.upgradeSuccessful', array('versionString' => $pluginVersion->getVersionString(false)))));
-				}
-			}
-		} else {
-			$errorMsg = __('manager.plugins.invalidPluginArchive');
+		// Extract the temporary file into a temporary location.
+		try {
+			$pluginDir = $pluginHelper->extractPlugin($temporaryFile->getFilePath(), $temporaryFile->getOriginalFileName());
+		} catch (Exception $e) {
+			$notificationMgr->createTrivialNotification($user->getId(), NOTIFICATION_TYPE_ERROR, array('contents' => $e->getMessage()));
+			return false;
+		} finally {
+			$temporaryFileManager->deleteById($temporaryFile->getId(), $user->getId());
 		}
 
-		if ($errorMsg) {
-			$notificationMgr->createTrivialNotification($user->getId(), NOTIFICATION_TYPE_ERROR, array('contents' => $errorMsg));
+		// Install or upgrade the extracted plugin.
+		try {
+			switch ($this->_function) {
+				case PLUGIN_ACTION_UPLOAD:
+					$pluginVersion = $pluginHelper->installPlugin($pluginDir);
+					$notificationMgr->createTrivialNotification(
+						$user->getId(),
+						NOTIFICATION_TYPE_SUCCESS,
+						array('contents' =>
+							__('manager.plugins.installSuccessful', array('versionNumber' => $pluginVersion->getVersionString(false))))
+					);
+					break;
+				case PLUGIN_ACTION_UPGRADE:
+					$plugin = PluginRegistry::getPlugin($request->getUserVar('category'), $request->getUserVar('plugin'));
+					$pluginVersion = $pluginHelper->upgradePlugin(
+						$request->getUserVar('category'),
+						basename($plugin->getPluginPath()),
+						$pluginDir
+					);
+					$notificationMgr->createTrivialNotification(
+						$user->getId(),
+						NOTIFICATION_TYPE_SUCCESS,
+						array('contents' => __('manager.plugins.upgradeSuccessful', array('versionString' => $pluginVersion->getVersionString(false))))
+					);
+					break;
+				default: assert(false); // Illegal PLUGIN_ACTION_...
+			}
+		} catch (Exception $e) {
+			$notificationMgr->createTrivialNotification($user->getId(), NOTIFICATION_TYPE_ERROR, array('contents' => $e->getMessage()));
+			$temporaryFileManager->rmtree($pluginDir);
 			return false;
 		}
-
 		return true;
 	}
 }
 
-?>
+

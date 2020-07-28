@@ -3,9 +3,9 @@
 /**
  * @file classes/file/PKPLibraryFileManager.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPLibraryFileManager
  * @ingroup file
@@ -43,11 +43,11 @@ class PKPLibraryFileManager extends PrivateFileManager {
 	 * @param $fileId int
 	 * @return int number of files removed
 	 */
-	function deleteFile($fileId) {
-		$libraryFileDao = DAORegistry::getDAO('LibraryFileDAO');
+	function deleteById($fileId) {
+		$libraryFileDao = DAORegistry::getDAO('LibraryFileDAO'); /* @var $libraryFileDao LibraryFileDAO */
 		$libraryFile = $libraryFileDao->getById($fileId);
 
-		parent::deleteFile($this->getBasePath() . $libraryFile->getServerFileName());
+		parent::deleteByPath($this->getBasePath() . $libraryFile->getServerFileName());
 
 		$libraryFileDao->deleteById($fileId);
 	}
@@ -59,7 +59,7 @@ class PKPLibraryFileManager extends PrivateFileManager {
 	 * @return string
 	 */
 	function generateFileName($type, $originalFileName) {
-		$libraryFileDao = DAORegistry::getDAO('LibraryFileDAO');
+		$libraryFileDao = DAORegistry::getDAO('LibraryFileDAO'); /* @var $libraryFileDao LibraryFileDAO */
 		$suffix = $this->getFileSuffixFromType($type);
 		$ext = $this->getExtension($originalFileName);
 		$truncated = $this->truncateFileName($originalFileName, 127 - PKPString::strlen($suffix) - 1);
@@ -91,7 +91,7 @@ class PKPLibraryFileManager extends PrivateFileManager {
 	 * @return LibraryFile the generated file, prepared as much as possible for insert (false if upload failed)
 	 */
 	function &copyFromTemporaryFile(&$temporaryFile, $libraryFileType) {
-		$libraryFileDao = DAORegistry::getDAO('LibraryFileDAO');
+		$libraryFileDao = DAORegistry::getDAO('LibraryFileDAO'); /* @var $libraryFileDao LibraryFileDAO */
 		$libraryFile = $libraryFileDao->newDataObject();
 
 		$libraryFile->setDateUploaded($temporaryFile->getDateUploaded());
@@ -100,7 +100,7 @@ class PKPLibraryFileManager extends PrivateFileManager {
 		$libraryFile->setFileSize($temporaryFile->getFileSize());
 		$libraryFile->setServerFileName($this->generateFileName($libraryFileType, $temporaryFile->getOriginalFileName()));
 		$libraryFile->setOriginalFileName($temporaryFile->getOriginalFileName());
-		if (!$this->copyFile($temporaryFile->getFilePath(), $this->getBasePath() . $temporaryFile->getOriginalFileName())) {
+		if (!$this->copyFile($temporaryFile->getFilePath(), $this->getBasePath() . $libraryFile->getServerFileName())) {
 			return false;
 		}
 
@@ -181,4 +181,4 @@ class PKPLibraryFileManager extends PrivateFileManager {
 	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/settings/genre/GenreGridHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class GenreGridHandler
  * @ingroup controllers_grid_settings_genre
@@ -36,10 +36,10 @@ class GenreGridHandler extends SetupGridHandler {
 	//
 	/*
 	 * Configure the grid
-	 * @param $request PKPRequest
+	 * @see SetupGridHandler::initialize
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 
 		// Load language components
 		AppLocale::requireComponents(
@@ -107,7 +107,7 @@ class GenreGridHandler extends SetupGridHandler {
 	protected function loadData($request, $filter) {
 		// Elements to be displayed in the grid
 		$context = $request->getContext();
-		$genreDao = DAORegistry::getDAO('GenreDAO');
+		$genreDao = DAORegistry::getDAO('GenreDAO'); /* @var $genreDao GenreDAO */
 		return $genreDao->getEnabledByContextId($context->getId(), self::getRangeInfo($request, $this->getId()));
 	}
 
@@ -141,7 +141,7 @@ class GenreGridHandler extends SetupGridHandler {
 	 * @copydoc GridHandler::setDataElementSequence()
 	 */
 	function setDataElementSequence($request, $rowId, $gridDataElement, $newSequence) {
-		$genreDao = DAORegistry::getDAO('GenreDAO');
+		$genreDao = DAORegistry::getDAO('GenreDAO'); /* @var $genreDao GenreDAO */
 		$context = $request->getContext();
 		$genre = $genreDao->getById($rowId, $context->getId());
 		$genre->setSequence($newSequence);
@@ -175,7 +175,7 @@ class GenreGridHandler extends SetupGridHandler {
 		import('lib.pkp.controllers.grid.settings.genre.form.GenreForm');
 		$genreForm = new GenreForm($genreId);
 
-		$genreForm->initData($args, $request);
+		$genreForm->initData($args);
 
 		return new JSONMessage(true, $genreForm->fetch($request));
 	}
@@ -197,7 +197,7 @@ class GenreGridHandler extends SetupGridHandler {
 		$router = $request->getRouter();
 
 		if ($genreForm->validate()) {
-			$genreForm->execute($args, $request);
+			$genreForm->execute();
 			return DAO::getDataChangedEvent($genreForm->getGenreId());
 		} else {
 			return new JSONMessage(false);
@@ -213,7 +213,7 @@ class GenreGridHandler extends SetupGridHandler {
 	function deleteGenre($args, $request) {
 		$genreId = isset($args['genreId']) ? (int) $args['genreId'] : null;
 		$context = $request->getContext();
-		$genreDao = DAORegistry::getDAO('GenreDAO');
+		$genreDao = DAORegistry::getDAO('GenreDAO'); /* @var $genreDao GenreDAO */
 		$genre = $genreDao->getById($genreId, $context->getId());
 		if ($genre && $request->checkCSRF()) {
 			$genreDao->deleteObject($genre);
@@ -234,10 +234,10 @@ class GenreGridHandler extends SetupGridHandler {
 
 		// Restore all the genres in this context form the registry XML file
 		$context = $request->getContext();
-		$genreDao = DAORegistry::getDAO('GenreDAO');
-		$genreDao->installDefaults($context->getId(), $context->getSupportedLocales());
+		$genreDao = DAORegistry::getDAO('GenreDAO'); /* @var $genreDao GenreDAO */
+		$genreDao->installDefaults($context->getId(), $context->getSupportedFormLocales());
 		return DAO::getDataChangedEvent();
 	}
 }
 
-?>
+

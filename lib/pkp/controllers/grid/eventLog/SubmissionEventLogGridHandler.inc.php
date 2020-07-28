@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/eventLog/SubmissionEventLogGridHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionEventLogGridHandler
  * @ingroup controllers_grid_eventLog
@@ -27,6 +27,9 @@ import('lib.pkp.controllers.grid.eventLog.EventLogGridCellProvider');
 class SubmissionEventLogGridHandler extends GridHandler {
 	/** @var Submission */
 	var $_submission;
+
+	/** @var boolean Is the current user assigned as an author to this submission */
+	var $_isCurrentUserAssignedAuthor;
 
 	/**
 	 * Constructor
@@ -72,7 +75,24 @@ class SubmissionEventLogGridHandler extends GridHandler {
 	function authorize($request, &$args, $roleAssignments) {
 		import('lib.pkp.classes.security.authorization.SubmissionAccessPolicy');
 		$this->addPolicy(new SubmissionAccessPolicy($request, $args, $roleAssignments));
-		return parent::authorize($request, $args, $roleAssignments);
+
+		import('lib.pkp.classes.security.authorization.internal.UserAccessibleWorkflowStageRequiredPolicy');
+		$this->addPolicy(new UserAccessibleWorkflowStageRequiredPolicy($request, WORKFLOW_TYPE_EDITORIAL));
+
+		$success = parent::authorize($request, $args, $roleAssignments);
+
+		// Prevent authors from accessing review details, even if they are also
+		// assigned as an editor, sub-editor or assistant.
+		$userAssignedRoles = $this->getAuthorizedContextObject(ASSOC_TYPE_ACCESSIBLE_WORKFLOW_STAGES);
+		$this->_isCurrentUserAssignedAuthor = false;
+		foreach ($userAssignedRoles as $stageId => $roles) {
+			if (in_array(ROLE_ID_AUTHOR, $roles)) {
+				$this->_isCurrentUserAssignedAuthor = true;
+				break;
+			}
+		}
+
+		return $success;
 	}
 
 	/**
@@ -88,11 +108,13 @@ class SubmissionEventLogGridHandler extends GridHandler {
 		// Load submission-specific translations
 		AppLocale::requireComponents(
 			LOCALE_COMPONENT_APP_SUBMISSION,
-			LOCALE_COMPONENT_PKP_SUBMISSION
+			LOCALE_COMPONENT_PKP_SUBMISSION,
+			LOCALE_COMPONENT_APP_EDITOR,
+			LOCALE_COMPONENT_PKP_EDITOR
 		);
 
 		// Columns
-		$cellProvider = new EventLogGridCellProvider();
+		$cellProvider = new EventLogGridCellProvider($this->_isCurrentUserAssignedAuthor);
 		$this->addColumn(
 			new GridColumn(
 				'date',
@@ -135,7 +157,7 @@ class SubmissionEventLogGridHandler extends GridHandler {
 	 * @return EventLogGridRow
 	 */
 	protected function getRowInstance() {
-		return new EventLogGridRow($this->getSubmission());
+		return new EventLogGridRow($this->getSubmission(), $this->_isCurrentUserAssignedAuthor);
 	}
 
 	/**
@@ -155,8 +177,8 @@ class SubmissionEventLogGridHandler extends GridHandler {
 	 * @copydoc GridHandler::loadData
 	 */
 	protected function loadData($request, $filter = null) {
-		$submissionEventLogDao = DAORegistry::getDAO('SubmissionEventLogDAO');
-		$submissionEmailLogDao = DAORegistry::getDAO('SubmissionEmailLogDAO');
+		$submissionEventLogDao = DAORegistry::getDAO('SubmissionEventLogDAO'); /* @var $submissionEventLogDao SubmissionEventLogDAO */
+		$submissionEmailLogDao = DAORegistry::getDAO('SubmissionEmailLogDAO'); /* @var $submissionEmailLogDao SubmissionEmailLogDAO */
 
 		$submission = $this->getSubmission();
 
@@ -185,7 +207,7 @@ class SubmissionEventLogGridHandler extends GridHandler {
 	 * @return JSONMessage JSON object
 	 */
 	function viewEmail($args, $request) {
-		$submissionEmailLogDao = DAORegistry::getDAO('SubmissionEmailLogDAO');
+		$submissionEmailLogDao = DAORegistry::getDAO('SubmissionEmailLogDAO'); /* @var $submissionEmailLogDao SubmissionEmailLogDAO */
 		$emailLogEntry = $submissionEmailLogDao->getById((int) $args['emailLogEntryId']);
 		return new JSONMessage(true, $this->_formatEmail($emailLogEntry));
 	}
@@ -208,4 +230,4 @@ class SubmissionEventLogGridHandler extends GridHandler {
 	}
 }
 
-?>
+

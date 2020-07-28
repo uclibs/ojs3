@@ -1,9 +1,9 @@
 {**
  * templates/form/formSection.tpl
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Form section.
  *}
@@ -11,10 +11,10 @@
 
 <div {if $FBV_id}id="{$FBV_id|escape}" {/if}class="section {$FBV_class|escape} {$FBV_layoutInfo|escape}">
 	{if $FBV_label}
-		{if $FBV_translate}{translate|assign:"FBV_labelTranslated" key=$FBV_label|escape}
+		{if $FBV_translate}{capture assign="FBV_labelTranslated"}{translate key=$FBV_label|escape}{/capture}
 		{else}{assign var="FBV_labelTranslated" value=$FBV_Label}{/if}
 		{if $FBV_labelFor}<label for="{$FBV_labelFor|escape}">{$FBV_labelTranslated}{if $FBV_required}<span class="req">*</span>{/if}</label>
-		{else}<span class="label">{$FBV_labelTranslated}</span>{/if}
+		{else}<span class="label">{$FBV_labelTranslated}{if $FBV_required}<span class="req">*</span>{/if}</span>{/if}
 	{/if}
 	{if $FBV_description}<label class="description">{if $FBV_translate}{translate key=$FBV_description}{else}{$FBV_description}{/if}</label>{/if}
 	{if $FBV_listSection}<ul class="checkbox_and_radiobutton">{/if}

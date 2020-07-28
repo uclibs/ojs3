@@ -1,9 +1,9 @@
 {**
  * templates/controllers/grid/settings/section/form/sectionForm.tpl
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Section form under journal management.
  *}
@@ -21,7 +21,7 @@
 
 	{include file="controllers/notification/inPlaceNotification.tpl" notificationId="sectionFormNotification"}
 
-	{if $sectionEditorCount == 0}
+	{if !$hasSubEditors}
 		<span class="pkp_form_error"><p>{translate key="manager.section.noSectionEditors"}</p></span>
 	{/if}
 
@@ -41,14 +41,16 @@
 			{fbvElement type="text" id="wordCount" value=$wordCount maxlength="80" label="manager.sections.wordCountInstructions"}
 		{/fbvFormSection}
 
-		{fbvFormSection title="submission.reviewForm" for="reviewFormId" inline=true size=$fbvStyles.size.MEDIUM}
-			{fbvElement type="select" id="reviewFormId" defaultLabel="manager.reviewForms.noneChosen"|translate defaultValue="" from=$reviewFormOptions selected=$reviewFormId translate=false size=$fbvStyles.size.MEDIUM inline=true}
-		{/fbvFormSection}
+		{if count($reviewFormOptions)>0}
+			{fbvFormSection title="submission.reviewForm" for="reviewFormId" inline=true size=$fbvStyles.size.MEDIUM}
+				{fbvElement type="select" id="reviewFormId" defaultLabel="manager.reviewForms.noneChosen"|translate defaultValue="" from=$reviewFormOptions selected=$reviewFormId translate=false size=$fbvStyles.size.MEDIUM inline=true}
+			{/fbvFormSection}
+		{/if}
 
 		{call_hook name="Templates::Manager::Sections::SectionForm::AdditionalMetadata" sectionId=$sectionId}
 	{/fbvFormArea}
 
-	{fbvFormArea id="indexingInfo" title="submission.indexing"}
+	{fbvFormArea id="indexingInfo" title="submission.sectionOptions"}
 		{fbvFormSection list=true}
 			{fbvElement type="checkbox" id="metaReviewed" checked=$metaReviewed label="manager.sections.submissionReview"}
 			{fbvElement type="checkbox" id="abstractsNotRequired" checked=$abstractsNotRequired label="manager.sections.abstractsNotRequired"}
@@ -63,12 +65,20 @@
 		{/fbvFormSection}
 	{/fbvFormArea}
 
-	{fbvFormSection for="context" size=$fbvStyles.size.LARGE}
-		{if $sectionEditorCount > 0}{* only include the section editor listbuilder if there are section editors available *}
-			{url|assign:sectionEditorsUrl router=$smarty.const.ROUTE_COMPONENT component="listbuilder.settings.SubEditorsListbuilderHandler" op="fetch" sectionId=$sectionId escape=false}
-			{load_url_in_div id="sectionEditorsContainer" url=$sectionEditorsUrl}
-		{/if}
-	{/fbvFormSection}
+	{if $hasSubEditors}
+		{fbvFormSection}
+			{assign var="uuid" value=""|uniqid|escape}
+			<div id="subeditors-{$uuid}">
+				<list-panel
+					v-bind="components.subeditors"
+					@set="set"
+				/>
+			</div>
+			<script type="text/javascript">
+				pkp.registry.init('subeditors-{$uuid}', 'Container', {$subEditorsListData|json_encode});
+			</script>
+		{/fbvFormSection}
+	{/if}
 
 	{fbvFormButtons submitText="common.save"}
 </form>

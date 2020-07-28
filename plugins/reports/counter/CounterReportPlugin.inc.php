@@ -3,9 +3,9 @@
 /**
  * @file plugins/reports/counter/CounterReportPlugin.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class CounterReportPlugin
  * @ingroup plugins_reports_counter
@@ -23,10 +23,10 @@ import('plugins.reports.counter.classes.CounterReport');
 class CounterReportPlugin extends ReportPlugin {
 
 	/**
-	 * @see PKPPlugin::register($category, $path)
+	 * @copydoc Plugin::register()
 	 */
-	function register($category, $path) {
-		$success = parent::register($category, $path);
+	function register($category, $path, $mainContextId = null) {
+		$success = parent::register($category, $path, $mainContextId);
 		if($success) {
 			$this->addLocaleData();
 		}
@@ -66,13 +66,6 @@ class CounterReportPlugin extends ReportPlugin {
 	 */
 	function getDescription() {
 		return __('plugins.reports.counter.description');
-	}
-
-	/**
-	 * @see PKPPlugin::getTemplatePath()
-	 */
-	function getTemplatePath($inCore = false) {
-		return parent::getTemplatePath($inCore) . 'templates/';
 	}
 
 	/**
@@ -157,7 +150,7 @@ class CounterReportPlugin extends ReportPlugin {
 						Validation::redirectLogin();
 					}
 					import('plugins.reports.counter.classes.LegacyJR1');
-					$r3jr1 = new LegacyJR1($this->getTemplatePath());
+					$r3jr1 = new LegacyJR1($this);
 					$r3jr1->display($request);
 					return;
 				case 'fetch':
@@ -214,7 +207,7 @@ class CounterReportPlugin extends ReportPlugin {
 		// legacy reports are site-wide, so only site admins have access
 		$templateManager->assign('showLegacy', Validation::isSiteAdmin());
 		if (!empty($legacyYears)) $templateManager->assign('legacyYears', $legacyYears);
-		$templateManager->display($this->getTemplatePath() . 'index.tpl');
+		$templateManager->display($this->getTemplateResource('index.tpl'));
 	}
 
 	/**
@@ -227,7 +220,7 @@ class CounterReportPlugin extends ReportPlugin {
 			$metricType = OJS_METRIC_TYPE_LEGACY_COUNTER;
 			$filter = array();
 		} else {
-			$metricType = OJS_METRIC_TYPE_COUNTER;
+			$metricType = METRIC_TYPE_COUNTER;
 			$filter = array(STATISTICS_DIMENSION_ASSOC_TYPE => ASSOC_TYPE_SUBMISSION_FILE);
 		}
 		$metricsDao = DAORegistry::getDAO('MetricsDAO'); /* @var $metricsDao MetricsDAO */
@@ -243,4 +236,4 @@ class CounterReportPlugin extends ReportPlugin {
 
 }
 
-?>
+

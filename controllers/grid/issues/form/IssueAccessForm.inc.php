@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/issues/form/IssueAccessForm.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class IssueAccessForm
  * @ingroup controllers_grid_issues_form
@@ -33,9 +33,9 @@ class IssueAccessForm extends Form {
 	}
 
 	/**
-	 * Fetch the form.
+	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$templateMgr = TemplateManager::getManager($request);
 		$templateMgr->assign(array(
 			'accessOptions' => array(
@@ -44,14 +44,14 @@ class IssueAccessForm extends Form {
 			),
 			'issueId' => $this->_issue->getId(),
 		));
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
 	 * Initialize form data from current issue.
 	 * @param $request PKPRequest
 	 */
-	function initData($request) {
+	function initData() {
 		$this->_data = array(
 			'accessStatus' => $this->_issue->getAccessStatus(),
 			'openAccessDate' => $this->_issue->getOpenAccessDate(),
@@ -70,21 +70,21 @@ class IssueAccessForm extends Form {
 	}
 
 	/**
-	 * Save issue settings.
-	 * @param $request PKPRequest
+	 * @copydoc Form::execute()
 	 * @return int Issue ID for created/updated issue
 	 */
-	function execute($request) {
-		$journal = $request->getJournal();
+	function execute(...$functionArgs) {
+		$journal = Application::get()->getRequest()->getJournal();
 
-		$issueDao = DAORegistry::getDAO('IssueDAO');
+		$issueDao = DAORegistry::getDAO('IssueDAO'); /* @var $issueDao IssueDAO */
 		$this->_issue->setAccessStatus($this->getData('accessStatus') ? $this->getData('accessStatus') : ISSUE_ACCESS_OPEN);
 		if ($openAccessDate = $this->getData('openAccessDate')) $this->_issue->setOpenAccessDate($openAccessDate);
 		else $this->_issue->setOpenAccessDate(null);
 
 		HookRegistry::call('IssueAccessForm::execute', array($this, $this->_issue));
 		$issueDao->updateObject($this->_issue);
+		parent::execute(...$functionArgs);
 	}
 }
 
-?>
+

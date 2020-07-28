@@ -6,10 +6,13 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname(dirname($vendorDir));
 
 return array(
-    'ce89ac35a6c330c55f4710717db9ff78' => $vendorDir . '/kriswallsmith/assetic/src/functions.php',
     '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => $vendorDir . '/symfony/polyfill-mbstring/bootstrap.php',
-    '3b5531f8bb4716e1b6014ad7e734f545' => $vendorDir . '/illuminate/support/Illuminate/Support/helpers.php',
+    '72579e7bd17821bb1321b87411366eae' => $vendorDir . '/illuminate/support/helpers.php',
+    '25072dd6e2470089de65ae7bf11d3109' => $vendorDir . '/symfony/polyfill-php72/bootstrap.php',
+    'f598d06aa772fa33d905e87be6398fb1' => $vendorDir . '/symfony/polyfill-intl-idn/bootstrap.php',
     '253c157292f75eb38082b5acb06f3f01' => $vendorDir . '/nikic/fast-route/src/functions.php',
+    'bf9f5270ae66ac6fa0290b4bf47867b7' => $vendorDir . '/adodb/adodb-php/adodb.inc.php',
+    '65fec9ebcfbb3cbb4fd0d519687aea01' => $vendorDir . '/danielstjules/stringy/src/Create.php',
     '2cffec82183ee1cea088009cef9a6fc3' => $vendorDir . '/ezyang/htmlpurifier/library/HTMLPurifier.composer.php',
-    'e40631d46120a9c38ea139981f8dab26' => $vendorDir . '/ircmaxell/password-compat/lib/password.php',
+    '7b11c4dc42b3b3023073cb14e519683c' => $vendorDir . '/ralouphie/getallheaders/src/getallheaders.php',
 );

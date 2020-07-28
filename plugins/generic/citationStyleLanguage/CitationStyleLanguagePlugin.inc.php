@@ -3,9 +3,9 @@
 /**
  * @file plugins/generic/citationStyleLanguage/CitationStyleLanguagePlugin.inc.php
  *
- * Copyright (c) 2017 Simon Fraser University
- * Copyright (c) 2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2017-2020 Simon Fraser University
+ * Copyright (c) 2017-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class CitationStyleLanguagePlugin
  * @ingroup plugins_generic_citationStyleLanguage
@@ -41,10 +41,10 @@ class CitationStyleLanguagePlugin extends GenericPlugin {
 	/**
 	 * @copydoc Plugin::register()
 	 */
-	public function register($category, $path) {
-		$success = parent::register($category, $path);
+	public function register($category, $path, $mainContextId = null) {
+		$success = parent::register($category, $path, $mainContextId);
 		if (!Config::getVar('general', 'installed') || defined('RUNNING_UPGRADE')) return $success;
-		if ($success && $this->getEnabled()) {
+		if ($success && $this->getEnabled($mainContextId)) {
 			HookRegistry::register('ArticleHandler::view', array($this, 'getArticleTemplateData'));
 			HookRegistry::register('LoadHandler', array($this, 'setPageHandler'));
 		}
@@ -183,7 +183,7 @@ class CitationStyleLanguagePlugin extends GenericPlugin {
 				'id' => 'ris',
 				'title' => __('plugins.generic.citationStyleLanguage.download.ris'),
 				'isEnabled' => true,
-				'useTemplate' => $this->getTemplatePath() . 'citation-styles/ris.tpl',
+				'useTemplate' => $this->getTemplateResource('citation-styles/ris.tpl'),
 				'fileExtension' => 'ris',
 				'contentType' => 'application/x-Research-Info-Systems',
 			),
@@ -231,8 +231,7 @@ class CitationStyleLanguagePlugin extends GenericPlugin {
 	 * @return array
 	 */
 	public function mapCitationIds($citations) {
-		$ids = array_map(function($citation) { return $citation['id']; }, $citations);
-		return $ids;
+		return array_values(array_map(function($citation) { return $citation['id']; }, $citations));
 	}
 
 	/**
@@ -262,16 +261,20 @@ class CitationStyleLanguagePlugin extends GenericPlugin {
 		$request = $args[0];
 		$issue = $args[1];
 		$article = $args[2];
+		$publication = $args[3];
 		$context = $request->getContext();
 		$contextId = $context ? $context->getId() : 0;
 		$templateMgr = TemplateManager::getManager();
 
-		$citationArgs = array('submissionId' => $article->getId());
+		$citationArgs = array(
+			'submissionId' => $article->getId(),
+			'publicationId' => $publication->getId(),
+		);
 		$citationArgsJson = $citationArgs;
 		$citationArgsJson['return'] = 'json';
 
 		$templateMgr->assign(array(
-			'citation' => $this->getCitation($request, $article, $this->getPrimaryStyleName($contextId), $issue),
+			'citation' => $this->getCitation($request, $article, $this->getPrimaryStyleName($contextId), $issue, $publication),
 			'citationArgs' => $citationArgs,
 			'citationArgsJson' => $citationArgsJson,
 			'citationStyles' => $this->getEnabledCitationStyles($contextId),
@@ -296,27 +299,31 @@ class CitationStyleLanguagePlugin extends GenericPlugin {
 	 * @see Zotero's mappings https://aurimasv.github.io/z2csl/typeMap.xml#map-journalArticle
 	 * @see Mendeley's mappings http://support.mendeley.com/customer/portal/articles/364144-csl-type-mapping
 	 * @param $request Request
-	 * @param $article PublishedArticle
+	 * @param $article Submission
 	 * @param $citationStyle string Name of the citation style to use.
 	 * @param $issue Issue Optional. Will fetch from db if not passed.
+	 * @param $publication Publication Optional. A particular version
 	 * @return string
 	 */
-	public function getCitation($request, $article, $citationStyle = 'apa', $issue = null) {
-		$journal = $request->getContext();
-
-		if (empty($issue)) {
-			$issueDao = DAORegistry::getDAO('IssueDAO');
-			$issue = $issueDao->getById($article->getIssueId());
-		}
+	public function getCitation($request, $article, $citationStyle = 'apa', $issue = null, $publication = null) {
+		$publication = $publication ?? $article->getCurrentPublication();
+		$issueDao = DAORegistry::getDAO('IssueDAO'); /* @var $issueDao IssueDAO */
+		$issue = $issue ?? $issueDao->getById($publication->getData('issueId'));
+		$context = $request->getContext();
 
 		import('lib.pkp.classes.core.PKPString');
 
 		$citationData = new stdClass();
 		$citationData->type = 'article-journal';
 		$citationData->id = $article->getId();
-		$citationData->title = htmlspecialchars($article->getLocalizedTitle());
-		$citationData->{'container-title'} = htmlspecialchars($journal->getLocalizedName());
-		$citationData->{'container-title-short'} = htmlspecialchars($journal->getLocalizedAcronym());
+		$citationData->title = htmlspecialchars($publication->getLocalizedFullTitle());
+		$citationData->{'container-title'} = htmlspecialchars($context->getLocalizedName());
+		$citationData->{'publisher-place'} = $this->getSetting($context->getId(), 'publisherLocation');
+		$citationData->abstract = htmlspecialchars($publication->getLocalizedData('abstract'));
+
+		$abbreviation = $context->getData('abbreviation', $context->getPrimaryLocale()) ?? $context->getData('acronym', $context->getPrimaryLocale());
+		if ($abbreviation) $citationData->{'container-title-short'} = htmlspecialchars($abbreviation);
+
 		$citationData->volume = htmlspecialchars($issue->getData('volume'));
 		// Zotero prefers issue and Mendeley uses `number` to store revisions
 		$citationData->issue = htmlspecialchars($issue->getData('number'));
@@ -327,41 +334,55 @@ class CitationStyleLanguagePlugin extends GenericPlugin {
 			null,
 			'article',
 			'view',
-			$article->getBestArticleId()
+			$article->getBestId()
 		);
 		$citationData->accessed = new stdClass();
 		$citationData->accessed->raw = date('Y-m-d');
 
-		$authors = $article->getAuthors();
+		$authors = $publication->getData('authors');
 		if (count($authors)) {
 			$citationData->author = array();
 			foreach ($authors as $author) {
 				$currentAuthor = new stdClass();
-				$currentAuthor->family = htmlspecialchars($author->getLastName());
-				$currentAuthor->given = htmlspecialchars($author->getFirstName());
+				if (empty($author->getLocalizedFamilyName())) {
+					$currentAuthor->family = htmlspecialchars($author->getLocalizedGivenName());
+				} else {
+					$currentAuthor->family = htmlspecialchars($author->getLocalizedFamilyName());
+					$currentAuthor->given = htmlspecialchars($author->getLocalizedGivenName());
+				}
 				$citationData->author[] = $currentAuthor;
 			}
 		}
 
-		if ($article->getDatePublished()) {
+		if ($publication->getData('datePublished')) {
 			$citationData->issued = new stdClass();
-			$citationData->issued->raw = htmlspecialchars($article->getDatePublished());
+			$citationData->issued->raw = htmlspecialchars($publication->getData('datePublished'));
+			$publishedPublications = $article->getPublishedPublications();
+			if (count($publishedPublications) > 1) {
+				$originalPublication = array_reduce($publishedPublications, function($a, $b) {
+					return $a && $a->getId() < $b->getId() ? $a : $b;
+				});
+				$originalDate = $originalPublication->getData('datePublished');
+				if ($originalDate && $originalDate !== $publication->getData('datePublished')) {
+					$citationData->{'original-date'} = new stdClass();
+					$citationData->{'original-date'}->raw = htmlspecialchars($originalPublication->getData('datePublished'));
+				}
+			}
 		} elseif ($issue->getPublished()) {
 			$citationData->issued = new stdClass();
-			$citationData->issued->raw = htmlspecialchars($issue->getPublished());
+			$citationData->issued->raw = htmlspecialchars($issue->getDatePublished());
 		}
 
-		if ($article->getPages()) {
-			$citationData->page = htmlspecialchars($article->getPages());
+		if ($publication->getData('pages')) {
+			$citationData->page = htmlspecialchars($publication->getData('pages'));
 		}
 
-		HookRegistry::call('CitationStyleLanguage::citation', array(&$citationData, &$citationStyle, $article, $issue, $journal));
+		HookRegistry::call('CitationStyleLanguage::citation', array(&$citationData, &$citationStyle, $article, $issue, $context, $publication));
 
 		$citation = '';
 
 		// Determine whether to use citeproc-php or a custom template to render
 		// the citation
-		$citationStyleSetting = null;
 		$styleConfig = $this->getCitationStyleConfig($citationStyle);
 		if (!empty($styleConfig)) {
 			if (!empty($styleConfig['useTemplate'])) {
@@ -370,15 +391,27 @@ class CitationStyleLanguagePlugin extends GenericPlugin {
 					'citationData' => $citationData,
 					'citationStyle' => $citationStyle,
 					'article' => $article,
+					'publication' => $publication,
 					'issue' => $issue,
-					'journal' => $journal,
+					'journal' => $context,
 				));
 				$citation = $templateMgr->fetch($styleConfig['useTemplate']);
 			} else {
 				$style = $this->loadStyle($styleConfig);
 				if ($style) {
-					$locale = str_replace('_', '-', AppLocale::getLocale());
-					$citeProc = new CiteProc($style, $locale);
+					// Determine what locale to use. Try in order:
+					//  - xx_YY
+					//  - xx
+					// Fall back English if none found.
+					$tryLocale = null;
+					foreach (array(
+						str_replace('_', '-', substr(AppLocale::getLocale(), 0, 5)),
+						substr(AppLocale::getLocale(), 0, 2),
+						'en-US'
+					) as $tryLocale) {
+						if (file_exists(dirname(__FILE__) . '/lib/vendor/citation-style-language/locales/locales-' . $tryLocale . '.xml')) break;
+					}
+					$citeProc = new CiteProc($style, $tryLocale);
 					$citation = $citeProc->render(array($citationData), 'bibliography');
 				}
 			}
@@ -407,7 +440,7 @@ class CitationStyleLanguagePlugin extends GenericPlugin {
 	 * software.
 	 *
 	 * @param $request Request
-	 * @param $article PublishedArticle
+	 * @param $article Submission
 	 * @param $citationStyle string Name of the citation style to use.
 	 * @param $issue Issue Optional. Will fetch from db if not passed.
 	 * @return string
@@ -416,8 +449,8 @@ class CitationStyleLanguagePlugin extends GenericPlugin {
 		$journal = $request->getContext();
 
 		if (empty($issue)) {
-			$issueDao = DAORegistry::getDAO('IssueDAO');
-			$issue = $issueDao->getById($article->getIssueId());
+			$issueDao = DAORegistry::getDAO('IssueDAO'); /* @var $issueDao IssueDAO */
+			$issue = $issueDao->getById($article->getCurrentPublication()->getData('issueId'));
 		}
 
 		$styleConfig = $this->getCitationStyleConfig($citationStyle);
@@ -491,22 +524,15 @@ class CitationStyleLanguagePlugin extends GenericPlugin {
 				if ($request->getUserVar('save')) {
 					$form->readInputData();
 					if ($form->validate()) {
-						$form->execute($request);
+						$form->execute();
 						return new JSONMessage(true);
 					}
 				}
 
-				$form->initData($request);
+				$form->initData();
 				return new JSONMessage(true, $form->fetch($request));
 		}
 		return parent::manage($args, $request);
-	}
-
-	/**
-	 * @copydoc Plugin::getTemplatePath($inCore)
-	 */
-	public function getTemplatePath($inCore = false) {
-		return parent::getTemplatePath($inCore) . 'templates/';
 	}
 
 	/**
@@ -526,4 +552,3 @@ class CitationStyleLanguagePlugin extends GenericPlugin {
 		return false;
 	}
 }
-?>

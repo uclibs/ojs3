@@ -3,9 +3,9 @@
 /**
  * @file classes/context/LibraryFile.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class LibraryFile
  * @ingroup context
@@ -31,7 +31,7 @@ class LibraryFile extends DataObject {
 	function getFilePath() {
 		$contextId = $this->getContextId();
 
-		return Config::getVar('files', 'public_files_dir') . '/contexts/' . $contextId . '/library/' . $this->getServerFileName();
+		return Config::getVar('files', 'files_dir') . '/contexts/' . $contextId . '/library/' . $this->getServerFileName();
 	}
 
 	//
@@ -225,6 +225,22 @@ class LibraryFile extends DataObject {
 		$fileManager = new FileManager();
 		return $fileManager->getDocumentType($this->getFileType());
 	}
+
+	/**
+	 * Get public access indication
+	 * @return boolean
+	 */
+	function getPublicAccess() {
+		return $this->getData('publicAccess');
+	}
+
+	/**
+	 * Set public access indication
+	 * @param $publicAccess boolean
+	 */
+	function setPublicAccess($publicAccess) {
+		$this->setData('publicAccess', $publicAccess);
+	}
 }
 
-?>
+

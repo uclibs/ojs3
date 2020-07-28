@@ -3,9 +3,9 @@
 /**
  * @file plugins/generic/webFeed/WebFeedGatewayPlugin.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class WebFeedGatewayPlugin
  * @ingroup plugins_generic_webFeed
@@ -17,18 +17,21 @@
 import('lib.pkp.classes.plugins.GatewayPlugin');
 
 class WebFeedGatewayPlugin extends GatewayPlugin {
-	/** @var string Name of parent plugin */
-	var $parentPluginName;
+	/** @var WebFeedPlugin Parent plugin */
+	protected $_parentPlugin;
 
-	function __construct($parentPluginName) {
+	/**
+	 * @param $parentPlugin WebFeedPlugin
+	 */
+	public function __construct($parentPlugin) {
 		parent::__construct();
-		$this->parentPluginName = $parentPluginName;
+		$this->_parentPlugin = $parentPlugin;
 	}
 
 	/**
 	 * Hide this plugin from the management interface (it's subsidiary)
 	 */
-	function getHideManagement() {
+	public function getHideManagement() {
 		return true;
 	}
 
@@ -37,47 +40,40 @@ class WebFeedGatewayPlugin extends GatewayPlugin {
 	 * its category.
 	 * @return String name of plugin
 	 */
-	function getName() {
+	public function getName() {
 		return 'WebFeedGatewayPlugin';
 	}
 
-	function getDisplayName() {
+	/**
+	 * @copydoc Plugin::getDisplayName()
+	 */
+	public function getDisplayName() {
 		return __('plugins.generic.webfeed.displayName');
 	}
 
-	function getDescription() {
+	/**
+	 * @copydoc Plugin::getDescription()
+	 */
+	public function getDescription() {
 		return __('plugins.generic.webfeed.description');
 	}
 
 	/**
-	 * Get the web feed plugin
-	 * @return WebFeedPlugin
-	 */
-	function getWebFeedPlugin() {
-		return PluginRegistry::getPlugin('generic', $this->parentPluginName);
-	}
-
-	/**
 	 * Override the builtin to get the correct plugin path.
+	 * @return string
 	 */
-	function getPluginPath() {
-		return $this->getWebFeedPlugin()->getPluginPath();
-	}
-
-	/**
-	 * @copydoc PKPPlugin::getTemplatePath
-	 */
-	function getTemplatePath($inCore = false) {
-		return $this->getWebFeedPlugin()->getTemplatePath($inCore);
+	public function getPluginPath() {
+		return $this->_parentPlugin->getPluginPath();
 	}
 
 	/**
 	 * Get whether or not this plugin is enabled. (Should always return true, as the
 	 * parent plugin will take care of loading this one when needed)
+	 * @param $contextId int Context ID (optional)
 	 * @return boolean
 	 */
-	function getEnabled() {
-		return $this->getWebFeedPlugin()->getEnabled();
+	public function getEnabled($contextId = null) {
+		return $this->_parentPlugin->getEnabled($contextId);
 	}
 
 	/**
@@ -85,19 +81,18 @@ class WebFeedGatewayPlugin extends GatewayPlugin {
 	 * @param $args array Arguments.
 	 * @param $request PKPRequest Request object.
 	 */
-	function fetch($args, $request) {
+	public function fetch($args, $request) {
 		// Make sure we're within a Journal context
-		$request = $this->getRequest();
+		$request = Application::get()->getRequest();
 		$journal = $request->getJournal();
 		if (!$journal) return false;
 
 		// Make sure there's a current issue for this journal
-		$issueDao = DAORegistry::getDAO('IssueDAO');
+		$issueDao = DAORegistry::getDAO('IssueDAO'); /* @var $issueDao IssueDAO */
 		$issue = $issueDao->getCurrent($journal->getId(), true);
 		if (!$issue) return false;
 
-		$webFeedPlugin = $this->getWebFeedPlugin();
-		if (!$webFeedPlugin->getEnabled()) return false;
+		if (!$this->_parentPlugin->getEnabled($journal->getId())) return false;
 
 		// Make sure the feed type is specified and valid
 		$type = array_shift($args);
@@ -114,38 +109,35 @@ class WebFeedGatewayPlugin extends GatewayPlugin {
 		if (!isset($typeMap[$type])) return false;
 
 		// Get limit setting from web feeds plugin
-		$displayItems = $webFeedPlugin->getSetting($journal->getId(), 'displayItems');
-		$recentItems = (int) $webFeedPlugin->getSetting($journal->getId(), 'recentItems');
+		$displayItems = $this->_parentPlugin->getSetting($journal->getId(), 'displayItems');
+		$recentItems = (int) $this->_parentPlugin->getSetting($journal->getId(), 'recentItems');
 
-		$publishedArticleDao = DAORegistry::getDAO('PublishedArticleDAO');
 		if ($displayItems == 'recent' && $recentItems > 0) {
-			import('lib.pkp.classes.db.DBResultRange');
-			$rangeInfo = new DBResultRange($recentItems, 1);
-			$publishedArticleObjects = $publishedArticleDao->getPublishedArticlesByJournalId($journal->getId(), $rangeInfo, true);
-			$publishedArticles = array();
-			while ($publishedArticle = $publishedArticleObjects->next()) {
-				$publishedArticles[]['articles'][] = $publishedArticle;
+			$submissionsIterator = Services::get('submission')->getMany(['contextId' => $journal->getId(), 'count' => $recentItems]);
+			$submissionsInSections = [];
+			foreach ($submissionsIterator as $submission) {
+				$submissionsInSections[]['articles'][] = $submission;
 			}
 		} else {
-			$publishedArticles = $publishedArticleDao->getPublishedArticlesInSections($issue->getId(), true);
+			$submissionsInSections = Services::get('submission')->getInSections($issue->getId(), $journal->getId());
 		}
 
-		$versionDao = DAORegistry::getDAO('VersionDAO');
+		$versionDao = DAORegistry::getDAO('VersionDAO'); /* @var $versionDao VersionDAO */
 		$version = $versionDao->getCurrentVersion();
 
 		$templateMgr = TemplateManager::getManager($request);
 		$templateMgr->assign(array(
 			'ojsVersion' => $version->getVersionString(),
-			'publishedArticles' => $publishedArticles,
+			'publishedSubmissions' => $submissionsInSections,
 			'journal' => $journal,
 			'issue' => $issue,
 			'showToc' => true,
 		));
 
-		$templateMgr->display($this->getTemplatePath() . $typeMap[$type], $mimeTypeMap[$type]);
+		AppLocale::requireComponents(LOCALE_COMPONENT_PKP_SUBMISSION); // submission.copyrightStatement
+
+		$templateMgr->display($this->_parentPlugin->getTemplateResource($typeMap[$type]), $mimeTypeMap[$type]);
 
 		return true;
 	}
 }
-
-?>

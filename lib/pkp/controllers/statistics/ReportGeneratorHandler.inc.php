@@ -3,9 +3,9 @@
 /**
  * @file controllers/statistics/ReportGeneratorHandler.inc.php
  *
- * Copyright (c) 2013-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2013-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReportGeneratorHandler
  * @ingroup controllers_statistics
@@ -29,6 +29,15 @@ class ReportGeneratorHandler extends Handler {
 	}
 
 	/**
+	 * @copydoc PKPHandler::authorize()
+	 */
+	function authorize($request, &$args, $roleAssignments) {
+		import('lib.pkp.classes.security.authorization.ContextAccessPolicy');
+		$this->addPolicy(new ContextAccessPolicy($request, $roleAssignments));
+		return parent::authorize($request, $args, $roleAssignments);
+	}
+
+	/**
 	* Fetch form to generate custom reports.
 	* @param $args array
 	* @param $request Request
@@ -37,7 +46,7 @@ class ReportGeneratorHandler extends Handler {
 	function fetchReportGenerator($args, $request) {
 		$this->setupTemplate($request);
 		$reportGeneratorForm = $this->_getReportGeneratorForm($request);
-		$reportGeneratorForm->initData($request);
+		$reportGeneratorForm->initData();
 
 		$formContent = $reportGeneratorForm->fetch($request);
 
@@ -64,7 +73,7 @@ class ReportGeneratorHandler extends Handler {
 		$reportGeneratorForm->readInputData();
 		$json = new JSONMessage(true);
 		if ($reportGeneratorForm->validate()) {
-			$reportUrl = $reportGeneratorForm->execute($request);
+			$reportUrl = $reportGeneratorForm->execute();
 			$json->setAdditionalAttributes(array('reportUrl' => $reportUrl));
 		} else {
 			$json->setStatus(false);
@@ -89,11 +98,13 @@ class ReportGeneratorHandler extends Handler {
 		if (!$issueId) {
 			return new JSONMessage(false);
 		} else {
-			$articleDao = DAORegistry::getDAO('PublishedArticleDAO'); /* @var $articleDao PublishedArticleDAO */
-			$articles = $articleDao->getPublishedArticles($issueId);
+			$submissionsIterator = Services::get('submission')->getMany([
+				'contextId' => $request->getContext()->getId(),
+				'issueIds' => $issueId,
+			]);
 			$articlesInfo = array();
-			foreach ($articles as $article) {
-				$articlesInfo[] = array('id' => $article->getId(), 'title' => $article->getLocalizedTitle());
+			foreach ($submissionsIterator as $submission) {
+				$articlesInfo[] = array('id' => $submission->getId(), 'title' => $submission->getLocalizedTitle());
 			}
 
 			return new JSONMessage(true, $articlesInfo);
@@ -195,4 +206,4 @@ class ReportGeneratorHandler extends Handler {
 	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file controllers/tab/pubIds/form/PKPPublicIdentifiersForm.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPPublicIdentifiersForm
  * @ingroup controllers_tab_pubIds_form
@@ -22,7 +22,7 @@ class PKPPublicIdentifiersForm extends Form {
 	var $_contextId;
 
 	/** @var object The pub object the identifiers are edited of
-	 * 	Submission, Representation, SubmissionFile + OJS Issue
+	 * 	Submission, Representation, SubmissionFile, OJS Issue and OMP Chapter
 	 */
 	var $_pubObject;
 
@@ -48,7 +48,7 @@ class PKPPublicIdentifiersForm extends Form {
 		$this->_stageId = $stageId;
 		$this->_formParams = $formParams;
 
-		$request = Application::getRequest();
+		$request = Application::get()->getRequest();
 		$context = $request->getContext();
 		$this->_contextId = $context->getId();
 
@@ -65,7 +65,7 @@ class PKPPublicIdentifiersForm extends Form {
 	/**
 	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$templateMgr = TemplateManager::getManager($request);
 		$templateMgr->assign(array(
 			'pubIdPlugins' => PluginRegistry::loadCategory('pubIds', true, $this->getContextId()),
@@ -73,10 +73,17 @@ class PKPPublicIdentifiersForm extends Form {
 			'stageId' => $this->getStageId(),
 			'formParams' => $this->getFormParams(),
 		));
+		if (is_a($this->getPubObject(), 'Representation') || is_a($this->getPubObject(), 'Chapter')) {
+			$publicationId = $this->getPubObject()->getData('publicationId');
+			$publication = Services::get('publication')->get($publicationId);
+			$templateMgr->assign([
+				'submissionId' => $publication->getData('submissionId'),
+			]);
+		}
 		// consider JavaScripts
 		$pubIdPluginHelper = new PKPPubIdPluginHelper();
 		$pubIdPluginHelper->addJavaScripts($this->getContextId(), $request, $templateMgr);
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
@@ -87,6 +94,7 @@ class PKPPublicIdentifiersForm extends Form {
 		$this->setData('publisherId', $pubObject->getStoredPubId('publisher-id'));
 		$pubIdPluginHelper = new PKPPubIdPluginHelper();
 		$pubIdPluginHelper->init($this->getContextId(), $this, $pubObject);
+		return parent::initData();
 	}
 
 
@@ -141,7 +149,7 @@ class PKPPublicIdentifiersForm extends Form {
 	/**
 	 * @copydoc Form::validate()
 	 */
-	function validate() {
+	function validate($callHooks = true) {
 		$pubObject = $this->getPubObject();
 		$assocType = $this->getAssocType($pubObject);
 		$publisherId = $this->getData('publisherId');
@@ -151,8 +159,11 @@ class PKPPublicIdentifiersForm extends Form {
 		}
 		$contextDao = Application::getContextDAO();
 		if ($publisherId) {
-			if (is_numeric($publisherId)) {
+			if (ctype_digit((string) $publisherId)) {
 				$this->addError('publisherId', __('editor.publicIdentificationNumericNotAllowed', array('publicIdentifier' => $publisherId)));
+				$this->addErrorField('$publisherId');
+			} elseif (count(explode('/', $publisherId)) > 1) {
+				$this->addError('publisherId', __('editor.publicIdentificationPatternNotAllowed', array('pattern' => '"/"')));
 				$this->addErrorField('$publisherId');
 			} elseif (is_a($pubObject, 'SubmissionFile') && preg_match('/^(\d+)-(\d+)$/', $publisherId)) {
 				$this->addError('publisherId', __('editor.publicIdentificationPatternNotAllowed', array('pattern' => '\'/^(\d+)-(\d+)$/\' i.e. \'number-number\'')));
@@ -164,15 +175,15 @@ class PKPPublicIdentifiersForm extends Form {
 		}
 		$pubIdPluginHelper = new PKPPubIdPluginHelper();
 		$pubIdPluginHelper->validate($this->getContextId(), $this, $this->getPubObject());
-		return parent::validate();
+		return parent::validate($callHooks);
 	}
 
 	/**
 	 * Store objects with pub ids.
 	 * @copydoc Form::execute()
 	 */
-	function execute($request) {
-		parent::execute($request);
+	function execute(...$functionArgs) {
+		parent::execute(...$functionArgs);
 
 		$pubObject = $this->getPubObject();
 		$pubObject->setStoredPubId('publisher-id', $this->getData('publisherId'));
@@ -180,14 +191,11 @@ class PKPPublicIdentifiersForm extends Form {
 		$pubIdPluginHelper = new PKPPubIdPluginHelper();
 		$pubIdPluginHelper->execute($this->getContextId(), $this, $pubObject);
 
-		if (is_a($pubObject, 'Submission')) {
-			$submissionDao = Application::getSubmissionDAO();
-			$submissionDao->updateObject($pubObject);
-		} elseif (is_a($pubObject, 'Representation')) {
+		if (is_a($pubObject, 'Representation')) {
 			$representationDao = Application::getRepresentationDAO();
 			$representationDao->updateObject($pubObject);
 		} elseif (is_a($pubObject, 'SubmissionFile')) {
-			$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
+			$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
 			$submissionFileDao->updateObject($pubObject);
 		}
 	}
@@ -210,6 +218,8 @@ class PKPPublicIdentifiersForm extends Form {
 		$assocType = null;
 		if (is_a($pubObject, 'Submission')) {
 			$assocType = ASSOC_TYPE_SUBMISSION;
+		} elseif (is_a($pubObject, 'Publication')) {
+			$assocType = ASSOC_TYPE_PUBLICATION;
 		} elseif (is_a($pubObject, 'Representation')) {
 			$assocType = ASSOC_TYPE_REPRESENTATION;
 		} elseif (is_a($pubObject, 'SubmissionFile')) {
@@ -218,5 +228,3 @@ class PKPPublicIdentifiersForm extends Form {
 		return $assocType;
 	}
 }
-
-?>

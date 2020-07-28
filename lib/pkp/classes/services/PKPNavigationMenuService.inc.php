@@ -3,9 +3,9 @@
 /**
  * @file classes/services/PKPNavigationMenuService.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPNavigationMenuService
  * @ingroup services
@@ -14,6 +14,8 @@
  */
 
 namespace PKP\Services;
+import('lib.pkp.classes.navigationMenu.NavigationMenuItemAssignment');
+import('lib.pkp.classes.navigationMenu.NavigationMenuItem');
 
 class PKPNavigationMenuService {
 
@@ -43,7 +45,7 @@ class PKPNavigationMenuService {
 				'conditionalWarning' => __('manager.navigationMenus.editorialTeam.conditionalWarning'),
 			),
 			NMI_TYPE_SUBMISSIONS => array(
-				'title' => __('navigation.submissions'),
+				'title' => __('about.submissions'),
 				'description' => __('manager.navigationMenus.submissions.description'),
 			),
 			NMI_TYPE_ANNOUNCEMENTS => array(
@@ -81,6 +83,20 @@ class PKPNavigationMenuService {
 				'description' => __('manager.navigationMenus.logOut.description'),
 				'conditionalWarning' => __('manager.navigationMenus.loggedOut.conditionalWarning'),
 			),
+			NMI_TYPE_CONTACT => array(
+				'title' => __('about.contact'),
+				'description' => __('manager.navigationMenus.contact.description'),
+				'conditionalWarning' => __('manager.navigationMenus.contact.conditionalWarning'),
+			),
+			NMI_TYPE_SEARCH => array(
+				'title' => __('common.search'),
+				'description' => __('manager.navigationMenus.search.description'),
+			),
+			NMI_TYPE_PRIVACY => array(
+				'title' => __('manager.setup.privacyStatement'),
+				'description' => __('manager.navigationMenus.privacyStatement.description'),
+				'conditionalWarning' => __('manager.navigationMenus.privacyStatement.conditionalWarning'),
+			),
 		);
 
 		\HookRegistry::call('NavigationMenus::itemTypes', array(&$types));
@@ -89,12 +105,31 @@ class PKPNavigationMenuService {
 	}
 
 	/**
+	 * Return all custom edit navigationMenuItemTypes Templates.
+	 * @return array
+	 */
+	public function getMenuItemCustomEditTemplates() {
+		$templates = array(
+			NMI_TYPE_CUSTOM => array(
+				'template' => 'core:controllers/grid/navigationMenus/customNMIType.tpl',
+			),
+			NMI_TYPE_REMOTE_URL => array(
+				'template' => 'core:controllers/grid/navigationMenus/remoteUrlNMIType.tpl',
+			),
+		);
+
+		\HookRegistry::call('NavigationMenus::itemCustomTemplates', array(&$templates));
+
+		return $templates;
+	}
+
+	/**
 	 * Callback for display menu item functionallity
 	 */
 	function getDisplayStatus(&$navigationMenuItem, &$navigationMenu) {
-		$request = \Application::getRequest();
+		$request = \Application::get()->getRequest();
 		$dispatcher = $request->getDispatcher();
-		$templateMgr = \TemplateManager::getManager(\Application::getRequest());
+		$templateMgr = \TemplateManager::getManager($request);
 
 		$isUserLoggedIn = \Validation::isLoggedIn();
 		$isUserLoggedInAs = \Validation::isLoggedInAs();
@@ -111,16 +146,16 @@ class PKPNavigationMenuService {
 		// Conditionally hide some items
 		switch ($menuItemType) {
 			case NMI_TYPE_ANNOUNCEMENTS:
-				$navigationMenuItem->setIsDisplayed($context && $context->getSetting('enableAnnouncements'));
+				$navigationMenuItem->setIsDisplayed($context && $context->getData('enableAnnouncements'));
 				break;
 			case NMI_TYPE_EDITORIAL_TEAM:
-				$navigationMenuItem->setIsDisplayed($context && $context->getLocalizedSetting('masthead'));
+				$navigationMenuItem->setIsDisplayed($context && $context->getLocalizedData('editorialTeam'));
 				break;
 			case NMI_TYPE_CONTACT:
-				$navigationMenuItem->setIsDisplayed($context && ($context->getSetting('mailingAddress') || $context->getSetting('contactName')));
+				$navigationMenuItem->setIsDisplayed($context && ($context->getData('mailingAddress') || $context->getData('contactName')));
 				break;
 			case NMI_TYPE_USER_REGISTER:
-				$navigationMenuItem->setIsDisplayed(!$isUserLoggedIn && !($context && $context->getSetting('disableUserReg')));
+				$navigationMenuItem->setIsDisplayed(!$isUserLoggedIn && !($context && $context->getData('disableUserReg')));
 				break;
 			case NMI_TYPE_USER_LOGIN:
 				$navigationMenuItem->setIsDisplayed(!$isUserLoggedIn);
@@ -131,12 +166,17 @@ class PKPNavigationMenuService {
 				$navigationMenuItem->setIsDisplayed($isUserLoggedIn);
 				break;
 			case NMI_TYPE_ADMINISTRATION:
-				$navigationMenuItem->setIsDisplayed($isUserLoggedIn && ($currentUser->hasRole(array(ROLE_ID_SITE_ADMIN), $contextId) || $currentUser->hasRole(array(ROLE_ID_SITE_ADMIN), CONTEXT_SITE)));
+				$navigationMenuItem->setIsDisplayed($isUserLoggedIn && $currentUser->hasRole(array(ROLE_ID_SITE_ADMIN), CONTEXT_SITE));
+				break;
+			case NMI_TYPE_SEARCH:
+				$navigationMenuItem->setIsDisplayed($context);
+				break;
+			case NMI_TYPE_PRIVACY:
+				$navigationMenuItem->setIsDisplayed($context && $context->getLocalizedData('privacyStatement'));
 				break;
 		}
 
 		if ($navigationMenuItem->getIsDisplayed()) {
-
 			// Adjust some titles
 			switch ($menuItemType) {
 				case NMI_TYPE_USER_LOGOUT:
@@ -151,7 +191,6 @@ class PKPNavigationMenuService {
 						$displayTitle = $templateMgr->fetch('frontend/components/navigationMenus/dashboardMenuItem.tpl');
 						$navigationMenuItem->setTitle($displayTitle, \AppLocale::getLocale());
 					}
-
 					break;
 			}
 
@@ -228,10 +267,18 @@ class PKPNavigationMenuService {
 					));
 					break;
 				case NMI_TYPE_ADMINISTRATION:
+					$contextPath = 'index';
+					$user = $request->getUser();
+					$contextDao = \Application::getContextDAO();
+					$workingContexts = $contextDao->getAvailable($user?$user->getId():null);
+					if ($workingContexts && $workingContexts->getCount() == 1) {
+						$workingContext = $workingContexts->next();
+						$contextPath = $workingContext->getPath();
+					}
 					$navigationMenuItem->setUrl($dispatcher->url(
 						$request,
 						ROUTE_PAGE,
-						'index',
+						$contextPath,
 						'admin',
 						'index',
 						null
@@ -281,15 +328,38 @@ class PKPNavigationMenuService {
 					break;
 				case NMI_TYPE_CUSTOM:
 					if ($navigationMenuItem->getPath()) {
+						$path = explode("/", $navigationMenuItem->getPath());
+						$page = array_shift($path);
+						$op = array_shift($path);
 						$navigationMenuItem->setUrl($dispatcher->url(
 							$request,
 							ROUTE_PAGE,
 							null,
-							'navigationMenu',
-							'view',
-							$navigationMenuItem->getPath()
+							$page,
+							$op,
+							$path
 						));
 					}
+					break;
+				case NMI_TYPE_SEARCH:
+					$navigationMenuItem->setUrl($dispatcher->url(
+						$request,
+						ROUTE_PAGE,
+						null,
+						'search',
+						'search',
+						null
+					));
+					break;
+				case NMI_TYPE_PRIVACY:
+					$navigationMenuItem->setUrl($dispatcher->url(
+						$request,
+						ROUTE_PAGE,
+						null,
+						'about',
+						'privacy',
+						null
+					));
 					break;
 			}
 		}
@@ -299,16 +369,9 @@ class PKPNavigationMenuService {
 		$templateMgr->assign('navigationMenuItem', $navigationMenuItem);
 	}
 
-	/**
-	 * Get a tree of NavigationMenuItems assigned to this menu
-	 * @param $navigationMenu \NavigationMenu
-	 *
-	 * @return array Hierarchical array of menu items
-	 */
-	public function getMenuTree(&$navigationMenu) {
+	public function loadMenuTree(&$navigationMenu) {
 		$navigationMenuItemDao = \DAORegistry::getDAO('NavigationMenuItemDAO');
 		$items = $navigationMenuItemDao->getByMenuId($navigationMenu->getId())->toArray();
-
 
 		$navigationMenuItemAssignmentDao = \DAORegistry::getDAO('NavigationMenuItemAssignmentDAO');
 		$assignments = $navigationMenuItemAssignmentDao->getByMenuId($navigationMenu->getId())
@@ -334,6 +397,7 @@ class PKPNavigationMenuService {
 				if (!isset($children[$assignment->getParentId()])) {
 					$children[$assignment->getParentId()] = array();
 				}
+
 				$children[$assignment->getParentId()][] = $assignment;
 			}
 		}
@@ -346,9 +410,92 @@ class PKPNavigationMenuService {
 			}
 		}
 
-		foreach($items as $item) {
-			$this->getDisplayStatus($item, $navigationMenu);
+		$navigationMenuDao = \DAORegistry::getDAO('NavigationMenuDAO');
+		$cache = $navigationMenuDao->getCache($navigationMenu->getId());
+		$json = json_encode($navigationMenu);
+		$cache->setEntireCache($json);
+	}
+
+	/**
+	 * Get a tree of NavigationMenuItems assigned to this menu
+	 * @param $navigationMenu \NavigationMenu
+	 *
+	 */
+	public function getMenuTree(&$navigationMenu) {
+		$navigationMenuDao = \DAORegistry::getDAO('NavigationMenuDAO');
+		$cache = $navigationMenuDao->getCache($navigationMenu->getId());
+		if ($cache->cache) {
+			$navigationMenu = json_decode($cache->cache, true);
+			$navigationMenu = $this->arrayToObject('NavigationMenu', $navigationMenu);
+			$this->loadMenuTreeDisplayState($navigationMenu);
+			return;
 		}
+		$this->loadMenuTree($navigationMenu);
+		$this->loadMenuTreeDisplayState($navigationMenu);
+	}
+
+	private function loadMenuTreeDisplayState(&$navigationMenu) {
+		foreach ($navigationMenu->menuTree as $assignment) {
+			$nmi = $assignment->getMenuItem();
+			if ($assignment->children) {
+				foreach($assignment->children as $childAssignment) {
+					$childNmi = $childAssignment->getMenuItem();
+					$this->getDisplayStatus($childNmi, $navigationMenu);
+
+					if ($childNmi->getIsDisplayed()) {
+						$nmi->setIsChildVisible(true);
+					}
+				}
+			}
+			$this->getDisplayStatus($nmi, $navigationMenu);
+		}
+	}
+
+	/**
+	 * Helper function to transform the json_decoded cached NavigationMenu object (stdClass) to the actual NavigationMenu object
+	 * Some changes on the NavigationMenu objects must be reflected here
+	 * @param mixed $class
+	 * @param mixed $array
+	 * @return mixed
+	 */
+	function arrayToObject($class, $array) {
+		if ($class == 'NavigationMenu') {
+			$obj = new \NavigationMenu();
+		} else if ($class == 'NavigationMenuItem') {
+			$obj = new \NavigationMenuItem();
+		} else if ($class == 'NavigationMenuItemAssignment') {
+			$obj = new \NavigationMenuItemAssignment();
+		}
+		foreach($array as $k => $v) {
+			if(strlen($k)) {
+				if(is_array($v) && $k == 'menuTree') {
+					$treeChildren = array();
+					foreach($v as $treeChild) {
+						array_push($treeChildren, $this->arrayToObject('NavigationMenuItemAssignment', $treeChild));
+					}
+					$obj->{$k} = $treeChildren;
+				} else if(is_array($v) && $k == 'navigationMenuItem') {
+					$obj->{$k} = $this->arrayToObject('NavigationMenuItem', $v); //RECURSION
+				} else if(is_array($v) && $k == 'children') {
+					$treeChildren = array();
+					foreach($v as $treeChild) {
+						array_push($treeChildren, $this->arrayToObject('NavigationMenuItemAssignment', $treeChild));
+					}
+					$obj->{$k} = $treeChildren;
+				} else {
+					$obj->{$k} = $v;
+				}
+			}
+		}
+
+		// should call transformNavMenuItemTitle because some
+		// request don't have all template variables in place
+		if ($class == 'NavigationMenuItem') {
+			$templateMgr = \TemplateManager::getManager(\Application::get()->getRequest());
+			$this->transformNavMenuItemTitle($templateMgr, $obj);
+		}
+
+		return $obj;
 	}
 
 	/**
@@ -357,6 +504,8 @@ class PKPNavigationMenuService {
 	 * @param $navigationMenu \NavigationMenu
 	 */
 	public function transformNavMenuItemTitle($templateMgr, &$navigationMenuItem) {
+		$this->setNMITitleLocalized($navigationMenuItem);
+
 		$title = $navigationMenuItem->getLocalizedTitle();
 		$prefix = '{$';
 		$postfix = '}';
@@ -367,7 +516,7 @@ class PKPNavigationMenuService {
 		if ($prefixPos !== false && $postfixPos !== false && ($postfixPos - $prefixPos) > 0){
 			$titleRepl = substr($title, $prefixPos + strlen($prefix), $postfixPos - $prefixPos - strlen($prefix));
 
-			$templateReplaceTitle = $templateMgr->get_template_vars($titleRepl);
+			$templateReplaceTitle = $templateMgr->getTemplateVars($titleRepl);
 			if ($templateReplaceTitle) {
 				$navigationMenuItem->setTitle($templateReplaceTitle, \AppLocale::getLocale());
 			}
@@ -404,7 +553,7 @@ class PKPNavigationMenuService {
 	 */
 	private function _hasNMTreeNMIAssignmentWithChildOfNMIType($navigationMenu, $navigationMenuItem, $nmiType, $isDisplayed = true) {
 		foreach($navigationMenu->menuTree as $nmiAssignment) {
-			$nmi = $nmiAssignment->getMenuItem();
+				$nmi = $nmiAssignment->getMenuItem();
 			if(isset($nmi) && $nmi->getId() == $navigationMenuItem->getId()) {
 				foreach($nmiAssignment->children as $childNmiAssignment){
 					$childNmi = $childNmiAssignment->getMenuItem();
@@ -417,6 +566,91 @@ class PKPNavigationMenuService {
 					}
 				}
 			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Sets the title of a navigation menu item, depending on its title or locale-key
+	 * @param $nmi \NavigationMenuItem The NMI to set its title
+	 */
+	public function setNMITitleLocalized($nmi) {
+		if ($nmi) {
+			\AppLocale::requireComponents(LOCALE_COMPONENT_PKP_COMMON, LOCALE_COMPONENT_PKP_MANAGER, LOCALE_COMPONENT_APP_COMMON, LOCALE_COMPONENT_PKP_USER);
+			if ($localisedTitle = $nmi->getLocalizedTitle()) {
+				$nmi->setTitle($localisedTitle, \AppLocale::getLocale());
+			} else {
+				$nmi->setTitle(__($nmi->getTitleLocaleKey()), \AppLocale::getLocale());
+			}
+		}
+	}
+
+	/**
+	 * Sets the title of a navigation menu item, depending on its title or locale-key
+	 * @param $nmi \NavigationMenuItem The NMI to set its title
+	 */
+	public function setAllNMILocalisedTitles($nmi) {
+		if ($nmi) {
+			$supportedFormLocales = \AppLocale::getSupportedFormLocales();
+
+			foreach ($supportedFormLocales as $supportedFormLocale => $supportedFormLocaleValue) {
+				\AppLocale::requireComponents(
+					LOCALE_COMPONENT_PKP_COMMON,
+					LOCALE_COMPONENT_PKP_MANAGER,
+					LOCALE_COMPONENT_APP_COMMON,
+					LOCALE_COMPONENT_PKP_USER,
+					$supportedFormLocale
+				);
+
+				if ($localisedTitle = $nmi->getTitle($supportedFormLocale)) {
+					$nmi->setTitle($localisedTitle, $supportedFormLocale);
+				} else {
+					$nmi->setTitle(__($nmi->getTitleLocaleKey(), array(), $supportedFormLocale), $supportedFormLocale);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Callback to be registered from PKPTemplateManager for the LoadHandler hook.
+	 * Used by the Custom NMI to point their URL target to [context]/[path]
+	 * @param mixed $hookName
+	 * @param mixed $args
+	 * @return boolean true if the callback has handled the request.
+	 */
+	public function _callbackHandleCustomNavigationMenuItems($hookName, $args) {
+		$request = \Application::get()->getRequest();
+
+		$page =& $args[0];
+		$op =& $args[1];
+
+		// Construct a path to look for
+		$path = $page;
+		if ($op !== 'index') $path .= "/$op";
+		if ($arguments = $request->getRequestedArgs()) $path .= '/' . implode('/', $arguments);
+
+		// Look for a static page with the given path
+		$navigationMenuItemDao = \DAORegistry::getDAO('NavigationMenuItemDAO');
+
+		$context = $request->getContext();
+		$contextId = $context?$context->getId():CONTEXT_ID_NONE;
+		$customNMI = $navigationMenuItemDao->getByPath($contextId, $path);
+
+		// Check if a custom NMI with the requested path existes
+		if ($customNMI) {
+			// Trick the handler into dealing with it normally
+			$page = 'pages';
+			$op = 'view';
+
+
+			// It is -- attach the custom NMI handler.
+			define('HANDLER_CLASS', 'NavigationMenuItemHandler');
+			import('lib.pkp.pages.navigationMenu.NavigationMenuItemHandler');
+
+			\NavigationMenuItemHandler::setPage($customNMI);
+
+			return true;
 		}
 
 		return false;

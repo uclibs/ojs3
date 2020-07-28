@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/copyedit/form/ManageCopyeditFilesForm.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ManageCopyeditFilesForm
  * @ingroup controllers_grid_files_copyedit
@@ -27,13 +27,12 @@ class ManageCopyeditFilesForm extends ManageSubmissionFilesForm {
 
 	/**
 	 * Save selection of copyedited files
-	 * @param $args array
-	 * @param $request PKPRequest
 	 * @param $stageSubmissionFiles array List of submission files in this stage.
+	 * @param $fileStage int SUBMISSION_FILE_...
 	 */
-	function execute($args, $request, $stageSubmissionFiles) {
-		parent::execute($args, $request, $stageSubmissionFiles, SUBMISSION_FILE_COPYEDIT);
+	function execute($stageSubmissionFiles, $fileStage = null) {
+		parent::execute($stageSubmissionFiles, SUBMISSION_FILE_COPYEDIT);
 	}
 }
 
-?>
+

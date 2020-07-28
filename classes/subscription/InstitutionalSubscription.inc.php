@@ -8,9 +8,9 @@
 /**
  * @file classes/subscription/InstitutionalSubscription.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class InstitutionalSubscription
  * @ingroup subscription 
@@ -116,10 +116,10 @@ class InstitutionalSubscription extends Subscription {
 	 * Check whether subscription is valid
 	 */
 	function isValid($domain, $IP, $check = SUBSCRIPTION_DATE_BOTH, $checkDate = null) {
-		$subscriptionDao = DAORegistry::getDAO('InstitutionalSubscriptionDAO');
+		$subscriptionDao = DAORegistry::getDAO('InstitutionalSubscriptionDAO'); /* @var $subscriptionDao InstitutionalSubscriptionDAO */
 		return $subscriptionDao->isValidInstitutionalSubscription($domain, $IP, $this->getData('journalId'), $check, $checkDate);
 	}
 
 }
 
-?>
+

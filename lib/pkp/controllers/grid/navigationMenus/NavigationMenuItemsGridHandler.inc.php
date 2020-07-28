@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/navigationMenus/NavigationMenuItemsGridHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class NavigationMenuItemsGridHandler
  * @ingroup controllers_grid_navigationMenus
@@ -15,7 +15,7 @@
 
 import('lib.pkp.classes.controllers.grid.GridHandler');
 import('lib.pkp.classes.controllers.grid.DataObjectGridCellProvider');
-import('lib.pkp.controllers.grid.navigationMenus.form.NavigationMenuItemsForm');
+import('controllers.grid.navigationMenus.form.NavigationMenuItemsForm');
 
 class NavigationMenuItemsGridHandler extends GridHandler {
 
@@ -26,13 +26,14 @@ class NavigationMenuItemsGridHandler extends GridHandler {
 		parent::__construct();
 		$this->addRoleAssignment(
 			ROLE_ID_MANAGER,
-			array(
+			$ops = array(
 				'fetchGrid', 'fetchRow',
 				'addNavigationMenuItem', 'editNavigationMenuItem',
 				'updateNavigationMenuItem',
 				'deleteNavigationMenuItem', 'saveSequence',
 			)
 		);
+		$this->addRoleAssignment(ROLE_ID_SITE_ADMIN, $ops);
 	}
 
 	//
@@ -43,15 +44,20 @@ class NavigationMenuItemsGridHandler extends GridHandler {
 	 */
 	function authorize($request, &$args, $roleAssignments) {
 		$context = $request->getContext();
+		$contextId = $context?$context->getId():CONTEXT_ID_NONE;
 
-		$contextId = CONTEXT_ID_NONE;
-		if ($context) {
-			$contextId = $context->getId();
+		import('lib.pkp.classes.security.authorization.PolicySet');
+		$rolePolicy = new PolicySet(COMBINING_PERMIT_OVERRIDES);
+
+		import('lib.pkp.classes.security.authorization.RoleBasedHandlerOperationPolicy');
+		foreach($roleAssignments as $role => $operations) {
+			$rolePolicy->addPolicy(new RoleBasedHandlerOperationPolicy($request, $role, $operations));
 		}
+		$this->addPolicy($rolePolicy);
 
 		$navigationMenuItemId = $request->getUserVar('navigationMenuItemId');
 		if ($navigationMenuItemId) {
-			$navigationMenuItemDao = DAORegistry::getDAO('NavigationMenuItemDAO');
+			$navigationMenuItemDao = DAORegistry::getDAO('NavigationMenuItemDAO'); /* @var $navigationMenuItemDao NavigationMenuItemDAO */
 			$navigationMenuItem = $navigationMenuItemDao->getById($navigationMenuItemId);
 			if (!$navigationMenuItem ||  $navigationMenuItem->getContextId() != $contextId) {
 				return false;
@@ -118,7 +124,7 @@ class NavigationMenuItemsGridHandler extends GridHandler {
 			$contextId = $context->getId();
 		}
 
-		$navigationMenuItemDao = DAORegistry::getDAO('NavigationMenuItemDAO');
+		$navigationMenuItemDao = DAORegistry::getDAO('NavigationMenuItemDAO'); /* @var $navigationMenuItemDao NavigationMenuItemDAO */
 		return $navigationMenuItemDao->getByContextId($contextId);
 	}
 
@@ -150,13 +156,13 @@ class NavigationMenuItemsGridHandler extends GridHandler {
 			$contextId = $context->getId();
 		}
 
-		import('lib.pkp.controllers.grid.navigationMenus.form.NavigationMenuItemsForm');
+		import('controllers.grid.navigationMenus.form.NavigationMenuItemsForm');
 		$navigationMenuItemForm = new NavigationMenuItemsForm($contextId, $navigationMenuItemId, $navigationMenuIdParent);
 
 		$navigationMenuItemForm->readInputData();
 
 		if ($navigationMenuItemForm->validate()) {
-			$navigationMenuItemForm->execute($request);
+			$navigationMenuItemForm->execute();
 
 			if ($navigationMenuItemId) {
 				// Successful edit of an existing $navigationMenuItem.
@@ -194,7 +200,7 @@ class NavigationMenuItemsGridHandler extends GridHandler {
 		}
 
 		$navigationMenuItemForm = new NavigationMenuItemsForm($contextId, $navigationMenuItemId, $navigationMenuIdParent);
-		$navigationMenuItemForm->initData($args, $request);
+		$navigationMenuItemForm->initData();
 
 		return new JSONMessage(true, $navigationMenuItemForm->fetch($request));
 	}
@@ -214,10 +220,10 @@ class NavigationMenuItemsGridHandler extends GridHandler {
 			$contextId = $context->getId();
 		}
 
-		import('lib.pkp.controllers.grid.navigationMenus.form.NavigationMenuItemsForm');
+		import('controllers.grid.navigationMenus.form.NavigationMenuItemsForm');
 		$navigationMenuItemForm = new NavigationMenuItemsForm($contextId, $navigationMenuItemId, $navigationMenuIdParent);
 
-		$navigationMenuItemForm->initData($args, $request);
+		$navigationMenuItemForm->initData();
 
 		return new JSONMessage(true, $navigationMenuItemForm->fetch($request));
 	}
@@ -237,7 +243,7 @@ class NavigationMenuItemsGridHandler extends GridHandler {
 			$contextId = $context->getId();
 		}
 
-		$navigationMenuItemDao = DAORegistry::getDAO('NavigationMenuItemDAO');
+		$navigationMenuItemDao = DAORegistry::getDAO('NavigationMenuItemDAO'); /* @var $navigationMenuItemDao NavigationMenuItemDAO */
 		$navigationMenuItem = $navigationMenuItemDao->getById($navigationMenuItemId, $contextId);
 		if ($navigationMenuItem) {
 			$navigationMenuItemDao->deleteObject($navigationMenuItem);
@@ -254,4 +260,4 @@ class NavigationMenuItemsGridHandler extends GridHandler {
 	}
 }
 
-?>
+

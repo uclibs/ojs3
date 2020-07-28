@@ -1,17 +1,19 @@
 {**
  * templates/header/usernav.tpl
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Site-Wide Navigation Bar
  *}
-{if $currentContext}
-	{url|assign:"homeUrl" page="index" router=$smarty.const.ROUTE_PAGE}
-{elseif $multipleContexts}
-	{url|assign:"homeUrl" context="index" router=$smarty.const.ROUTE_PAGE}
-{/if}
+{capture assign="homeUrl"}
+	{if $currentContext}
+		{url page="index" router=$smarty.const.ROUTE_PAGE}
+	{elseif $multipleContexts}
+		{url context="index" router=$smarty.const.ROUTE_PAGE}
+	{/if}
+{/capture}
 
 <script type="text/javascript">
 	// Attach the JS file tab handler.
@@ -23,18 +25,18 @@
 
 <ul id="navigationContextMenu" class="pkp_nav_context pkp_nav_list" role="navigation" aria-label="{translate|escape key="common.navigation.siteContext"}">
 
-	<li {if $multipleContexts}class="submenuOpensBelow"{/if} aria-haspopup="true" aria-expanded="false">
+	<li {if $multipleContexts}class="submenuOpensBelow" aria-haspopup="true" aria-expanded="false"{/if}>
 		<span class="pkp_screen_reader">
 			{translate key="context.current"}
 		</span>
 
-		<a href="#" class="pkp_current_context">
+		<a href="{if $multipleContexts}#{else}{url router=$smarty.const.ROUTE_PAGE page="submissions"}{/if}" class="pkp_current_context">
 			{if $displayPageHeaderTitle && is_string($displayPageHeaderTitle)}
-				{$displayPageHeaderTitle}
+				{$displayPageHeaderTitle|escape}
 			{elseif $currentContextName}
-				{$currentContextName}
+				{$currentContextName|escape}
 			{else}
-				{$applicationName}
+				{$applicationName|escape}
 			{/if}
 		</a>
 
@@ -44,10 +46,10 @@
 			</h3>
 			<ul class="pkp_contexts">
 				{foreach from=$contextsNameAndUrl key=url item=name}
-					{if $currentContextName == $name}{php}continue;{/php}{/if}
+					{if $currentContextName == $name}{continue}{/if}
 					<li>
 						<a href="{$url}">
-							{$name}
+							{$name|escape}
 						</a>
 					</li>
 				{/foreach}
@@ -65,7 +67,7 @@
 		{rdelim});
 	</script>
 	<ul id="navigationTasks" class="pkp_nav_tasks pkp_nav_list" role="navigation" aria-label="{translate|escape key="common.tasks"}">
-		{url|assign:fetchTaskUrl router=$smarty.const.ROUTE_COMPONENT component="page.PageHandler" op="tasks" escape=false}
+		{capture assign=fetchTaskUrl}{url router=$smarty.const.ROUTE_COMPONENT component="page.PageHandler" op="tasks" escape=false}{/capture}
 		{capture assign="tasksNavPlaceholder"}
 			<a href="#">
 				{translate key="common.tasks"}
@@ -84,7 +86,7 @@
 	{rdelim});
 </script>
 <ul id="navigationUser" class="pkp_nav_user pkp_nav_list" role="navigation" aria-label="{translate|escape key="common.navigation.user"}">
-	{if $supportedLocales|@count}
+	{if isset($supportedLocales) && $supportedLocales|@count}
 		<li class="languages" aria-haspopup="true" aria-expanded="false">
 			<a href="#">
 				<span class="fa fa-globe"></span>
@@ -94,7 +96,7 @@
 				{foreach from=$supportedLocales item=localeName key=localeKey}
 					{if $localeKey != $currentLocale}
 						<li>
-							<a href="{url router=$smarty.const.ROUTE_PAGE page="user" op="setLocale" path=$localeKey source=$smarty.server.REQUEST_URI}">
+							<a href="{url router=$smarty.const.ROUTE_PAGE page="user" op="setLocale" path=$localeKey}">
 								{$localeName}
 							</a>
 						</li>

@@ -3,9 +3,9 @@
 /**
  * @file tools/CopyAcessLogFileTool.php
  *
- * Copyright (c) 2013-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2013-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class CopyAccessLogFileTool
  * @ingroup tools
@@ -185,9 +185,10 @@ class CopyAccessLogFileTool extends CommandLineTool {
 		// Uncompress it, if needed.
 		if ($isCompressed) {
 			$fileMgr = new FileManager();
-			$errorMsg = null;
-			if (!$tmpFilePath = $fileMgr->decompressFile($tmpFilePath, $errorMsg)) {
-				printf($errorMsg . "\n");
+			try {
+				$tmpFilePath = $fileMgr->decompressFile($tmpFilePath);
+			} catch (Exception $e) {
+				printf($e->getMessage() . "\n");
 				exit(1);
 			}
 		}
@@ -205,7 +206,7 @@ class CopyAccessLogFileTool extends CommandLineTool {
 			printf(__('admin.error.executingUtil', array('utilPath' => $egrepPath, 'utilVar' => 'egrep')) . "\n");
  			exit(1);
  		}
-		if (!$fileMgr->deleteFile($tmpFilePath)) {
+		if (!$fileMgr->deleteByPath($tmpFilePath)) {
 			printf(__('admin.copyAccessLogFileTool.error.deletingFile', array('tmpFilePath' => $tmpFilePath)) . "\n");
 			exit(1);
 		}
@@ -216,4 +217,4 @@ class CopyAccessLogFileTool extends CommandLineTool {
 
 $tool = new CopyAccessLogFileTool(isset($argv) ? $argv : array());
 $tool->execute();
-?>
+

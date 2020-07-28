@@ -8,9 +8,9 @@
 /**
  * @file classes/issue/IssueGalley.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class IssueGalley
  * @ingroup issue_galley
@@ -50,7 +50,7 @@ class IssueGalley extends IssueFile {
 	 * @return int
 	 */
 	function getViews() {
-		$application = PKPApplication::getApplication();
+		$application = Application::getApplication();
 		return $application->getPrimaryMetricByAssoc(ASSOC_TYPE_ISSUE_GALLEY, $this->getId());
 	}
 
@@ -154,14 +154,14 @@ class IssueGalley extends IssueFile {
 	}
 
 	/**
-	 * Return the "best" issue galley ID -- If a public isue galley ID is set,
+	 * Return the "best" issue galley ID -- If a urlPath is set,
 	 * use it; otherwise use the internal article Id.
 	 * @return string
 	 */
 	function getBestGalleyId() {
-		$publicGalleyId = $this->getStoredPubId('publisher-id');
-		if (!empty($publicGalleyId)) return $publicGalleyId;
-		return $this->getId();
+		return $this->getData('urlPath')
+			? $this->getData('urlPath')
+			: $this->getId();
 	}
 
 	/**
@@ -170,7 +170,7 @@ class IssueGalley extends IssueFile {
 	 */
 	function getFile() {
 		if (!isset($this->_issueFile)) {
-			$issueFileDao = DAORegistry::getDAO('IssueFileDAO');
+			$issueFileDao = DAORegistry::getDAO('IssueFileDAO'); /* @var $issueFileDao IssueFileDAO */
 			$this->_issueFile = $issueFileDao->getById($this->getFileId());
 		}
 		return $this->_issueFile;
@@ -178,4 +178,4 @@ class IssueGalley extends IssueFile {
 
 }
 
-?>
+

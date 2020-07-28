@@ -3,9 +3,9 @@
 /**
  * @file classes/core/APIRouter.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2016 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class APIRouter
  * @ingroup core
@@ -22,8 +22,6 @@ import('classes.core.Request');
 import('classes.handler.Handler');
 
 class APIRouter extends PKPRouter {
-	/** @var APIHandler */
-	var $_handler;
 
 	/**
 	 * Determines path info parts depending of disable_path_info config value
@@ -97,8 +95,14 @@ class APIRouter extends PKPRouter {
 		$sourceFile = sprintf('api/%s/%s/index.php', $this->getVersion(), $this->getEntity());
 
 		if (!file_exists($sourceFile)) {
-			$dispatcher = $this->getDispatcher();
-			$dispatcher->handle404();
+			AppLocale::requireComponents(LOCALE_COMPONENT_PKP_API, LOCALE_COMPONENT_APP_API);
+			http_response_code('404');
+			header('Content-Type: application/json');
+			echo json_encode([
+				'error' => 'api.404.endpointNotFound',
+				'errorMessage' => __('api.404.endpointNotFound'),
+			]);
+			exit;
 		}
 
 		if (!defined('SESSION_DISABLE_INIT')) {
@@ -106,16 +110,9 @@ class APIRouter extends PKPRouter {
 			SessionManager::getManager();
 		}
 
-		$this->_handler = require ('./'.$sourceFile);
-		$this->_handler->getApp()->run();
-	}
-
-	/**
-	 * Get the API handler.
-	 * @return APIHandler
-	 */
-	function getHandler() {
-		return $this->_handler;
+		$handler = require ('./'.$sourceFile);
+		$this->setHandler($handler);
+		$handler->getApp()->run();
 	}
 
 	/**
@@ -128,8 +125,8 @@ class APIRouter extends PKPRouter {
 		$handler = $this->getHandler();
 		$container = $handler->getApp()->getContainer();
 		$router = $container->get('router');
-		$request = $container->get('request');
-		$routeInfo = $router->dispatch($request);
+		$slimRequest = $handler->getSlimRequest();
+		$routeInfo = $router->dispatch($slimRequest);
 		if (isset($routeInfo[1])) {
 			$route = $router->lookupRoute($routeInfo[1]);
 			$callable = $route->getCallable();
@@ -143,10 +140,62 @@ class APIRouter extends PKPRouter {
 	 * @copydoc PKPRouter::handleAuthorizationFailure()
 	 */
 	function handleAuthorizationFailure($request, $authorizationMessage) {
-		$dispatcher = $this->getDispatcher();
-		$dispatcher->handle404();
+		AppLocale::requireComponents(LOCALE_COMPONENT_PKP_API, LOCALE_COMPONENT_APP_API);
+		http_response_code('403');
+		header('Content-Type: application/json');
+		echo json_encode([
+			'error' => $authorizationMessage,
+			'errorMessage' => __($authorizationMessage),
+		]);
+		exit;
 	}
 
-}
+	/**
+	 * @copydoc PKPRouter::url()
+	 */
+	function url($request, $newContext = null, $endpoint = null, $op = null, $path = null,
+			$params = null, $anchor = null, $escape = false) {
 
-?>
+		// APIHandlers do not understand $op, $path or $anchor. All routing is baked
+		// into the $endpoint string. It only accepts a string as the $newContext,
+		// since it relies on this when path info is disabled.
+		if (!is_null($op) || !is_null($path) || !is_null($anchor) || !is_scalar($newContext)) {
+			throw new Exception('APIRouter::url() should not be called with an op, path or anchor. If a new context is passed, the context path must be passed instead of the context object.');
+		}
+
+		//
+		// Base URL and Context
+		//
+		$baseUrlAndContext = $this->_urlGetBaseAndContext($request, $this->_urlCanonicalizeNewContext($newContext));
+		$baseUrl = array_shift($baseUrlAndContext);
+		$context = $baseUrlAndContext;
+
+		//
+		// Additional query parameters
+		//
+		$additionalParameters = $this->_urlGetAdditionalParameters($request, $params, $escape);
+
+		//
+		// Assemble URL
+		//
+		if ($request->isPathInfoEnabled()) {
+			// If path info is enabled, everything but params goes into the path
+			$pathInfoArray = array_merge(
+				$context,
+				['api',	API_VERSION, $endpoint]
+			);
+			$queryParametersArray = $additionalParameters;
+		} else {
+			// If path info is disabled, the context and endpoint must be passed as
+			// query params, and the context must be concatenated into the endpoint
+			$pathInfoArray = array();
+			$queryParametersArray = array_merge(
+				$context,
+				[sprintf('endpoint=/%s/api/%s/%s', $newContext, API_VERSION, $endpoint)],
+				$additionalParameters
+			);
+		}
+
+		return $this->_urlFromParts($baseUrl, $pathInfoArray, $queryParametersArray, $anchor, $escape);
+	}
+}

@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/eventLog/SubmissionFileEventLogGridHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionFileEventLogGridHandler
  * @ingroup controllers_grid_eventLog
@@ -55,10 +55,10 @@ class SubmissionFileEventLogGridHandler extends SubmissionEventLogGridHandler {
 
 	/**
 	 * Configure the grid
-	 * @param $request PKPRequest
+	 * @see SubmissionEventLogGridHandler::initialize
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 
 		// Retrieve the authorized monograph.
 		$submission = $this->getAuthorizedContextObject(ASSOC_TYPE_SUBMISSION);
@@ -90,7 +90,7 @@ class SubmissionFileEventLogGridHandler extends SubmissionEventLogGridHandler {
 	 */
 	protected function loadData($request, $filter = null) {
 		$submissionFile = $this->getSubmissionFile();
-		$submissionFileEventLogDao = DAORegistry::getDAO('SubmissionFileEventLogDAO');
+		$submissionFileEventLogDao = DAORegistry::getDAO('SubmissionFileEventLogDAO'); /* @var $submissionFileEventLogDao SubmissionFileEventLogDAO */
 		$eventLogEntries = $submissionFileEventLogDao->getByFileId(
 			$submissionFile->getFileId()
 		);
@@ -98,7 +98,7 @@ class SubmissionFileEventLogGridHandler extends SubmissionEventLogGridHandler {
 
 		if ($filter['allEvents']) {
 			// Also include events from past versions
-			$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
+			$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
 			while (true) {
 				$submissionFile = $submissionFileDao->getRevision($submissionFile->getSourceFileId(), $submissionFile->getSourceRevision());
 				if (!$submissionFile) break;
@@ -133,4 +133,4 @@ class SubmissionFileEventLogGridHandler extends SubmissionEventLogGridHandler {
 	}
 }
 
-?>
+

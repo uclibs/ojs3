@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/settings/languages/ManageLanguageGridHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ManageLanguageGridHandler
  * @ingroup controllers_grid_settings_languages
@@ -23,7 +23,7 @@ class ManageLanguageGridHandler extends LanguageGridHandler {
 		parent::__construct();
 		$this->addRoleAssignment(
 			array(ROLE_ID_MANAGER),
-			array('saveLanguageSetting', 'setContextPrimaryLocale', 'fetchGrid', 'fetchRow')
+			array('saveLanguageSetting', 'setContextPrimaryLocale', 'reloadLocale', 'fetchGrid', 'fetchRow')
 		);
 	}
 
@@ -69,14 +69,40 @@ class ManageLanguageGridHandler extends LanguageGridHandler {
 	/**
 	 * @copydoc LanguageGridHandler::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 		AppLocale::requireComponents(LOCALE_COMPONENT_APP_MANAGER);
 
 		$this->addNameColumn();
 		$this->addPrimaryColumn('contextPrimary');
 		$this->addManagementColumns();
 	}
-}
 
-?>
+	/**
+	 * Reload locale.
+	 * @param $args array
+	 * @param $request Request
+	 * @return JSONMessage JSON object
+	 */
+	public function reloadLocale($args, $request) {
+		$context = $request->getContext();
+		$locale = $request->getUserVar('rowId');
+		$gridData = $this->getGridDataElements($request);
+
+		if (empty($context) || !$request->checkCSRF() || !array_key_exists($locale, $gridData)) {
+			return new JSONMessage(false);
+		}
+
+		import('classes.core.Services');
+		$context = Services::get('context')->restoreLocaleDefaults($context, $request, $locale);
+
+		$notificationManager = new NotificationManager();
+		$notificationManager->createTrivialNotification(
+			$request->getUser()->getId(),
+			NOTIFICATION_TYPE_SUCCESS,
+			array('contents' => __('notification.localeReloaded', array('locale' => $gridData[$locale]['name'], 'contextName' => $context->getLocalizedName())))
+		);
+
+		return DAO::getDataChangedEvent($locale);
+	}
+}

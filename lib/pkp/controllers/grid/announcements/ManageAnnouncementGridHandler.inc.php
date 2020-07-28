@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/announcements/ManageAnnouncementGridHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPManageAnnouncementGridHandler
  * @ingroup classes_controllers_grid_announcements
@@ -40,8 +40,8 @@ class ManageAnnouncementGridHandler extends AnnouncementGridHandler {
 	/**
 	 * @copydoc AnnouncementGridHandler::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 
 		$this->setTitle('announcement.announcements');
 
@@ -85,10 +85,10 @@ class ManageAnnouncementGridHandler extends AnnouncementGridHandler {
 	/**
 	 * @copydoc GridHandler::authorize()
 	 */
-	function authorize($request, &$args, $roleAssignments) {
+	function authorize($request, &$args, $roleAssignments, $requireAnnouncementsEnabled = false) {
 		import('lib.pkp.classes.security.authorization.ContextAccessPolicy');
 		$this->addPolicy(new ContextAccessPolicy($request, $roleAssignments));
-		return parent::authorize($request, $args, $roleAssignments, false);
+		return parent::authorize($request, $args, $roleAssignments, $requireAnnouncementsEnabled);
 	}
 
 	/**
@@ -96,7 +96,7 @@ class ManageAnnouncementGridHandler extends AnnouncementGridHandler {
 	 */
 	protected function loadData($request, $filter) {
 		$context = $request->getContext();
-		$announcementDao = DAORegistry::getDAO('AnnouncementDAO');
+		$announcementDao = DAORegistry::getDAO('AnnouncementDAO'); /* @var $announcementDao AnnouncementDAO */
 		$rangeInfo = $this->getGridRangeInfo($request, $this->getId());
 		return $announcementDao->getByAssocId($context->getAssocType(), $context->getId(), $rangeInfo);
 	}
@@ -124,7 +124,7 @@ class ManageAnnouncementGridHandler extends AnnouncementGridHandler {
 	function editAnnouncement($args, $request) {
 		$context = $request->getContext();
 		$announcementForm = new AnnouncementForm($context->getId(), (int) $request->getUserVar('announcementId'));
-		$announcementForm->initData($args, $request);
+		$announcementForm->initData();
 		return new JSONMessage(true, $announcementForm->fetch($request));
 	}
 
@@ -151,7 +151,7 @@ class ManageAnnouncementGridHandler extends AnnouncementGridHandler {
 				$notificationLocaleKey = 'notification.addedAnnouncement';
 			}
 
-			$announcementId = $announcementForm->execute($request);
+			$announcementId = $announcementForm->execute();
 
 			// Record the notification to user.
 			$notificationManager = new NotificationManager();
@@ -174,7 +174,7 @@ class ManageAnnouncementGridHandler extends AnnouncementGridHandler {
 		$context = $request->getContext();
 		$announcementId = (int) $request->getUserVar('announcementId');
 
-		$announcementDao = DAORegistry::getDAO('AnnouncementDAO');
+		$announcementDao = DAORegistry::getDAO('AnnouncementDAO'); /* @var $announcementDao AnnouncementDAO */
 		$announcement = $announcementDao->getById($announcementId, $context->getAssocType(), $context->getId());
 		if ($announcement && $request->checkCSRF()) {
 			$announcementDao->deleteObject($announcement);
@@ -191,4 +191,4 @@ class ManageAnnouncementGridHandler extends AnnouncementGridHandler {
 	}
 }
 
-?>
+

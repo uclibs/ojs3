@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/form/PKPSubmissionSubmitStep2Form.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPSubmissionSubmitStep2Form
  * @ingroup submission_form
@@ -27,17 +27,18 @@ class PKPSubmissionSubmitStep2Form extends SubmissionSubmitForm {
 
 	/**
 	 * Save changes to submission.
-	 * @param $args array
-	 * @param $request PKPRequest
 	 * @return int the submission ID
 	 */
-	function execute($args, $request) {
+	function execute(...$functionArgs) {
+		parent::execute(...$functionArgs);
+
 		// Update submission
-		$submissionDao = Application::getSubmissionDAO();
+		$submissionDao = DAORegistry::getDAO('SubmissionDAO'); /* @var $submissionDao SubmissionDAO */
 		$submission = $this->submission;
 
 		if ($submission->getSubmissionProgress() <= $this->step) {
-			$submission->stampStatusModified();
+			$submission->stampLastActivity();
+			$submission->stampModified();
 			$submission->setSubmissionProgress($this->step + 1);
 			$submissionDao->updateObject($submission);
 		}
@@ -46,4 +47,4 @@ class PKPSubmissionSubmitStep2Form extends SubmissionSubmitForm {
 	}
 }
 
-?>
+

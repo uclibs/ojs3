@@ -3,9 +3,9 @@
 /**
  * @file plugins/generic/customBlockManager/controllers/grid/CustomBlockGridHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class CustomBlockGridHandler
  * @ingroup controllers_grid_customBlockManager
@@ -26,7 +26,7 @@ class CustomBlockGridHandler extends GridHandler {
 	function __construct() {
 		parent::__construct();
 		$this->addRoleAssignment(
-			array(ROLE_ID_MANAGER),
+			array(ROLE_ID_MANAGER, ROLE_ID_SITE_ADMIN),
 			array('fetchGrid', 'fetchRow', 'addCustomBlock', 'editCustomBlock', 'updateCustomBlock', 'deleteCustomBlock')
 		);
 		$this->plugin = PluginRegistry::getPlugin('generic', CUSTOMBLOCKMANAGER_PLUGIN_NAME);
@@ -36,6 +36,20 @@ class CustomBlockGridHandler extends GridHandler {
 	//
 	// Overridden template methods
 	//
+	/**
+	 * @copydoc PKPHandler::authorize()
+	 */
+	function authorize($request, &$args, $roleAssignments) {
+		if ($request->getContext()) {
+			import('lib.pkp.classes.security.authorization.ContextAccessPolicy');
+			$this->addPolicy(new ContextAccessPolicy($request, $roleAssignments));
+		} else {
+			import('lib.pkp.classes.security.authorization.PKPSiteAccessPolicy');
+			$this->addPolicy(new PKPSiteAccessPolicy($request, null, $roleAssignments));
+		}
+		return parent::authorize($request, $args, $roleAssignments);
+	}
+
 	/**
 	 * @copydoc GridHandler::initialize()
 	 */
@@ -134,11 +148,10 @@ class CustomBlockGridHandler extends GridHandler {
 		// Create and present the edit form
 		import('plugins.generic.customBlockManager.controllers.grid.form.CustomBlockForm');
 		$customBlockManagerPlugin = $this->plugin;
-		$template = $customBlockManagerPlugin->getTemplatePath() . 'editCustomBlockForm.tpl';
+		$template = $customBlockManagerPlugin->getTemplateResource('editCustomBlockForm.tpl');
 		$customBlockForm = new CustomBlockForm($template, $contextId, $customBlockPlugin);
 		$customBlockForm->initData();
-		$json = new JSONMessage(true, $customBlockForm->fetch($request));
-		return $json->getString();
+		return new JSONMessage(true, $customBlockForm->fetch($request));
 	}
 
 	/**
@@ -164,7 +177,7 @@ class CustomBlockGridHandler extends GridHandler {
 		// Create and populate the form
 		import('plugins.generic.customBlockManager.controllers.grid.form.CustomBlockForm');
 		$customBlockManagerPlugin = $this->plugin;
-		$template = $customBlockManagerPlugin->getTemplatePath() . 'editCustomBlockForm.tpl';
+		$template = $customBlockManagerPlugin->getTemplateResource('editCustomBlockForm.tpl');
 		$customBlockForm = new CustomBlockForm($template, $contextId, $customBlockPlugin);
 		$customBlockForm->readInputData();
 
@@ -175,8 +188,7 @@ class CustomBlockGridHandler extends GridHandler {
  			return DAO::getDataChangedEvent();
 		} else {
 			// Present any errors
-			$json = new JSONMessage(true, $customBlockForm->fetch($request));
-			return $json->getString();
+			return new JSONMessage(true, $customBlockForm->fetch($request));
 		}
 	}
 
@@ -208,4 +220,3 @@ class CustomBlockGridHandler extends GridHandler {
 	}
 }
 
-?>

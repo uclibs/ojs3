@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/form/StaticPageForm.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class StaticPageForm
  * @ingroup controllers_grid_staticPages
@@ -33,7 +33,7 @@ class StaticPageForm extends Form {
 	 * @param $staticPageId int Static page ID (if any)
 	 */
 	function __construct($staticPagesPlugin, $contextId, $staticPageId = null) {
-		parent::__construct($staticPagesPlugin->getTemplatePath() . 'editStaticPageForm.tpl');
+		parent::__construct($staticPagesPlugin->getTemplateResource('editStaticPageForm.tpl'));
 
 		$this->contextId = $contextId;
 		$this->staticPageId = $staticPageId;
@@ -44,7 +44,12 @@ class StaticPageForm extends Form {
 		$this->addCheck(new FormValidatorCSRF($this));
 		$this->addCheck(new FormValidator($this, 'title', 'required', 'plugins.generic.staticPages.nameRequired'));
 		$this->addCheck(new FormValidatorRegExp($this, 'path', 'required', 'plugins.generic.staticPages.pathRegEx', '/^[a-zA-Z0-9\/._-]+$/'));
-		$this->addCheck(new FormValidatorCustom($this, 'path', 'required', 'plugins.generic.staticPages.duplicatePath', create_function('$path,$form,$staticPagesDao', '$page = $staticPagesDao->getByPath($form->contextId, $path); return !$page || $page->getId()==$form->staticPageId;'), array($this, DAORegistry::getDAO('StaticPagesDAO'))));
+		$form = $this;
+		$this->addCheck(new FormValidatorCustom($this, 'path', 'required', 'plugins.generic.staticPages.duplicatePath', function($path) use ($form) {
+			$staticPagesDao = DAORegistry::getDAO('StaticPagesDAO');
+			$page = $staticPagesDao->getByPath($form->contextId, $path);
+			return !$page || $page->getId()==$form->staticPageId;
+		}));
 	}
 
 	/**
@@ -70,9 +75,9 @@ class StaticPageForm extends Form {
 	}
 
 	/**
-	 * @see Form::fetch
+	 * @copydoc Form::fetch
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$templateMgr = TemplateManager::getManager();
 		$templateMgr->assign(array(
 			'staticPageId' => $this->staticPageId,
@@ -80,20 +85,22 @@ class StaticPageForm extends Form {
 		));
 
 		if ($context = $request->getContext()) $templateMgr->assign('allowedVariables', array(
-			'contactName' => __('plugins.generic.tinymce.variables.principalContactName', array('value' => $context->getSetting('contactName'))),
-			'contactEmail' => __('plugins.generic.tinymce.variables.principalContactEmail', array('value' => $context->getSetting('contactEmail'))),
-			'supportName' => __('plugins.generic.tinymce.variables.supportContactName', array('value' => $context->getSetting('supportName'))),
-			'supportPhone' => __('plugins.generic.tinymce.variables.supportContactPhone', array('value' => $context->getSetting('supportPhone'))),
-			'supportEmail' => __('plugins.generic.tinymce.variables.supportContactEmail', array('value' => $context->getSetting('supportEmail'))),
+			'contactName' => __('plugins.generic.tinymce.variables.principalContactName', array('value' => $context->getData('contactName'))),
+			'contactEmail' => __('plugins.generic.tinymce.variables.principalContactEmail', array('value' => $context->getData('contactEmail'))),
+			'supportName' => __('plugins.generic.tinymce.variables.supportContactName', array('value' => $context->getData('supportName'))),
+			'supportPhone' => __('plugins.generic.tinymce.variables.supportContactPhone', array('value' => $context->getData('supportPhone'))),
+			'supportEmail' => __('plugins.generic.tinymce.variables.supportContactEmail', array('value' => $context->getData('supportEmail'))),
 		));
 
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
 	 * Save form values into the database
 	 */
-	function execute() {
+	function execute(...$functionParams) {
+		parent::execute(...$functionParams);
+
 		$staticPagesDao = DAORegistry::getDAO('StaticPagesDAO');
 		if ($this->staticPageId) {
 			// Load and update an existing page
@@ -116,4 +123,3 @@ class StaticPageForm extends Form {
 	}
 }
 
-?>

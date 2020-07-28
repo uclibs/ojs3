@@ -3,9 +3,9 @@
 /**
  * @file plugins/importexport/native/filter/NativeExportFilter.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class NativeExportFilter
  * @ingroup plugins_importexport_native
@@ -19,7 +19,7 @@ class NativeExportFilter extends NativeImportExportFilter {
 
 	/** @var boolean If set to true no validation (e.g. XML validation) will be done */
 	var $_noValidation = null;
-
+	var $opts = array();
 
 	/**
 	 * Constructor
@@ -107,6 +107,14 @@ class NativeExportFilter extends NativeImportExportFilter {
 		$parentNode->appendChild($node = $doc->createElementNS($deployment->getNamespace(), $name, htmlspecialchars($value, ENT_COMPAT, 'UTF-8')));
 		return $node;
 	}
+
+	/**
+	 * Set xml filtering opts
+	 * @param $opts array
+	 */
+	function setOpts($opts) {
+		$this->opts = $opts;
+	}
 }
 
-?>
+

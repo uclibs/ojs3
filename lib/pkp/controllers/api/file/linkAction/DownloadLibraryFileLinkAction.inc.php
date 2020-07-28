@@ -2,9 +2,9 @@
 /**
  * @file controllers/api/file/linkAction/DownloadLibraryFileLinkAction.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DownloadLibraryFileLinkAction
  * @ingroup controllers_api_file_linkAction
@@ -37,7 +37,7 @@ class DownloadLibraryFileLinkAction extends LinkAction {
 
 		// Configure the file link action.
 		parent::__construct(
-			'downloadFile', $redirectRequest, $libraryFile->getLocalizedName(),
+			'downloadFile', $redirectRequest, htmlspecialchars($libraryFile->getLocalizedName()),
 			$libraryFile->getDocumentType()
 		);
 	}
@@ -61,4 +61,4 @@ class DownloadLibraryFileLinkAction extends LinkAction {
 	}
 }
 
-?>
+

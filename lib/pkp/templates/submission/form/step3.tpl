@@ -1,9 +1,9 @@
 {**
  * templates/submission/form/step3.tpl
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Step 3 of author submission.
  *}
@@ -24,17 +24,13 @@
 	<input type="hidden" name="submissionId" value="{$submissionId|escape}" />
 	{include file="controllers/notification/inPlaceNotification.tpl" notificationId="submitStep3FormNotification"}
 
-	{include file="core:submission/submissionMetadataFormTitleFields.tpl"}
+	{include file="submission/submissionMetadataFormTitleFields.tpl"}
 
-	{fbvFormArea id="contributors"}
-		<!--  Contributors -->
-		{url|assign:authorGridUrl router=$smarty.const.ROUTE_COMPONENT component="grid.users.author.AuthorGridHandler" op="fetchGrid" submissionId=$submissionId escape=false}
-		{load_url_in_div id="authorsGridContainer" url=$authorGridUrl}
+	<!--  Contributors -->
+	{capture assign=authorGridUrl}{url router=$smarty.const.ROUTE_COMPONENT component="grid.users.author.AuthorGridHandler" op="fetchGrid" submissionId=$submissionId publicationId=$publicationId escape=false}{/capture}
+	{load_url_in_div id="authorsGridContainer" url=$authorGridUrl}
 
-		{$additionalContributorsFields}
-	{/fbvFormArea}
-
-	{$additionalFormFields}
+	{$additionalContributorsFields}
 
 	{include file="submission/submissionMetadataFormFields.tpl"}
 

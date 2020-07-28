@@ -3,9 +3,9 @@
 /**
  * @file classes/issue/IssueDAO.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class IssueDAO
  * @ingroup issue
@@ -14,9 +14,9 @@
  * @brief Operations for retrieving and modifying Issue objects.
  */
 
-import ('classes.issue.Issue');
+import('classes.issue.Issue');
+import('lib.pkp.classes.submission.PKPSubmission'); // STATUS_... constants
 import('lib.pkp.classes.plugins.PKPPubIdPluginDAO');
-
 
 class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 	var $caches;
@@ -122,7 +122,7 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 			FROM	issues i ';
 		if (is_null($settingValue)) {
 			$sql .= 'LEFT JOIN issue_settings ist ON i.issue_id = ist.issue_id AND ist.setting_name = ?
-				WHERE	(ist.setting_value IS NULL OR ist.setting_value = "")';
+				WHERE	(ist.setting_value IS NULL OR ist.setting_value = \'\')';
 		} else {
 			$params[] = (string) $settingValue;
 			$sql .= 'INNER JOIN issue_settings ist ON i.issue_id = ist.issue_id
@@ -150,7 +150,7 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 	 * @param $volume int
 	 * @param $number int
 	 * @param $year int
-	 * @return Iterator object
+	 * @return DAOResultFactory object
 	 */
 	function getPublishedIssuesByNumber($journalId, $volume = null, $number = null, $year = null) {
 		$sql = 'SELECT i.* FROM issues i WHERE i.published = 1 AND i.journal_id = ?';
@@ -158,7 +158,7 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 
 		if ($volume !== null) {
 			$sql .= ' AND i.volume = ?';
-			$params[] = $volume;
+			$params[] = (int) $volume;
 		}
 		if ($number !== null) {
 			$sql .= ' AND i.number = ?';
@@ -217,17 +217,33 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 	}
 
 	/**
-	 * Retrieve Issue by "best" issue id -- public ID if it exists,
+	 * Retrieve Issue by "best" issue id -- urlPath if it exists,
 	 * falling back on the internal issue ID otherwise.
 	 * @param $issueId string
-	 * @param $journalId int optional
+	 * @param $contextId int optional
 	 * @param $useCache boolean optional
 	 * @return Issue object
 	 */
-	function getByBestId($issueId, $journalId = null, $useCache = false) {
-		$issue = $this->getByPubId('publisher-id', $issueId, $journalId, $useCache);
-		if (!isset($issue) && ctype_digit("$issueId")) $issue = $this->getById((int) $issueId, $journalId, $useCache);
-		return $issue;
+	function getByBestId($issueId, $contextId = null, $useCache = false) {
+		$params = [
+			$issueId
+		];
+		if ($contextId) $params[] = (int) $contextId;
+
+		$result = $this->retrieve(
+			'SELECT i.* FROM issues i WHERE url_path = ?'
+			. ($contextId?' AND journal_id = ?':''),
+			$params
+		);
+
+		if ($result->RecordCount() != 0) {
+			$issue = $this->_returnIssueFromRow($result->GetRowAssoc(false));
+		} elseif (is_int($issueId) || ctype_digit($issueId)) {
+			$issue = $this->getById($issueId);
+		}
+		$result->Close();
+
+		return $issue ?? null;
 	}
 
 	/**
@@ -281,7 +297,7 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 	 * @param $row array
 	 * @return Issue object
 	 */
-	function _returnIssueFromRow($row) {
+	function _fromRow($row) {
 		$issue = $this->newDataObject();
 		$issue->setId($row['issue_id']);
 		$issue->setJournalId($row['journal_id']);
@@ -299,11 +315,22 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 		$issue->setShowNumber($row['show_number']);
 		$issue->setShowYear($row['show_year']);
 		$issue->setShowTitle($row['show_title']);
+		$issue->setData('urlPath', $row['url_path']);
 
 		$this->getDataObjectSettings('issue_settings', 'issue_id', $row['issue_id'], $issue);
 
-		HookRegistry::call('IssueDAO::_returnIssueFromRow', array(&$issue, &$row));
+		HookRegistry::call('IssueDAO::_fromRow', array(&$issue, &$row));
 
+		return $issue;
+	}
+
+	/**
+	 * @copydoc self::_fromRow()
+	 * @deprecated 2018-01-05
+	 */
+	function _returnIssueFromRow($row) {
+		$issue = self::_fromRow($row);
+		HookRegistry::call('IssueDAO::_returnIssueFromRow', array(&$issue, &$row));
 		return $issue;
 	}
 
@@ -345,15 +372,15 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 	function insertObject($issue) {
 		$this->update(
 			sprintf('INSERT INTO issues
-				(journal_id, volume, number, year, published, current, date_published, date_notified, last_modified, access_status, open_access_date, show_volume, show_number, show_year, show_title)
+				(journal_id, volume, number, year, published, current, date_published, date_notified, last_modified, access_status, open_access_date, show_volume, show_number, show_year, show_title, url_path)
 				VALUES
-				(?, ?, ?, ?, ?, ?, %s, %s, %s, ?, %s, ?, ?, ?, ?)',
+				(?, ?, ?, ?, ?, ?, %s, %s, %s, ?, %s, ?, ?, ?, ?, ?)',
 				$this->datetimeToDB($issue->getDatePublished()), $this->datetimeToDB($issue->getDateNotified()), $this->datetimeToDB($issue->getLastModified()), $this->datetimeToDB($issue->getOpenAccessDate())),
 			array(
 				(int) $issue->getJournalId(),
-				$issue->getVolume(),
+				$this->nullOrInt($issue->getVolume()),
 				$issue->getNumber(),
-				$issue->getYear(),
+				$this->nullOrInt($issue->getYear()),
 				(int) $issue->getPublished(),
 				(int) $issue->getCurrent(),
 				(int) $issue->getAccessStatus(),
@@ -361,6 +388,7 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 				(int) $issue->getShowNumber(),
 				(int) $issue->getShowYear(),
 				(int) $issue->getShowTitle(),
+				$issue->getData('urlPath'),
 			)
 		);
 
@@ -393,7 +421,7 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 	function issueExists($journalId, $volume, $number, $year, $issueId) {
 		$result = $this->retrieve(
 			'SELECT i.* FROM issues i WHERE journal_id = ? AND volume = ? AND number = ? AND year = ? AND issue_id <> ?',
-			array((int) $journalId, $volume, $number, $year, (int) $issueId)
+			array((int) $journalId, $this->nullOrInt($volume), $number, $year, (int) $issueId)
 		);
 		$returner = $result->RecordCount() != 0 ? true : false;
 		$result->Close();
@@ -423,14 +451,15 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 					show_volume = ?,
 					show_number = ?,
 					show_year = ?,
-					show_title = ?
+					show_title = ?,
+					url_path = ?
 				WHERE issue_id = ?',
 			$this->datetimeToDB($issue->getDatePublished()), $this->datetimeToDB($issue->getDateNotified()), $this->datetimeToDB($issue->getLastModified()), $this->datetimeToDB($issue->getOpenAccessDate())),
 			array(
 				(int) $issue->getJournalId(),
-				$issue->getVolume(),
+				$this->nullOrInt($issue->getVolume()),
 				$issue->getNumber(),
-				$issue->getYear(),
+				$this->nullOrInt($issue->getYear()),
 				(int) $issue->getPublished(),
 				(int) $issue->getCurrent(),
 				(int) $issue->getAccessStatus(),
@@ -438,7 +467,8 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 				(int) $issue->getShowNumber(),
 				(int) $issue->getShowYear(),
 				(int) $issue->getShowTitle(),
-				(int) $issue->getId()
+				$issue->getData('urlPath'),
+				(int) $issue->getId(),
 			)
 		);
 
@@ -450,7 +480,7 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 	}
 
 	/**
-	 * Delete issue. Deletes associated issue galleys, cover pages, and published articles.
+	 * Delete issue. Deletes associated issue galleys, cover pages, and published submissions.
 	 * @param $issue object issue
 	 */
 	function deleteObject($issue) {
@@ -460,7 +490,7 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 		if (is_array($issue->getCoverImage(null))) {
 			foreach ($issue->getCoverImage(null) as $coverImage) {
 				if ($coverImage != '') {
-					$publicFileManager->removeJournalFile($issue->getJournalId(), $coverImage);
+					$publicFileManager->removeContextFile($issue->getJournalId(), $coverImage);
 				}
 			}
 		}
@@ -468,23 +498,19 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 		$issueId = $issue->getId();
 
 		// Delete issue-specific ordering if it exists.
-		$sectionDao = DAORegistry::getDAO('SectionDAO');
+		$sectionDao = DAORegistry::getDAO('SectionDAO'); /* @var $sectionDao SectionDAO */
 		$sectionDao->deleteCustomSectionOrdering($issueId);
 
 		// Delete published issue galleys and issue files
-		$issueGalleyDao = DAORegistry::getDAO('IssueGalleyDAO');
+		$issueGalleyDao = DAORegistry::getDAO('IssueGalleyDAO'); /* @var $issueGalleyDao IssueGalleyDAO */
 		$issueGalleyDao->deleteByIssueId($issueId);
 
-		$issueFileDao = DAORegistry::getDAO('IssueFileDAO');
+		$issueFileDao = DAORegistry::getDAO('IssueFileDAO'); /* @var $issueFileDao IssueFileDAO */
 		$issueFileDao->deleteByIssueId($issueId);
 
 		import('classes.file.IssueFileManager');
 		$issueFileManager = new IssueFileManager($issueId);
 		$issueFileManager->deleteIssueTree();
-
-		// Delete published articles
-		$publishedArticleDao = DAORegistry::getDAO('PublishedArticleDAO');
-		$publishedArticleDao->deletePublishedArticlesByIssueId($issueId);
 
 		// Delete issue settings and issue
 		$this->update('DELETE FROM issue_settings WHERE issue_id = ?', (int) $issueId);
@@ -526,18 +552,18 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 	 * @param journalId int optional
 	 * @return Issue object
 	 */
-	function getByArticleId($articleId, $journalId = null) {
-		$params = array((int) $articleId);
+	function getBySubmissionId($articleId, $journalId = null) {
+		$params = ['issueId', (int) $articleId];
 		if ($journalId) $params[] = (int) $journalId;
 
 		$result = $this->retrieve(
 			'SELECT	i.*
 			FROM	issues i,
-				published_submissions pa,
 				submissions a
-			WHERE	i.issue_id = pa.issue_id AND
-				pa.submission_id = ? AND
-				pa.submission_id = a.submission_id AND
+			LEFT JOIN publications p ON (p.publication_id = a.current_publication_id)
+			LEFT JOIN publication_settings ps ON (ps.publication_id = p.publication_id)
+			WHERE	ps.setting_name = ? AND ps.setting_value = CAST(i.issue_id as CHAR) AND
+				a.submission_id = ? AND
 				a.context_id = i.journal_id' .
 				($journalId?' AND i.journal_id = ?':''),
 			$params
@@ -556,7 +582,7 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 	 * Get all issues organized by published date
 	 * @param $journalId int
 	 * @param $rangeInfo object DBResultRange (optional)
-	 * @return ItemIterator
+	 * @return DAOResultFactory
 	 */
 	function getIssues($journalId, $rangeInfo = null) {
 		$result = $this->retrieveRange(
@@ -571,7 +597,7 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 	 * Get published issues organized by published date
 	 * @param $journalId int
 	 * @param $rangeInfo object DBResultRange
-	 * @return ItemIterator
+	 * @return DAOResultFactory
 	 */
 	function getPublishedIssues($journalId, $rangeInfo = null) {
 		$result = $this->retrieveRange(
@@ -586,7 +612,7 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 	 * Get unpublished issues organized by published date
 	 * @param $journalId int
 	 * @param $rangeInfo object DBResultRange
-	 * @return ItemIterator
+	 * @return DAOResultFactory
 	 */
 	function getUnpublishedIssues($journalId, $rangeInfo = null) {
 		$result = $this->retrieveRange(
@@ -647,7 +673,14 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 	 * @return int
 	 */
 	function getNumArticles($issueId) {
-		$result = $this->retrieve('SELECT COUNT(*) FROM published_submissions WHERE issue_id = ?', (int) $issueId);
+		$result = $this->retrieve(
+			'SELECT COUNT(*)
+				FROM submissions s
+				LEFT JOIN publications p ON (p.publication_id = s.current_publication_id)
+				LEFT JOIN publication_settings ps ON (ps.publication_id = p.publication_id)
+				WHERE ps.setting_name = ? AND ps.setting_value = ? AND (s.status = ? or s.status = ?) ',
+			['issueId', (int) $issueId, (int) STATUS_SCHEDULED, (int) STATUS_PUBLISHED]
+		);
 		$returner = isset($result->fields[0]) ? $result->fields[0] : 0;
 		$result->Close();
 		return $returner;
@@ -782,7 +815,7 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 	/**
 	 * @copydoc PKPPubIdPluginDAO::pubIdExists()
 	 */
-	function pubIdExists($pubIdType, $pubId, $issueId, $journalId) {
+	function pubIdExists($pubIdType, $pubId, $excludePubObjectId, $contextId) {
 		$result = $this->retrieve(
 			'SELECT COUNT(*)
 			FROM issue_settings ist
@@ -791,8 +824,8 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 			array(
 				'pub-id::'.$pubIdType,
 				$pubId,
-				(int) $issueId,
-				(int) $journalId
+				(int) $excludePubObjectId,
+				(int) $contextId
 			)
 		);
 		$returner = $result->fields[0] ? true : false;
@@ -803,12 +836,12 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 	/**
 	 * @copydoc PKPPubIdPluginDAO::changePubId()
 	 */
-	function changePubId($issueId, $pubIdType, $pubId) {
+	function changePubId($pubObjectId, $pubIdType, $pubId) {
 		$idFields = array(
 			'issue_id', 'locale', 'setting_name'
 		);
 		$updateArray = array(
-			'issue_id' => (int) $issueId,
+			'issue_id' => (int) $pubObjectId,
 			'locale' => '',
 			'setting_name' => 'pub-id::'.$pubIdType,
 			'setting_type' => 'string',
@@ -821,13 +854,13 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 	/**
 	 * @copydoc PKPPubIdPluginDAO::deletePubId()
 	 */
-	function deletePubId($issueId, $pubIdType) {
+	function deletePubId($pubObjectId, $pubIdType) {
 		$settingName = 'pub-id::'.$pubIdType;
 		$this->update(
 			'DELETE FROM issue_settings WHERE setting_name = ? AND issue_id = ?',
 			array(
 				$settingName,
-				(int)$issueId
+				(int)$pubObjectId
 			)
 		);
 		$this->flushCache();
@@ -836,12 +869,11 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 	/**
 	 * @copydoc PKPPubIdPluginDAO::deleteAllPubIds()
 	 */
-	function deleteAllPubIds($journalId, $pubIdType) {
-		$journalId = (int) $journalId;
+	function deleteAllPubIds($contextId, $pubIdType) {
 		$settingName = 'pub-id::'.$pubIdType;
 
 		// issues
-		$issues = $this->getIssues($journalId);
+		$issues = $this->getIssues($contextId);
 		while ($issue = $issues->next()) {
 			$this->update(
 				'DELETE FROM issue_settings WHERE setting_name = ? AND issue_id = ?',
@@ -863,4 +895,4 @@ class IssueDAO extends DAO implements PKPPubIdPluginDAO {
 	}
 }
 
-?>
+

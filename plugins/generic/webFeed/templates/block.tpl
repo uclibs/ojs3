@@ -1,15 +1,15 @@
 {**
  * plugins/generic/webFeed/templates/block.tpl
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Feed plugin navigation sidebar.
  *
  *}
 <div class="pkp_block block_web_feed">
-	<span class="title">{translate key="journal.currentIssue"}</span>
+	<h2 class="title">{translate key="journal.currentIssue"}</h2>
 	<div class="content">
 		<ul>
 			<li>

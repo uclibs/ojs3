@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/SubmissionFile.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionFile
  * @ingroup submission
@@ -82,6 +82,26 @@ class SubmissionFile extends PKPFile {
 	 * @param $fileId int
 	 */
 	function setFileId($fileId) {
+		// WARNING: Do not modernize getter/setters without considering
+		// ID clash with subclasses ArticleGalley and ArticleNote!
+		$this->setData('fileId', $fileId);
+	}
+
+	/**
+	 * Get ID of file.
+	 * @return int
+	 */
+	function getId() {
+		// WARNING: Do not modernize getter/setters without considering
+		// ID clash with subclasses ArticleGalley and ArticleNote!
+		return $this->getData('fileId');
+	}
+
+	/**
+	 * Set ID of file.
+	 * @param $fileId int
+	 */
+	function setId($fileId) {
 		// WARNING: Do not modernize getter/setters without considering
 		// ID clash with subclasses ArticleGalley and ArticleNote!
 		$this->setData('fileId', $fileId);
@@ -240,6 +260,18 @@ class SubmissionFile extends PKPFile {
 	}
 
 	/**
+	 * Determine whether this file supports dependent content.
+	 * @return boolean
+	 */
+	function supportsDependentFiles() {
+		return !in_array($this->getFileStage(), array(SUBMISSION_FILE_DEPENDENT, SUBMISSION_FILE_QUERY)) && in_array($this->getFileType(), array(
+			'text/html',
+			'application/xml',
+			'text/xml',
+		));
+	}
+
+	/**
 	 * Get the file's extension.
 	 * @return string
 	 */
@@ -336,24 +368,6 @@ class SubmissionFile extends PKPFile {
 	}
 
 	/**
-	 * Get type of the file.
-	 * @return int
-	 */
-	function getType() {
-		if (Config::getVar('debug', 'deprecation_warnings')) trigger_error('Deprecated function.');
-		return $this->getFileStage();
-	}
-
-	/**
-	 * Set type of the file.
-	 * @param $type int
-	 */
-	function setType($type) {
-		if (Config::getVar('debug', 'deprecation_warnings')) trigger_error('Deprecated function.');
-		return $this->setFileStage($type);
-	}
-
-	/**
 	 * Get file stage of the file.
 	 * @return int SUBMISSION_FILE_...
 	 */
@@ -384,7 +398,7 @@ class SubmissionFile extends PKPFile {
 	 */
 
 	function setDateModified($dateModified) {
-		return $this->SetData('dateModified', $dateModified);
+		return $this->setData('dateModified', $dateModified);
 	}
 
 	/**
@@ -401,7 +415,7 @@ class SubmissionFile extends PKPFile {
 	 * @param $round int
 	 */
 	function setRound($round) {
-		return $this->SetData('round', $round);
+		return $this->setData('round', $round);
 	}
 
 	/**
@@ -418,7 +432,7 @@ class SubmissionFile extends PKPFile {
 	 * @param $viewable boolean
 	 */
 	function setViewable($viewable) {
-		return $this->SetData('viewable', $viewable);
+		return $this->setData('viewable', $viewable);
 	}
 
 	/**
@@ -435,22 +449,6 @@ class SubmissionFile extends PKPFile {
 	 */
 	function getUploaderUserId() {
 		return $this->getData('uploaderUserId');
-	}
-
-	/**
-	 * Set the uploader's user group id
-	 * @param $userGroupId int
-	 */
-	function setUserGroupId($userGroupId) {
-		$this->setData('userGroupId', $userGroupId);
-	}
-
-	/**
-	 * Get the uploader's user group id
-	 * @return int
-	 */
-	function getUserGroupId() {
-		return $this->getData('userGroupId');
 	}
 
 	/**
@@ -490,7 +488,7 @@ class SubmissionFile extends PKPFile {
 	 */
 	function getFilePath() {
 		// Get the context ID
-		$submissionDao = Application::getSubmissionDAO();
+		$submissionDao = DAORegistry::getDAO('SubmissionDAO'); /* @var $submissionDao SubmissionDAO */
 		$submission = $submissionDao->getById($this->getSubmissionId());
 		if (!$submission) return null;
 		$contextId = $submission->getContextId();
@@ -543,7 +541,7 @@ class SubmissionFile extends PKPFile {
 		// Generate a human readable time stamp.
 		$timestamp = date('Ymd', strtotime($this->getDateUploaded()));
 
-		$genreDao = DAORegistry::getDAO('GenreDAO');
+		$genreDao = DAORegistry::getDAO('GenreDAO'); /* @var $genreDao GenreDAO */
 		$genre = $genreDao->getById($this->getGenreId());
 
 		// Make the file name unique across all files and file revisions.
@@ -584,7 +582,7 @@ class SubmissionFile extends PKPFile {
 	* @return int
 	*/
 	function getViews() {
-		$application = Application::getApplication();
+		$application = Application::get();
 		return $application->getPrimaryMetricByAssoc(ASSOC_TYPE_SUBMISSION_FILE, $this->getFileId());
 	}
 
@@ -618,10 +616,8 @@ class SubmissionFile extends PKPFile {
 	 * @return string
 	 */
 	function _generateName($anonymous = false) {
-		$genreDao = DAORegistry::getDAO('GenreDAO');
+		$genreDao = DAORegistry::getDAO('GenreDAO'); /* @var $genreDao GenreDAO */
 		$genre = $genreDao->getById($this->getGenreId());
-		$userGroupDAO = DAORegistry::getDAO('UserGroupDAO');
-		$userGroup = $userGroupDAO->getById($this->getUserGroupId());
 		$userDAO = DAORegistry::getDAO('UserDAO');
 		$user = $userDAO->getById($this->getUploaderUserId());
 
@@ -632,7 +628,6 @@ class SubmissionFile extends PKPFile {
 		if ($genre) {
 			$genreName = $genre->getName($submissionLocale) ? $genre->getName($submissionLocale) : $genre->getLocalizedName();
 		}
-		$userGroupName = $userGroup->getName($submissionLocale) ? $userGroup->getName($submissionLocale) : $userGroup->getLocalizedName();
 
 		$localeKey = $anonymous ? 'common.file.anonymousNamingPattern' : 'common.file.namingPattern';
 		return __($localeKey,
@@ -641,7 +636,6 @@ class SubmissionFile extends PKPFile {
 				'docType'          => $this->getDocumentType(),
 				'originalFilename' => $this->getOriginalFilename(),
 				'username'         => $user->getUsername(),
-				'userGroup'        => $userGroupName,
 			),
 			$submissionLocale
 		);
@@ -698,4 +692,4 @@ class SubmissionFile extends PKPFile {
 	}
 }
 
-?>
+

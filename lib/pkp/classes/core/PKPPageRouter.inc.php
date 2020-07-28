@@ -3,9 +3,9 @@
 /**
  * @file classes/core/PKPPageRouter.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPPageRouter
  * @ingroup core
@@ -35,7 +35,6 @@ class PKPPageRouter extends PKPRouter {
 	var $_indexUrl;
 	/** @var string cache filename */
 	var $_cacheFilename;
-
 
 	/**
 	 * get the installation pages
@@ -151,7 +150,6 @@ class PKPPageRouter extends PKPRouter {
 		// If the application has not yet been installed we only
 		// allow installer pages to be displayed.
 		if (!Config::getVar('general', 'installed')) {
-			define('SESSION_DISABLE_INIT', 1);
 			if (!in_array($page, $this->getInstallationPages())) {
 				// A non-installation page was called although
 				// the system is not yet installed. Redirect to
@@ -176,8 +174,7 @@ class PKPPageRouter extends PKPRouter {
 			$user = $request->getUser();
 			$currentContext = $request->getContext();
 			if ($currentContext && !$currentContext->getEnabled() && !is_a($user, 'User')) {
-				$op = ROUTER_DEFAULT_OP;
-				$page = ROUTER_DEFAULT_PAGE;
+				if ($page != 'login') $request->redirect(null, 'login');
 			}
 		}
 
@@ -219,6 +216,7 @@ class PKPPageRouter extends PKPRouter {
 		// Instantiate the handler class
 		$handlerClass = HANDLER_CLASS;
 		$handler = new $handlerClass($request);
+		$this->setHandler($handler);
 
 		// Authorize and initialize the request but don't call the
 		// validate() method on page handlers.
@@ -402,7 +400,7 @@ class PKPPageRouter extends PKPRouter {
 	 * @param $request PKPRequest the request to be routed
 	 */
 	function getHomeUrl($request) {
-		$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
+		$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
 		$user = $request->getUser();
 		$userId = $user->getId();
 
@@ -460,4 +458,4 @@ class PKPPageRouter extends PKPRouter {
 	}
 }
 
-?>
+

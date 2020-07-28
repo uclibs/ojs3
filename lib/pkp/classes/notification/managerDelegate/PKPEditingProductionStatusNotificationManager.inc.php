@@ -3,9 +3,9 @@
 /**
  * @file classes/notification/managerDelegate/PKPEditingProductionStatusNotificationManager.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPEditingProductionStatusNotificationManager
  * @ingroup classses_notification_managerDelegate
@@ -47,7 +47,7 @@ class PKPEditingProductionStatusNotificationManager extends NotificationManagerD
 	 * @copydoc PKPNotificationOperationManager::getNotificationUrl()
 	 */
 	public function getNotificationUrl($request, $notification) {
-		$dispatcher = Application::getDispatcher();
+		$dispatcher = Application::get()->getDispatcher();
 		$contextDao = Application::getContextDAO();
 		$context = $contextDao->getById($notification->getContextId());
 
@@ -79,10 +79,10 @@ class PKPEditingProductionStatusNotificationManager extends NotificationManagerD
 
 		assert($assocType == ASSOC_TYPE_SUBMISSION);
 		$submissionId = $assocId;
-		$submissionDao = Application::getSubmissionDAO();
+		$submissionDao = DAORegistry::getDAO('SubmissionDAO'); /* @var $submissionDao SubmissionDAO */
 		$submission = $submissionDao->getById($submissionId);
 
-		$stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');
+		$stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO'); /* @var $stageAssignmentDao StageAssignmentDAO */
 		$editorStageAssignments = $stageAssignmentDao->getEditorsAssignedToStage($submissionId, $submission->getStageId());
 
 		// Get the copyediting and production discussions
@@ -91,13 +91,13 @@ class PKPEditingProductionStatusNotificationManager extends NotificationManagerD
 		$productionQueries = $queryDao->getByAssoc(ASSOC_TYPE_SUBMISSION, $submissionId, WORKFLOW_STAGE_ID_PRODUCTION);
 
 		// Get the copyedited files
-		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
+		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
 		import('lib.pkp.classes.submission.SubmissionFile');
 		$copyeditedFiles = $submissionFileDao->getLatestRevisions($submissionId, SUBMISSION_FILE_COPYEDIT);
 
 		// Get representations
 		$representationDao = Application::getRepresentationDAO();
-		$representations = $representationDao->getBySubmissionId($submissionId, $contextId);
+		$representations = $representationDao->getByPublicationId($submission->getLatestPublication()->getId());
 
 		$notificationType = $this->getNotificationType();
 
@@ -183,8 +183,6 @@ class PKPEditingProductionStatusNotificationManager extends NotificationManagerD
 						}
 					}
 					break;
-				default:
-					assert(false);
 			}
 		}
 	}
@@ -245,4 +243,4 @@ class PKPEditingProductionStatusNotificationManager extends NotificationManagerD
 
 }
 
-?>
+

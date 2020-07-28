@@ -3,9 +3,9 @@
 /**
  * @file classes/reviewForm/ReviewFormElement.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewFormElement
  * @ingroup reviewForm
@@ -30,6 +30,14 @@ class ReviewFormElement extends DataObject {
 	 */
 	function getLocalizedQuestion() {
 		return $this->getLocalizedData('question');
+	}
+
+	/**
+	 * Get localized description.
+	 * @return string
+	 */
+	function getLocalizedDescription() {
+		return $this->getLocalizedData('description');
 	}
 
 	/**
@@ -143,6 +151,24 @@ class ReviewFormElement extends DataObject {
 	}
 
 	/**
+	 * Get description.
+	 * @param $locale string
+	 * @return string
+	 */
+	function getDescription($locale) {
+		return $this->getData('description', $locale);
+	}
+
+	/**
+	 * Set description.
+	 * @param $description string
+	 * @param $locale string
+	 */
+	function setDescription($description, $locale) {
+		$this->setData('description', $description, $locale);
+	}
+
+	/**
 	 * Get possible response.
 	 * @param $locale string
 	 * @return string
@@ -188,4 +214,4 @@ class ReviewFormElement extends DataObject {
 	}
 }
 
-?>
+

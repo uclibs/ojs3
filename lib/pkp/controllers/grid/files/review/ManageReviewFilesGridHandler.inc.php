@@ -2,9 +2,9 @@
 /**
  * @file controllers/grid/files/review/ManageReviewFilesGridHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ManageReviewFilesGridHandler
  * @ingroup controllers_grid_files_review
@@ -62,7 +62,6 @@ class ManageReviewFilesGridHandler extends SelectableSubmissionFileListCategoryG
 		if ($manageReviewFilesForm->validate()) {
 			$dataProvider = $this->getDataProvider();
 			$manageReviewFilesForm->execute(
-				$args, $request,
 				$this->getGridCategoryDataElements($request, $this->getStageId())
 			);
 
@@ -90,4 +89,4 @@ class ManageReviewFilesGridHandler extends SelectableSubmissionFileListCategoryG
 	}
 }
 
-?>
+

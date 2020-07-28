@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/users/reviewer/ReviewerGridCellProvider.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewerGridCellProvider
  * @ingroup controllers_grid_users_reviewer
@@ -19,6 +19,19 @@ import('lib.pkp.classes.linkAction.request.AjaxModal');
 import('lib.pkp.classes.linkAction.request.AjaxAction');
 
 class ReviewerGridCellProvider extends DataObjectGridCellProvider {
+
+	/** @var boolean Is the current user assigned as an author to this submission */
+	public $_isCurrentUserAssignedAuthor;
+
+	/**
+	 * Constructor
+	 * @param $isCurrentUserAssignedAuthor boolean Is the current user assigned
+	 *  as an author to this submission?
+	 */
+	public function __construct($isCurrentUserAssignedAuthor) {
+		parent::__construct();
+		$this->_isCurrentUserAssignedAuthor = $isCurrentUserAssignedAuthor;
+	}
 
 	//
 	// Template methods from GridCellProvider
@@ -35,6 +48,7 @@ class ReviewerGridCellProvider extends DataObjectGridCellProvider {
 		assert(is_a($reviewAssignment, 'DataObject') && !empty($columnId));
 		switch ($columnId) {
 			case 'name':
+			case 'method':
 				return '';
 			case 'considered':
 			case 'actions':
@@ -55,7 +69,14 @@ class ReviewerGridCellProvider extends DataObjectGridCellProvider {
 		assert(is_a($element, 'DataObject') && !empty($columnId));
 		switch ($columnId) {
 			case 'name':
+				$isReviewBlind = in_array($element->getReviewMethod(), array(SUBMISSION_REVIEW_METHOD_BLIND, SUBMISSION_REVIEW_METHOD_DOUBLEBLIND));
+				if ($this->_isCurrentUserAssignedAuthor && $isReviewBlind) {
+					return array('label' => __('editor.review.anonymousReviewer'));
+				}
 				return array('label' => $element->getReviewerFullName());
+
+			case 'method':
+				return array('label' => __($element->getReviewMethodKey()));
 
 			case 'considered':
 				return array('label' => $this->_getStatusText($this->getCellState($row, $column), $row));
@@ -76,6 +97,12 @@ class ReviewerGridCellProvider extends DataObjectGridCellProvider {
 	 */
 	function getCellActions($request, $row, $column, $position = GRID_ACTION_POSITION_DEFAULT) {
 		$reviewAssignment = $row->getData();
+
+		// Authors can't perform action on reviews
+		if ($this->_isCurrentUserAssignedAuthor) {
+			return array();
+		}
+
 		$actionArgs = array(
 			'submissionId' => $reviewAssignment->getSubmissionId(),
 			'reviewAssignmentId' => $reviewAssignment->getId(),
@@ -84,7 +111,7 @@ class ReviewerGridCellProvider extends DataObjectGridCellProvider {
 
 		$router = $request->getRouter();
 		$action = false;
-		$submissionDao = Application::getSubmissionDAO();
+		$submissionDao = DAORegistry::getDAO('SubmissionDAO'); /* @var $submissionDao SubmissionDAO */
 		$submission = $submissionDao->getById($reviewAssignment->getSubmissionId());
 
 		// Only attach actions to the actions column. The actions and status
@@ -109,7 +136,7 @@ class ReviewerGridCellProvider extends DataObjectGridCellProvider {
 				case REVIEW_ASSIGNMENT_STATUS_RECEIVED:
 					$user = $request->getUser();
 					import('lib.pkp.controllers.review.linkAction.ReviewNotesLinkAction');
-					return array(new ReviewNotesLinkAction($request, $reviewAssignment, $submission, $user, true));
+					return array(new ReviewNotesLinkAction($request, $reviewAssignment, $submission, $user, 'grid.users.reviewer.ReviewerGridHandler', true));
 			}
 
 		}
@@ -136,9 +163,13 @@ class ReviewerGridCellProvider extends DataObjectGridCellProvider {
 			case REVIEW_ASSIGNMENT_STATUS_RESPONSE_OVERDUE:
 				return '<span class="state overdue">'.__('common.overdue').'</span><span class="details">'.__('editor.review.responseDue', array('date' => substr($reviewAssignment->getDateResponseDue(),0,10))).'</span>';
 			case REVIEW_ASSIGNMENT_STATUS_DECLINED:
-				return '<span class="state declined">'.__('common.declined').'</span>';
+				return '<span class="state declined" title="' . __('editor.review.requestDeclined.tooltip') . '">'.__('editor.review.requestDeclined').'</span>';
+			case REVIEW_ASSIGNMENT_STATUS_CANCELLED:
+				return '<span class="state declined" title="' . __('editor.review.requestCancelled.tooltip') . '">'.__('editor.review.requestCancelled').'</span>';
 			case REVIEW_ASSIGNMENT_STATUS_RECEIVED:
 				return  $this->_getStatusWithRecommendation('editor.review.reviewSubmitted', $reviewAssignment);
+			case REVIEW_ASSIGNMENT_STATUS_THANKED:
+				return  $this->_getStatusWithRecommendation('editor.review.reviewerThanked', $reviewAssignment);
 			default:
 				return '';
 		}
@@ -163,4 +194,4 @@ class ReviewerGridCellProvider extends DataObjectGridCellProvider {
 	}
 }
 
-?>
+

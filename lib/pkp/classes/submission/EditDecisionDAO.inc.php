@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/EditDecisionDAO.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class EditDecisionDAO
  * @ingroup submission
@@ -120,20 +120,24 @@ class EditDecisionDAO extends DAO {
 	 * other decision.
 	 * @param $submissionId int
 	 * @param $expectedStageId int
+	 * @param $revisionDecision int SUBMISSION_EDITOR_DECISION_PENDING_REVISIONS or SUBMISSION_EDITOR_DECISION_RESUBMIT
 	 * @return mixed array or null
 	 */
-	function findValidPendingRevisionsDecision($submissionId, $expectedStageId) {
-		$editDecisionDao = DAORegistry::getDAO('EditDecisionDAO');
+	function findValidPendingRevisionsDecision($submissionId, $expectedStageId, $revisionDecision = SUBMISSION_EDITOR_DECISION_PENDING_REVISIONS) {
+		$postReviewDecisions = array(SUBMISSION_EDITOR_DECISION_SEND_TO_PRODUCTION);
+		$revisionDecisions = array(SUBMISSION_EDITOR_DECISION_PENDING_REVISIONS, SUBMISSION_EDITOR_DECISION_RESUBMIT);
+		if (!in_array($revisionDecision, $revisionDecisions)) return null;
+
+		$editDecisionDao = DAORegistry::getDAO('EditDecisionDAO'); /* @var $editDecisionDao EditDecisionDAO */
 		$editorDecisions = $editDecisionDao->getEditorDecisions($submissionId);
 		$workingDecisions = array_reverse($editorDecisions);
-		$postReviewDecisions = array(SUBMISSION_EDITOR_DECISION_SEND_TO_PRODUCTION);
 		$pendingRevisionDecision = null;
 
 		foreach ($workingDecisions as $decision) {
 			if (in_array($decision['decision'], $postReviewDecisions)) {
 				// Decisions at later stages do not override the pending revisions one.
 				continue;
-			} elseif ($decision['decision'] == SUBMISSION_EDITOR_DECISION_PENDING_REVISIONS) {
+			} elseif ($decision['decision'] == $revisionDecision) {
 				if ($decision['stageId'] == $expectedStageId) {
 					$pendingRevisionDecision = $decision;
 					// Only the last pending revisions decision is relevant.
@@ -164,10 +168,10 @@ class EditDecisionDAO extends DAO {
 		$round = $decision['round'];
 		$sentRevisions = false;
 
-		$reviewRoundDao = DAORegistry::getDAO('ReviewRoundDAO');
+		$reviewRoundDao = DAORegistry::getDAO('ReviewRoundDAO'); /* @var $reviewRoundDao ReviewRoundDAO */
 		$reviewRound = $reviewRoundDao->getReviewRound($submissionId, $stageId, $round);
 
-		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
+		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
 		import('lib.pkp.classes.submission.SubmissionFile'); // Bring the file constants.
 		$submissionFiles =  $submissionFileDao->getRevisionsByReviewRound($reviewRound, SUBMISSION_FILE_REVIEW_REVISION);
 
@@ -184,4 +188,4 @@ class EditDecisionDAO extends DAO {
 	}
 }
 
-?>
+

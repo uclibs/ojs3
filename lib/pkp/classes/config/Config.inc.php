@@ -8,9 +8,9 @@
 /**
  * @file classes/config/Config.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Config
  * @ingroup config
@@ -91,12 +91,12 @@ class Config {
 	 * Get context base urls from config file.
 	 * @return array Empty array if none is set.
 	 */
-	function &getContextBaseUrls() {
+	static function &getContextBaseUrls() {
 		$contextBaseUrls =& Registry::get('contextBaseUrls'); // Reference required.
 
 		if (is_null($contextBaseUrls)) {
 			$contextBaseUrls = array();
-			$configData = Config::getData();
+			$configData = self::getData();
 			// Filter the settings.
 			$matches = null;
 			foreach ($configData['general'] as $settingName => $settingValue) {
@@ -110,4 +110,3 @@ class Config {
 		return $contextBaseUrls;
 	}
 }
-?>

@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/settings/roles/UserGroupGridHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class UserGroupGridHandler
  * @ingroup controllers_grid_settings
@@ -87,7 +87,7 @@ class UserGroupGridHandler extends GridHandler {
 	}
 
 	/**
-	 * @copydoc PKPHandler::initialize()
+	 * @copydoc GridHandler::initialize()
 	 */
 	function initialize($request, $args = null) {
 		parent::initialize($request, $args);
@@ -129,7 +129,7 @@ class UserGroupGridHandler extends GridHandler {
 		// Set array containing the columns info with the same cell provider.
 		$columnsInfo = array(
 			1 => array('id' => 'name', 'title' => 'settings.roles.roleName', 'template' => null),
-			2 => array('id' => 'abbrev', 'title' => 'settings.roles.roleAbbrev', 'template' => null)
+			2 => array('id' => 'roleId', 'title' => 'settings.roles.from', 'template' => null)
 		);
 
 		foreach ($workflowStagesLocales as $stageId => $stageTitleKey) {
@@ -192,9 +192,9 @@ class UserGroupGridHandler extends GridHandler {
 	/**
 	* @see GridHandler::renderFilter()
 	*/
-	function renderFilter($request) {
+	function renderFilter($request, $filterData = array()) {
 		// Get filter data.
-		$roleDao = DAORegistry::getDAO('RoleDAO');
+		$roleDao = DAORegistry::getDAO('RoleDAO'); /* @var $roleDao RoleDAO */
 		$roleOptions = array(0 => 'grid.user.allPermissionLevels') + Application::getRoleNames(true);
 
 		// Reader roles are not important for stage assignments.
@@ -278,8 +278,12 @@ class UserGroupGridHandler extends GridHandler {
 
 		$userGroupForm->readInputData();
 		if($userGroupForm->validate()) {
-			$userGroupForm->execute($request);
-			return DAO::getDataChangedEvent();
+			$notificationMgr = new NotificationManager();
+			$notificationMgr->createTrivialNotification($request->getUser()->getId());
+			$userGroupForm->execute();
+			$json = DAO::getDataChangedEvent();
+			$json->setGlobalEvent('userGroupUpdated');
+			return $json;
 		} else {
 			return new JSONMessage(true, $userGroupForm->fetch($request));
 		}
@@ -326,7 +330,9 @@ class UserGroupGridHandler extends GridHandler {
 
 		}
 
-		return DAO::getDataChangedEvent($userGroup->getId());
+		$json = DAO::getDataChangedEvent($userGroup->getId());
+		$json->setGlobalEvent('userGroupUpdated');
+		return $json;
 	}
 
 	/**
@@ -412,5 +418,3 @@ class UserGroupGridHandler extends GridHandler {
 		return $this->_contextId;
 	}
 }
-
-?>

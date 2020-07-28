@@ -1,23 +1,23 @@
 {**
- * templates/subscriptions/userInstitutionalSubscriptionForm.tpl
+ * templates/payments/userInstitutionalSubscriptionForm.tpl
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * User purchase institutional subscription form
  *
  *}
 {include file="frontend/components/header.tpl" pageTitle="user.subscriptions.purchaseInstitutionalSubscription"}
 
-<div class="pkp_page_content pkp_page_purchaseIndividualSubscription">
+<div class="pkp_page_content pkp_page_purchaseInstitutionalSubscription">
 	<h1 class="page_title">
 		{translate key="user.subscriptions.purchaseInstitutionalSubscription"}
 	</h1>
 
 	{assign var="formPath" value="institutional"}
 	{if $subscriptionId}
-		{assign var="formPath" value={"institutional":to_array:$subscriptionId}}
+		{assign var="formPath" value="institutional"|to_array:$subscriptionId}
 	{/if}
 	<form class="cmp_form purchase_subscription" method="post" id="subscriptionForm" action="{url op="payPurchaseSubscription" path=$formPath}">
 		{csrf}
@@ -104,3 +104,5 @@
 
 	</form>
 </div>
+
+{include file="frontend/components/footer.tpl"}

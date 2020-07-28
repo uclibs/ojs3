@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/users/stageParticipant/StageParticipantGridHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class StageParticipantGridHandler
  * @ingroup controllers_grid_users_stageParticipant
@@ -20,6 +20,8 @@ import('lib.pkp.classes.controllers.grid.CategoryGridHandler');
 import('lib.pkp.controllers.grid.users.stageParticipant.StageParticipantGridRow');
 import('lib.pkp.controllers.grid.users.stageParticipant.StageParticipantGridCategoryRow');
 import('classes.log.SubmissionEventLogEntry'); // App-specific.
+
+import('lib.pkp.classes.linkAction.request.RemoteActionConfirmationModal');
 
 class StageParticipantGridHandler extends CategoryGridHandler {
 	/**
@@ -90,10 +92,10 @@ class StageParticipantGridHandler extends CategoryGridHandler {
 
 
 	/**
-	 * @copydoc PKPHandler::initialize()
+	 * @copydoc CategoryGridHandler::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 
 		// Load submission-specific translations
 		AppLocale::requireComponents(
@@ -114,6 +116,33 @@ class StageParticipantGridHandler extends CategoryGridHandler {
 			null,
 			$cellProvider
 		));
+		$submission = $this->getSubmission();
+		$submissionId = $submission->getId();
+		if (Validation::isLoggedInAs()) {
+			$router = $request->getRouter();
+			$dispatcher = $router->getDispatcher();
+			$user = $request->getUser();
+			$redirectUrl = $dispatcher->url(
+				$request,
+				ROUTE_PAGE,
+				null,
+				'workflow',
+				'access',
+				$submissionId
+			);
+			import('lib.pkp.classes.linkAction.request.RedirectAction');
+			$this->addAction(
+				new LinkAction(
+					'signOutAsUser',
+					new RedirectAction(
+						$dispatcher->url($request, ROUTE_PAGE, null, 'login', 'signOutAsUser', null, array('redirectUrl' => $redirectUrl))
+					),
+					__('user.logOutAs').' '. $user->getUsername(),
+					null,
+					__('user.logOutAs')
+				)
+			);
+		}
 
 		// The "Add stage participant" grid action is available to
 		// Editors and Managers only
@@ -143,7 +172,7 @@ class StageParticipantGridHandler extends CategoryGridHandler {
 	/**
 	 * @copydoc CategoryGridHandler::loadCategoryData()
 	 */
-	function loadCategoryData($request, $userGroup) {
+	function loadCategoryData($request, &$userGroup, $filter = null) {
 		// Retrieve useful objects.
 		$submission = $this->getSubmission();
 		$stageId = $this->getStageId();
@@ -206,7 +235,7 @@ class StageParticipantGridHandler extends CategoryGridHandler {
 	 */
 	protected function loadData($request, $filter) {
 		$submission = $this->getSubmission();
-		$stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');
+		$stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO'); /* @var $stageAssignmentDao StageAssignmentDAO */
 		$stageAssignments = $stageAssignmentDao->getBySubmissionAndStageId(
 			$this->getSubmission()->getId(),
 			$this->getStageId()
@@ -247,15 +276,18 @@ class StageParticipantGridHandler extends CategoryGridHandler {
 	function addParticipant($args, $request) {
 		$submission = $this->getSubmission();
 		$stageId = $this->getStageId();
+		$assignmentId = null;
+		if (array_key_exists('assignmentId', $args)) {
+			$assignmentId = $args['assignmentId'];
+		}
 		$userGroups = $this->getGridDataElements($request);
 
 		import('lib.pkp.controllers.grid.users.stageParticipant.form.AddParticipantForm');
-		$form = new AddParticipantForm($submission, $stageId);
+		$form = new AddParticipantForm($submission, $stageId, $assignmentId);
 		$form->initData();
 
 		return new JSONMessage(true, $form->fetch($request));
 	}
-
 
 	/**
 	 * Update the row for the current userGroup's stage participant list.
@@ -266,26 +298,27 @@ class StageParticipantGridHandler extends CategoryGridHandler {
 	function saveParticipant($args, $request) {
 		$submission = $this->getSubmission();
 		$stageId = $this->getStageId();
+		$assignmentId = $args['assignmentId'];
 		$userGroups = $this->getGridDataElements($request);
 
 		import('lib.pkp.controllers.grid.users.stageParticipant.form.AddParticipantForm');
-		$form = new AddParticipantForm($submission, $stageId);
+		$form = new AddParticipantForm($submission, $stageId, $assignmentId);
 		$form->readInputData();
 		if ($form->validate()) {
-			list($userGroupId, $userId, $stageAssignmentId) = $form->execute($request);
+			list($userGroupId, $userId, $stageAssignmentId) = $form->execute();
 
 			$notificationMgr = new NotificationManager();
 
 			// Check user group role id.
-			$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
-			$stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');
+			$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
+			$stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO'); /* @var $stageAssignmentDao StageAssignmentDAO */
 
 			$userGroup = $userGroupDao->getById($userGroupId);
 			import('classes.workflow.EditorDecisionActionsManager');
 			if ($userGroup->getRoleId() == ROLE_ID_MANAGER) {
 				$notificationMgr->updateNotification(
 					$request,
-					EditorDecisionActionsManager::getStageNotifications(),
+					(new EditorDecisionActionsManager())->getStageNotifications(),
 					null,
 					ASSOC_TYPE_SUBMISSION,
 					$submission->getId()
@@ -296,26 +329,25 @@ class StageParticipantGridHandler extends CategoryGridHandler {
 			foreach ($stages as $workingStageId) {
 				// remove the 'editor required' task if we now have an editor assigned
 				if ($stageAssignmentDao->editorAssignedToStage($submission->getId(), $workingStageId)) {
-					$notificationDao = DAORegistry::getDAO('NotificationDAO');
+					$notificationDao = DAORegistry::getDAO('NotificationDAO'); /* @var $notificationDao NotificationDAO */
 					$notificationDao->deleteByAssoc(ASSOC_TYPE_SUBMISSION, $submission->getId(), null, NOTIFICATION_TYPE_EDITOR_ASSIGNMENT_REQUIRED);
 				}
 			}
 
 			// Create trivial notification.
 			$user = $request->getUser();
-			$notificationMgr->createTrivialNotification($user->getId(), NOTIFICATION_TYPE_SUCCESS, array('contents' => __('notification.addedStageParticipant')));
+			if ($stageAssignmentId != $assignmentId) { // New assignment added
+				$notificationMgr->createTrivialNotification($user->getId(), NOTIFICATION_TYPE_SUCCESS, array('contents' => __('notification.addedStageParticipant')));
+			} else {
+				$notificationMgr->createTrivialNotification($user->getId(), NOTIFICATION_TYPE_SUCCESS, array('contents' => __('notification.editStageParticipant')));
+			}
+
 
 			// Log addition.
-			$userDao = DAORegistry::getDAO('UserDAO');
+			$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 			$assignedUser = $userDao->getById($userId);
 			import('lib.pkp.classes.log.SubmissionLog');
 			SubmissionLog::logEvent($request, $submission, SUBMISSION_LOG_ADD_PARTICIPANT, 'submission.event.participantAdded', array('name' => $assignedUser->getFullName(), 'username' => $assignedUser->getUsername(), 'userGroupName' => $userGroup->getLocalizedName()));
-
-			// send message to user if form is filled in.
-			if ($form->getData('message')) {
-				$form->sendMessage($form->getData('userId'), $submission, $request);
-				$this->_logEventAndCreateNotification($request);
-			}
 
 			return DAO::getDataChangedEvent($userGroupId);
 		} else {
@@ -349,7 +381,7 @@ class StageParticipantGridHandler extends CategoryGridHandler {
 		import('classes.workflow.EditorDecisionActionsManager');
 		$notificationMgr->updateNotification(
 			$request,
-			EditorDecisionActionsManager::getStageNotifications(),
+			(new EditorDecisionActionsManager())->getStageNotifications(),
 			null,
 			ASSOC_TYPE_SUBMISSION,
 			$submission->getId()
@@ -374,9 +406,9 @@ class StageParticipantGridHandler extends CategoryGridHandler {
 		}
 
 		// Log removal.
-		$userDao = DAORegistry::getDAO('UserDAO');
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$assignedUser = $userDao->getById($stageAssignment->getUserId());
-		$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
+		$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
 		$userGroup = $userGroupDao->getById($stageAssignment->getUserGroupId());
 		import('lib.pkp.classes.log.SubmissionLog');
 		SubmissionLog::logEvent($request, $submission, SUBMISSION_LOG_REMOVE_PARTICIPANT, 'submission.event.participantRemoved', array('name' => $assignedUser->getFullName(), 'username' => $assignedUser->getUsername(), 'userGroupName' => $userGroup->getLocalizedName()));
@@ -400,7 +432,7 @@ class StageParticipantGridHandler extends CategoryGridHandler {
 		$userStageAssignmentDao = DAORegistry::getDAO('UserStageAssignmentDAO'); /* @var $userStageAssignmentDao UserStageAssignmentDAO */
 		$users = $userStageAssignmentDao->getUsersNotAssignedToStageInUserGroup($submission->getId(), $stageId, $userGroupId);
 
-		$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
+		$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
 		$userGroup = $userGroupDao->getById($userGroupId);
 		$roleId = $userGroup->getRoleId();
 
@@ -443,14 +475,10 @@ class StageParticipantGridHandler extends CategoryGridHandler {
 
 		import('controllers.grid.users.stageParticipant.form.StageParticipantNotifyForm'); // exists in each app.
 		$notifyForm = new StageParticipantNotifyForm($this->getSubmission()->getId(), ASSOC_TYPE_SUBMISSION, $this->getAuthorizedContextObject(ASSOC_TYPE_WORKFLOW_STAGE));
-		$notifyForm->readInputData($request);
+		$notifyForm->readInputData();
 
 		if ($notifyForm->validate()) {
-			$noteId = $notifyForm->execute($request);
-			// Return a JSON string indicating success
-			// (will clear the form on return)
-			$this->_logEventAndCreateNotification($request);
-
+			$noteId = $notifyForm->execute();
 
 			if ($this->getStageId() == WORKFLOW_STAGE_ID_EDITING ||
 				$this->getStageId() == WORKFLOW_STAGE_ID_PRODUCTION) {
@@ -478,20 +506,6 @@ class StageParticipantGridHandler extends CategoryGridHandler {
 			// Return a JSON string indicating failure
 			return new JSONMessage(false);
 		}
-	}
-
-	/**
-	 * Convenience function for logging the message sent event and creating the notification.  Called from more than one place.
-	 * @param PKPRequest $request
-	 */
-	function _logEventAndCreateNotification($request) {
-		import('lib.pkp.classes.log.SubmissionLog');
-		SubmissionLog::logEvent($request, $this->getSubmission(), SUBMISSION_LOG_MESSAGE_SENT, 'informationCenter.history.messageSent');
-
-		// Create trivial notification.
-		$currentUser = $request->getUser();
-		$notificationMgr = new NotificationManager();
-		$notificationMgr->createTrivialNotification($currentUser->getId(), NOTIFICATION_TYPE_SUCCESS, array('contents' => __('stageParticipants.history.messageSent')));
 	}
 
 	/**
@@ -535,4 +549,4 @@ class StageParticipantGridHandler extends CategoryGridHandler {
 	}
 }
 
-?>
+

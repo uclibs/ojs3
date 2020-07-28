@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/navigationMenus/form/NavigationMenuForm.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class NavigationMenuForm
  * @ingroup controllers_grid_navigationMenus_form
@@ -52,15 +52,18 @@ class NavigationMenuForm extends Form {
 	/**
 	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$templateMgr = TemplateManager::getManager($request);
 
 		$themePlugins = PluginRegistry::getPlugins('themes');
-		if (is_null($themePlugins)) {
+		if (empty($themePlugins)) {
 			$themePlugins = PluginRegistry::loadCategory('themes', true);
 		}
 
 		$activeThemeNavigationAreas = array();
+
+		$activeThemeNavigationAreas = array('' => __('common.none'));
+
 		foreach ($themePlugins as $themePlugin) {
 			if ($themePlugin->isActive()) {
 				$areas = $themePlugin->getMenuAreas();
@@ -70,17 +73,13 @@ class NavigationMenuForm extends Form {
 			}
 		}
 
-		if (empty($activeThemeNavigationAreas)) {
-			$activeThemeNavigationAreas = array('' => __('common.none'));
-		}
-
 		$context = $request->getContext();
 		$contextId = CONTEXT_ID_NONE;
 		if ($context) {
 			$contextId = $context->getId();
 		}
 
-		$navigationMenuItemDao = DAORegistry::getDAO('NavigationMenuItemDAO');
+		$navigationMenuItemDao = DAORegistry::getDAO('NavigationMenuItemDAO'); /* @var $navigationMenuItemDao NavigationMenuItemDAO */
 		$navigationMenuItems = $navigationMenuItemDao->getByContextId($contextId)
 				->toArray();
 		$assignedItems = $navigationMenuItemDao->getByMenuId($this->_navigationMenuId)
@@ -89,10 +88,13 @@ class NavigationMenuForm extends Form {
 			return $a->getId() - $b->getId();
 		});
 
-		import('classes.core.ServicesContainer');
-		$navigationMenuItemTypes = ServicesContainer::instance()
-			->get('navigationMenu')
-			->getMenuItemTypes();
+		foreach ($unassignedItems as $unassignedItem) {
+			import('classes.core.Services');
+			Services::get('navigationMenu')->transformNavMenuItemTitle($templateMgr, $unassignedItem);
+		}
+
+		import('classes.core.Services');
+		$navigationMenuItemTypes = Services::get('navigationMenu')->getMenuItemTypes();
 
 		$typeConditionalWarnings = array();
 		foreach ($navigationMenuItemTypes as $type => $settings) {
@@ -112,7 +114,7 @@ class NavigationMenuForm extends Form {
 			'navigationMenuItemTypeConditionalWarnings' => json_encode($typeConditionalWarnings),
 		));
 
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
@@ -121,14 +123,12 @@ class NavigationMenuForm extends Form {
 	function initData() {
 
 		if (isset($this->_navigationMenuId) && $this->_navigationMenuId != 0) {
-			$navigationMenusDao = DAORegistry::getDAO('NavigationMenuDAO');
+			$navigationMenusDao = DAORegistry::getDAO('NavigationMenuDAO'); /* @var $navigationMenusDao NavigationMenuDAO */
 			$navigationMenu = $navigationMenusDao->getById($this->_navigationMenuId);
 
 			if ($navigationMenu != null) {
-				import('classes.core.ServicesContainer');
-				ServicesContainer::instance()
-					->get('navigationMenu')
-					->getMenuTree($navigationMenu);
+				import('classes.core.Services');
+				Services::get('navigationMenu')->getMenuTree($navigationMenu);
 
 				$this->_data = array(
 					'title' => $navigationMenu->getTitle(),
@@ -153,9 +153,11 @@ class NavigationMenuForm extends Form {
 	/**
 	 * Save NavigationMenu .
 	 */
-	function execute() {
-		$navigationMenusDao = DAORegistry::getDAO('NavigationMenuDAO');
-		$navigationMenuItemAssignmentDao = DAORegistry::getDAO('NavigationMenuItemAssignmentDAO');
+	function execute(...$functionParams) {
+		parent::execute(...$functionParams);
+
+		$navigationMenusDao = DAORegistry::getDAO('NavigationMenuDAO'); /* @var $navigationMenusDao NavigationMenuDAO */
+		$navigationMenuItemAssignmentDao = DAORegistry::getDAO('NavigationMenuItemAssignmentDAO'); /* @var $navigationMenuItemAssignmentDao NavigationMenuItemAssignmentDAO */
 
 		if (isset($this->_navigationMenuId)) {
 			$navigationMenu = $navigationMenusDao->getById($this->_navigationMenuId);
@@ -199,16 +201,21 @@ class NavigationMenuForm extends Form {
 	 * Perform additional validation checks
 	 * @copydoc Form::validate
 	 */
-	function validate() {
-		$navigationMenuDao = DAORegistry::getDAO('NavigationMenuDAO');
+	function validate($callHooks = true) {
+		$navigationMenuDao = DAORegistry::getDAO('NavigationMenuDAO'); /* @var $navigationMenuDao NavigationMenuDAO */
 
 		$navigationMenu = $navigationMenuDao->getByTitle($this->_contextId, $this->getData('title'));
 		if (isset($navigationMenu) && $navigationMenu->getId() != $this->_navigationMenuId) {
 			$this->addError('path', __('manager.navigationMenus.form.duplicateTitle'));
 		}
 
-		return parent::validate();
+		if ($this->getData('areaName') != '') {
+			$navigationMenusWithArea = $navigationMenuDao->getByArea($this->_contextId, $this->getData('areaName'))->toArray();
+			if (count($navigationMenusWithArea) == 1 && $navigationMenusWithArea[0]->getId() != $this->_navigationMenuId) {
+				$this->addError('areaName', __('manager.navigationMenus.form.menuAssigned'));
+			}
+		}
+
+		return parent::validate($callHooks);
 	}
 }
-
-?>

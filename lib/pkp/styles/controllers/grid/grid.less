@@ -1,9 +1,9 @@
 /**
  * @file styles/controllers/grid/grid.less
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @ingroup pkp_controllers_grid
  *
@@ -610,6 +610,10 @@
 	word-break: break-word;
 }
 
+/* Fix strange grid float issue when placed inside subtabs */
+.pkpTabs--side .pkpTab .pkp_controllers_grid .header {
+	max-height: 48px;
+}
 
 // TODO check if these styles can be removed
 .pkp_controllers_grid {

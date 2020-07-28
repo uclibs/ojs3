@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/users/reviewer/form/EnrollExistingReviewerForm.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class EnrollExistingReviewerForm
  * @ingroup controllers_grid_users_reviewer_form
@@ -28,14 +28,13 @@ class EnrollExistingReviewerForm extends ReviewerForm {
 	}
 
 	/**
-	 * Fetch the form.
-	 * @see Form::fetch()
+	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$advancedSearchAction = $this->getAdvancedSearchAction($request);
 
 		$this->setReviewerFormAction($advancedSearchAction);
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
@@ -49,11 +48,9 @@ class EnrollExistingReviewerForm extends ReviewerForm {
 	}
 
 	/**
-	 * Save review assignment
-	 * @param $args array
-	 * @param $request PKPRequest
+	 * @copydoc Form::execute()
 	 */
-	function execute($args, $request) {
+	function execute(...$functionArgs) {
 		// Assign a reviewer user group to an existing non-reviewer
 		$userId = (int) $this->getData('userId');
 
@@ -64,8 +61,8 @@ class EnrollExistingReviewerForm extends ReviewerForm {
 		// Set the reviewerId in the Form for the parent class to use
 		$this->setData('reviewerId', $userId);
 
-		return parent::execute($args, $request);
+		return parent::execute(...$functionArgs);
 	}
 }
 
-?>
+

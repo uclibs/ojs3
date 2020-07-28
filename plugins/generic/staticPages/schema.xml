@@ -4,9 +4,9 @@
 <!--
   * schema.xml
   *
-  * Copyright (c) 2014-2017 Simon Fraser University
-  * Copyright (c) 2003-2017 John Willinsky
-  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+  * Copyright (c) 2014-2020 Simon Fraser University
+  * Copyright (c) 2003-2020 John Willinsky
+  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
   *
   * Static pages plugin schema in XML.
   *
@@ -41,7 +41,7 @@
 		<field name="static_page_id" type="I8">
 			<NOTNULL/>
 		</field>
-		<field name="locale" type="C2" size="5">
+		<field name="locale" type="C2" size="14">
 			<NOTNULL/>
 			<DEFAULT VALUE=""/>
 		</field>

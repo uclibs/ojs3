@@ -3,9 +3,9 @@
 /**
  * @file plugins/pubIds/urn/classes/form/URNSettingsForm.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class URNSettingsForm
  * @ingroup plugins_pubIds_urn
@@ -55,21 +55,32 @@ class URNSettingsForm extends Form {
 		$this->_contextId = $contextId;
 		$this->_plugin = $plugin;
 
-		parent::__construct($plugin->getTemplatePath() . 'settingsForm.tpl');
+		parent::__construct($plugin->getTemplateResource('settingsForm.tpl'));
 
-		$this->addCheck(new FormValidatorCustom($this, 'urnObjects', 'required', 'plugins.pubIds.urn.manager.settings.urnObjectsRequired', create_function('$enableIssueURN,$form', 'return $form->getData(\'enableIssueURN\') || $form->getData(\'enableSubmissionURN\') || $form->getData(\'enableRepresentationURN\');'), array($this)));
+		$form = $this;
+		$this->addCheck(new FormValidatorCustom($this, 'urnObjects', 'required', 'plugins.pubIds.urn.manager.settings.urnObjectsRequired', function($enableIssueURN) use ($form) {
+			return $form->getData('enableIssueURN') || $form->getData('enablePublicationURN') || $form->getData('enableRepresentationURN');
+		}));
 		$this->addCheck(new FormValidatorRegExp($this, 'urnPrefix', 'required', 'plugins.pubIds.urn.manager.settings.form.urnPrefixPattern', '/^urn:[a-zA-Z0-9-]*:.*/'));
-		$this->addCheck(new FormValidatorCustom($this, 'urnIssueSuffixPattern', 'required', 'plugins.pubIds.urn.manager.settings.form.urnIssueSuffixPatternRequired', create_function('$urnIssueSuffixPattern,$form', 'if ($form->getData(\'urnSuffix\') == \'pattern\' && $form->getData(\'enableIssueURN\')) return $urnIssueSuffixPattern != \'\';return true;'), array($this)));
-		$this->addCheck(new FormValidatorCustom($this, 'urnSubmissionSuffixPattern', 'required', 'plugins.pubIds.urn.manager.settings.form.urnSubmissionSuffixPatternRequired', create_function('$urnSubmissionSuffixPattern,$form', 'if ($form->getData(\'urnSuffix\') == \'pattern\' && $form->getData(\'enableSubmissionURN\')) return $urnSubmissionSuffixPattern != \'\';return true;'), array($this)));
-		$this->addCheck(new FormValidatorCustom($this, 'urnRepresentationSuffixPattern', 'required', 'plugins.pubIds.urn.manager.settings.form.urnRepresentationSuffixPatternRequired', create_function('$urnRepresentationSuffixPattern,$form', 'if ($form->getData(\'urnSuffix\') == \'pattern\' && $form->getData(\'enableRepresentationURN\')) return $urnRepresentationSuffixPattern != \'\';return true;'), array($this)));
+		$this->addCheck(new FormValidatorCustom($this, 'urnIssueSuffixPattern', 'required', 'plugins.pubIds.urn.manager.settings.form.urnIssueSuffixPatternRequired', function($urnIssueSuffixPattern) use ($form) {
+			if ($form->getData('urnSuffix') == 'pattern' && $form->getData('enableIssueURN')) return $urnIssueSuffixPattern != '';
+			return true;
+		}));
+		$this->addCheck(new FormValidatorCustom($this, 'urnPublicationSuffixPattern', 'required', 'plugins.pubIds.urn.manager.settings.form.urnPublicationSuffixPatternRequired', function($urnPublicationSuffixPattern) use ($form) {
+			if ($form->getData('urnSuffix') == 'pattern' && $form->getData('enablePublicationURN')) return $urnPublicationSuffixPattern != '';
+			return true;
+		}));
+		$this->addCheck(new FormValidatorCustom($this, 'urnRepresentationSuffixPattern', 'required', 'plugins.pubIds.urn.manager.settings.form.urnRepresentationSuffixPatternRequired', function($urnRepresentationSuffixPattern) use ($form) {
+			if ($form->getData('urnSuffix') == 'pattern' && $form->getData('enableRepresentationURN')) return $urnRepresentationSuffixPattern != '';
+			return true;
+		}));
 		$this->addCheck(new FormValidatorUrl($this, 'urnResolver', 'required', 'plugins.pubIds.urn.manager.settings.form.urnResolverRequired'));
 		$this->addCheck(new FormValidatorPost($this));
 		$this->addCheck(new FormValidatorCSRF($this));
 
 		// for URN reset requests
 		import('lib.pkp.classes.linkAction.request.RemoteActionConfirmationModal');
-		$application = PKPApplication::getApplication();
-		$request = $application->getRequest();
+		$request = Application::get()->getRequest();
 		$this->setData('clearPubIdsLinkAction', new LinkAction(
 			'reassignURNs',
 			new RemoteActionConfirmationModal(
@@ -125,14 +136,15 @@ class URNSettingsForm extends Form {
 	}
 
 	/**
-	 * @copydoc Form::validate()
+	 * @copydoc Form::execute()
 	 */
-	function execute() {
+	function execute(...$functionArgs) {
 		$contextId = $this->_getContextId();
 		$plugin = $this->_getPlugin();
 		foreach($this->_getFormFields() as $fieldName => $fieldType) {
 			$plugin->updateSetting($contextId, $fieldName, $this->getData($fieldName), $fieldType);
 		}
+		parent::execute(...$functionArgs);
 	}
 
 	//
@@ -141,12 +153,12 @@ class URNSettingsForm extends Form {
 	function _getFormFields() {
 		return array(
 			'enableIssueURN' => 'bool',
-			'enableSubmissionURN' => 'bool',
+			'enablePublicationURN' => 'bool',
 			'enableRepresentationURN' => 'bool',
 			'urnPrefix' => 'string',
 			'urnSuffix' => 'string',
 			'urnIssueSuffixPattern' => 'string',
-			'urnSubmissionSuffixPattern' => 'string',
+			'urnPublicationSuffixPattern' => 'string',
 			'urnRepresentationSuffixPattern' => 'string',
 			'urnCheckNo' => 'bool',
 			'urnNamespace' => 'string',
@@ -155,4 +167,4 @@ class URNSettingsForm extends Form {
 	}
 }
 
-?>
+

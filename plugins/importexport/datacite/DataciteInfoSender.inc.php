@@ -3,9 +3,9 @@
 /**
  * @file plugins/importexport/datacite/DataciteInfoSender.php
  *
- * Copyright (c) 2013-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2013-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DataciteInfoSender
  * @ingroup plugins_importexport_datacite
@@ -65,7 +65,7 @@ class DataciteInfoSender extends ScheduledTask {
 				}
 			}
 
-			if ($doiPubIdPlugin->getSetting($journal->getId(), 'enableSubmissionDoi')) {
+			if ($doiPubIdPlugin->getSetting($journal->getId(), 'enablePublicationDoi')) {
 				// Get unregistered articles
 				$unregisteredArticles = $plugin->getUnregisteredArticles($journal);
 				// If there are articles to be deposited
@@ -144,7 +144,7 @@ class DataciteInfoSender extends ScheduledTask {
 				$this->_addLogEntry($result);
 			}
 			// Remove all temporary files.
-			$fileManager->deleteFile($exportFileName);
+			$fileManager->deleteByPath($exportFileName);
 		}
 	}
 
@@ -170,4 +170,4 @@ class DataciteInfoSender extends ScheduledTask {
 	}
 
 }
-?>
+

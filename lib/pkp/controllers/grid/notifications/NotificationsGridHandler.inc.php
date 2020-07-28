@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/notifications/NotificationsGridHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class NotificationsGridHandler
  * @ingroup controllers_grid_notifications
@@ -28,7 +28,7 @@ class NotificationsGridHandler extends GridHandler {
 	 * @copydoc GridHandler::initialize()
 	 */
 	function initialize($request, $args = null) {
-		parent::initialize($request);
+		parent::initialize($request, $args);
 		AppLocale::requireComponents(LOCALE_COMPONENT_APP_SUBMISSION, LOCALE_COMPONENT_PKP_SUBMISSION);
 
 		$this->_selectedNotificationIds = (array) $request->getUserVar('selectedNotificationIds');
@@ -72,7 +72,7 @@ class NotificationsGridHandler extends GridHandler {
 		$router = $request->getRouter();
 		$this->addAction(
 			new LinkAction(
-				'deleteNotifications',
+				'deleteNotification',
 				new NullAction(),
 				__('grid.action.delete'),
 				'delete'
@@ -165,7 +165,7 @@ class NotificationsGridHandler extends GridHandler {
 	 * @return JSONMessage JSON object
 	 */
 	function markNew($args, $request) {
-		$notificationDao = DAORegistry::getDAO('NotificationDAO');
+		$notificationDao = DAORegistry::getDAO('NotificationDAO'); /* @var $notificationDao NotificationDAO */
 		$user = $request->getUser();
 
 		$selectedElements = (array) $request->getUserVar('selectedElements');
@@ -184,7 +184,7 @@ class NotificationsGridHandler extends GridHandler {
 	 * @return JSONMessage JSON object
 	 */
 	function markRead($args, $request) {
-		$notificationDao = DAORegistry::getDAO('NotificationDAO');
+		$notificationDao = DAORegistry::getDAO('NotificationDAO'); /* @var $notificationDao NotificationDAO */
 		$user = $request->getUser();
 
 		$selectedElements = (array) $request->getUserVar('selectedElements');
@@ -212,7 +212,7 @@ class NotificationsGridHandler extends GridHandler {
 	 * @return JSONMessage JSON object
 	 */
 	function deleteNotifications($args, $request) {
-		$notificationDao = DAORegistry::getDAO('NotificationDAO');
+		$notificationDao = DAORegistry::getDAO('NotificationDAO'); /* @var $notificationDao NotificationDAO */
 		$user = $request->getUser();
 
 		$selectedElements = (array) $request->getUserVar('selectedElements');
@@ -231,10 +231,10 @@ class NotificationsGridHandler extends GridHandler {
 	 * @return JSONMessage JSON object
 	 */
 	function getUnreadNotificationsCount($args, $request) {
-		$notificationDao = DAORegistry::getDAO('NotificationDAO');
+		$notificationDao = DAORegistry::getDAO('NotificationDAO'); /* @var $notificationDao NotificationDAO */
 		$user = $request->getUser();
 		return new JSONMessage(true, $notificationDao->getNotificationCount(false, $user->getId(), null, NOTIFICATION_LEVEL_TASK));
 	}
 }
 
-?>
+
