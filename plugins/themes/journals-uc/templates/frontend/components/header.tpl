@@ -41,7 +41,7 @@
     </nav>
 
     {* Header *}
-    <header class="navbar navbar-default" id="headerNavigationContainer" role="banner" style="background: #e00122 url('{$baseUrl}/templates/images/uc/wavy-banner.png') no-repeat bottom center; background-size: 100%;">
+    <header class="navbar navbar-default" id="headerNavigationContainer" role="banner" style="background: #e00122 url('{$baseUrl}/templates/images/uc/wavy-banner.png') no-repeat bottom center; background-size: cover;">
 
         <div class="row">
             <div class="col-sm-6">
