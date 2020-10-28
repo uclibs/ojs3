@@ -1,5 +1,7 @@
 <?php
 
+$_SERVER['HTTPS'] = 'on';
+
 /**
  * @mainpage OJS API Reference
  *
