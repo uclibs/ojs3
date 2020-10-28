@@ -3,9 +3,9 @@
 /**
  * @file plugins/generic/usageEvent/PKPUsageEventPlugin.inc.php
  *
- * Copyright (c) 2013-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2013-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPUsageEventPlugin
  * @ingroup plugins_generic_usageEvent
@@ -27,10 +27,10 @@ abstract class PKPUsageEventPlugin extends GenericPlugin {
 	// Implement methods from PKPPlugin.
 	//
 	/**
-	* @copydoc LazyLoadPlugin::register()
-	*/
-	function register($category, $path) {
-		$success = parent::register($category, $path);
+	 * @copydoc Plugin::register()
+	 */
+	function register($category, $path, $mainContextId = null) {
+		$success = parent::register($category, $path, $mainContextId);
 
 		if ($success) {
 			$eventHooks = $this->getEventHooks();
@@ -73,7 +73,7 @@ abstract class PKPUsageEventPlugin extends GenericPlugin {
 	/**
 	 * @copydoc LazyLoadPlugin::getEnabled()
 	 */
-	function getEnabled() {
+	function getEnabled($contextId = null) {
 		return true;
 	}
 
@@ -154,7 +154,7 @@ abstract class PKPUsageEventPlugin extends GenericPlugin {
 			return null;
 		}
 
-		$application = Application::getApplication();
+		$application = Application::get();
 		$request = $application->getRequest();
 		$router = $request->getRouter(); /* @var $router PageRouter */
 		$templateMgr = $args[0]; /* @var $templateMgr TemplateManager */
@@ -228,7 +228,7 @@ abstract class PKPUsageEventPlugin extends GenericPlugin {
 		// 2) Standardized public identifiers, e.g. DOI, URN, etc.
 		if ($this->isPubIdObjectType($pubObject)) {
 			$pubIdPlugins = PluginRegistry::loadCategory('pubIds', true, $context->getId());
-			if (is_array($pubIdPlugins)) {
+			if (!empty($pubIdPlugins)) {
 				foreach ($pubIdPlugins as $pubIdPlugin) {
 					if (!$pubIdPlugin->getEnabled()) continue;
 					$pubId = $pubObject->getStoredPubId($pubIdPlugin->getPubIdType());
@@ -352,7 +352,7 @@ abstract class PKPUsageEventPlugin extends GenericPlugin {
 
 			// First check for a context index page view.
 			if (($page == 'index' || empty($page)) && $op == 'index') {
-				$pubObject = $templateMgr->get_template_vars('currentContext');
+				$pubObject = $templateMgr->getTemplateVars('currentContext');
 				if (is_a($pubObject, 'Context')) {
 					$assocType = Application::getContextAssocType();
 					$canonicalUrlOp = '';
@@ -385,4 +385,4 @@ abstract class PKPUsageEventPlugin extends GenericPlugin {
 
 }
 
-?>
+

@@ -9,9 +9,9 @@
 /**
  * @file classes/stageAssignment/StageAssignment.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class StageAssignment
  * @ingroup stageAssignment
@@ -121,6 +121,22 @@ class StageAssignment extends DataObject {
 		$this->setData('recommendOnly', $recommendOnly);
 	}
 
+	/**
+	 * Get permit metadata edit option.
+	 * @return boolean
+	 */
+	function getCanChangeMetadata() {
+		return $this->getData('canChangeMetadata');
+	}
+
+	/**
+	 * Set permit metadata edit option.
+	 * @param $permitMetadataEdits boolean
+	 */
+	function setCanChangeMetadata($canChangeMetadata) {
+		$this->setData('canChangeMetadata', $canChangeMetadata);
+	}
+
 }
 
-?>
+

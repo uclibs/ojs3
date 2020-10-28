@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/form/ManageSubmissionFilesForm.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ManageSubmissionFilesForm
  * @ingroup controllers_grid_files_form
@@ -49,11 +49,9 @@ class ManageSubmissionFilesForm extends Form {
 	// Overridden template methods
 	//
 	/**
-	 * Initialize variables
-	 * @param $args array
-	 * @param $request PKPRequest
+	 * @copydoc Form::initData
 	 */
-	function initData($args, $request) {
+	function initData() {
 		$this->setData('submissionId', $this->_submissionId);
 	}
 
@@ -67,15 +65,13 @@ class ManageSubmissionFilesForm extends Form {
 
 	/**
 	 * Save selection of submission files
-	 * @param $args array
-	 * @param $request PKPRequest
 	 * @param $stageSubmissionFiles array The files that belongs to a file stage
 	 * that is currently being used by a grid inside this form.
 	 * @param $fileStage int SUBMISSION_FILE_...
 	 */
-	function execute($args, $request, $stageSubmissionFiles, $fileStage) {
+	function execute($stageSubmissionFiles, $fileStage = null) {
 		$selectedFiles = (array)$this->getData('selectedFiles');
-		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
+		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
 		$submissionFiles = $submissionFileDao->getLatestRevisions($this->getSubmissionId());
 
 		foreach ($submissionFiles as $submissionFile) {
@@ -94,6 +90,7 @@ class ManageSubmissionFilesForm extends Form {
 				}
 			} elseif ($isViewable) {
 				// Import a file from a different workflow area
+				$request = Application::get()->getRequest();
 				$context = $request->getContext();
 				$submissionFile = $this->importFile($context, $submissionFile, $fileStage);
 			}
@@ -122,7 +119,7 @@ class ManageSubmissionFilesForm extends Form {
 	 * @return SubmissionFile Resultant new submission file
 	 */
 	protected function importFile($context, $submissionFile, $fileStage) {
-		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
+		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
 		import('lib.pkp.classes.file.SubmissionFileManager');
 		$submissionFileManager = new SubmissionFileManager($context->getId(), $submissionFile->getSubmissionId());
 		// Split the file into file id and file revision.
@@ -133,4 +130,4 @@ class ManageSubmissionFilesForm extends Form {
 	}
 }
 
-?>
+

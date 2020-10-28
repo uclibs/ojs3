@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/settings/user/form/UserDisableForm.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class UserDisableForm
  * @ingroup controllers_grid_settings_user_form
@@ -39,9 +39,9 @@ class UserDisableForm extends Form {
 	/**
 	 * Initialize form data.
 	 */
-	function initData($args, $request) {
+	function initData() {
 		if ($this->_userId) {
-			$userDao = DAORegistry::getDAO('UserDAO');
+			$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 			$user = $userDao->getById($this->_userId);
 
 			if ($user) {
@@ -66,9 +66,9 @@ class UserDisableForm extends Form {
 	}
 
 	/**
-	 * Display the form.
+	 * @copydoc Form::display
 	 */
-	function display($args, $request) {
+	function display($request = null, $template = null) {
 		$templateMgr = TemplateManager::getManager($request);
 		$templateMgr->assign(array(
 			'userId' => $this->_userId,
@@ -78,12 +78,10 @@ class UserDisableForm extends Form {
 	}
 
 	/**
-	 * Enable/Disable the user
-	 * @param $args array
-	 * @param $request PKPRequest
+	 * @copydoc Form::execute()
 	 */
-	function execute($args, $request) {
-		$userDao = DAORegistry::getDAO('UserDAO');
+	function execute(...$functionArgs) {
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$user = $userDao->getById($this->_userId);
 
 		if ($user) {
@@ -91,9 +89,9 @@ class UserDisableForm extends Form {
 			$user->setDisabledReason($this->getData('disableReason'));
 			$userDao->updateObject($user);
 		}
-
+		parent::execute(...$functionArgs);
 		return $user;
 	}
 }
 
-?>
+

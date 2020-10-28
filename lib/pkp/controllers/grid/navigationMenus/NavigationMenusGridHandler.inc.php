@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/navigationMenus/NavigationMenusGridHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class NavigationMenusGridHandler
  * @ingroup controllers_grid_navigationMenus
@@ -24,13 +24,14 @@ class NavigationMenusGridHandler extends GridHandler {
 		parent::__construct();
 		$this->addRoleAssignment(
 			ROLE_ID_MANAGER,
-			array(
+			$ops = array(
 				'fetchGrid', 'fetchRow',
 				'addNavigationMenu', 'editNavigationMenu',
 				'updateNavigationMenu',
 				'deleteNavigationMenu'
 			)
 		);
+		$this->addRoleAssignment(ROLE_ID_SITE_ADMIN, $ops);
 	}
 
 	//
@@ -41,11 +42,17 @@ class NavigationMenusGridHandler extends GridHandler {
 	 */
 	function authorize($request, &$args, $roleAssignments) {
 		$context = $request->getContext();
+		$contextId = $context?$context->getId():CONTEXT_ID_NONE;
 
-		$contextId = CONTEXT_ID_NONE;
-		if ($context) {
-			$contextId = $context->getId();
+		import('lib.pkp.classes.security.authorization.PolicySet');
+		$rolePolicy = new PolicySet(COMBINING_PERMIT_OVERRIDES);
+
+		import('lib.pkp.classes.security.authorization.RoleBasedHandlerOperationPolicy');
+		foreach($roleAssignments as $role => $operations) {
+			$rolePolicy->addPolicy(new RoleBasedHandlerOperationPolicy($request, $role, $operations));
 		}
+		$this->addPolicy($rolePolicy);
+
 
 		$navigationMenuId = $request->getUserVar('navigationMenuId');
 		if ($navigationMenuId) {
@@ -78,6 +85,15 @@ class NavigationMenusGridHandler extends GridHandler {
 		$this->addColumn(
 			new GridColumn('title',
 				'common.title',
+				null,
+				null,
+				$navigationMenuCellProvider
+			)
+		);
+
+		$this->addColumn(
+			new GridColumn('nmis',
+				'manager.navigationMenuItems',
 				null,
 				null,
 				$navigationMenuCellProvider
@@ -117,7 +133,7 @@ class NavigationMenusGridHandler extends GridHandler {
 			$contextId = $context->getId();
 		}
 
-		$navigationMenuDao = DAORegistry::getDAO('NavigationMenuDAO');
+		$navigationMenuDao = DAORegistry::getDAO('NavigationMenuDAO'); /* @var $navigationMenuDao NavigationMenuDAO */
 		return $navigationMenuDao->getByContextId($contextId);
 	}
 
@@ -182,7 +198,7 @@ class NavigationMenusGridHandler extends GridHandler {
 		$navigationMenusForm->readInputData();
 
 		if ($navigationMenusForm->validate()) {
-			$navigationMenusForm->execute($request);
+			$navigationMenusForm->execute();
 
 			if ($navigationMenuId) {
 				// Successful edit of an existing NavigationMenu.
@@ -214,8 +230,8 @@ class NavigationMenusGridHandler extends GridHandler {
 		$navigationMenuId = (int) $request->getUserVar('navigationMenuId');
 		$context = $request->getContext();
 
-		$navigationMenuDao = DAORegistry::getDAO('NavigationMenuDAO');
-		$navigationMenu = $navigationMenuDao->getById($navigationMenuId, $context->getId());
+		$navigationMenuDao = DAORegistry::getDAO('NavigationMenuDAO'); /* @var $navigationMenuDao NavigationMenuDAO */
+		$navigationMenu = $navigationMenuDao->getById($navigationMenuId, $context?$context->getId():CONTEXT_SITE);
 		if ($navigationMenu && $request->checkCSRF()) {
 			$navigationMenuDao->deleteObject($navigationMenu);
 
@@ -233,4 +249,4 @@ class NavigationMenusGridHandler extends GridHandler {
 
 }
 
-?>
+

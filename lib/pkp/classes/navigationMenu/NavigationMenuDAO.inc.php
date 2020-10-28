@@ -3,9 +3,9 @@
 /**
  * @file classes/navigationMenu/NavigationMenuDAO.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class NavigationMenuDAO
  * @ingroup navigationMenu
@@ -78,12 +78,7 @@ class NavigationMenuDAO extends DAO {
 			$params
 		);
 
-		$returner = null;
-		if ($result->RecordCount() != 0) {
-			$returner = $this->_fromRow($result->GetRowAssoc(false));
-		}
-		$result->Close();
-		return $returner;
+		return new DAOResultFactory($result, $this, '_fromRow');
 	}
 
 	/**
@@ -113,7 +108,7 @@ class NavigationMenuDAO extends DAO {
 	 * @param $contextId int
 	 * @param $title int
 	 *
-	 * @return ADORecordSet
+	 * @return boolean True if a NM exists by that title
 	 */
 	function navigationMenuExistsByTitle($contextId, $title) {
 		$result = $this->retrieve(
@@ -197,6 +192,8 @@ class NavigationMenuDAO extends DAO {
 			)
 		);
 
+		$this->unCache($navigationMenu->getId());
+
 		return $returner;
 	}
 
@@ -214,9 +211,11 @@ class NavigationMenuDAO extends DAO {
 	 * @param $navigationMenuId int
 	 */
 	function deleteById($navigationMenuId) {
+		$this->unCache($navigationMenuId);
+
 		$this->update('DELETE FROM navigation_menus WHERE navigation_menu_id = ?', (int) $navigationMenuId);
 
-		$navigationMenuItemAssignmentDao = DAORegistry::getDAO('NavigationMenuItemAssignmentDAO');
+		$navigationMenuItemAssignmentDao = DAORegistry::getDAO('NavigationMenuItemAssignmentDAO'); /* @var $navigationMenuItemAssignmentDao NavigationMenuItemAssignmentDAO */
 		$navigationMenuItemAssignmentDao->deleteByMenuId($navigationMenuId);
 	}
 
@@ -250,59 +249,107 @@ class NavigationMenuDAO extends DAO {
 		$xmlParser = new XMLParser();
 		$tree = $xmlParser->parse($filename);
 
-		if ($contextId != CONTEXT_ID_NONE) {
-			$contextDao = Application::getContextDAO();
-			$context = $contextDao->getById($contextId);
-			$supportedLocales = $context->getSupportedLocales();
-		} else {
-			$siteDao = DAORegistry::getDAO('SiteDAO');
+		if ($contextId == CONTEXT_ID_NONE) {
+			$siteDao = DAORegistry::getDAO('SiteDAO'); /* @var $siteDao SiteDAO */
 			$site = $siteDao->getSite();
-			$supportedLocales = $site->getSupportedLocales();
 		}
 
-		if (!$tree) {
-			$xmlParser->destroy();
-			return false;
-		}
+		if (!$tree) return false;
 
 		foreach ($tree->getChildren() as $navigationMenuNode) {
-			$title = $navigationMenuNode->getAttribute('title');
-			$area = $navigationMenuNode->getAttribute('area');
 			$site = $navigationMenuNode->getAttribute('site');
-
 			if ($contextId == CONTEXT_ID_NONE && !$site) {
 				continue;
 			}
 
-			$navigationMenu = null;
-			if ($this->navigationMenuExistsByTitle($contextId, $title)) {
-				$navigationMenu = $this->getByTitle($contextId, $title);
-				$navigationMenu->setAreaName($area);
+			if ($navigationMenuNode->name == 'navigationMenu') {
+				$title = $navigationMenuNode->getAttribute('title');
+				$area = $navigationMenuNode->getAttribute('area');
 
-				// update the navigationMenu into the DB
-				$navigationMenuId = $this->updateObject($navigationMenu);
-			} else {
-				$navigationMenu = $this->newDataObject();
-				$navigationMenu->setTitle($title);
-				$navigationMenu->setContextId($contextId);
-				$navigationMenu->setAreaName($area);
+				$navigationMenu = null;
 
-				// insert the navigationMenu into the DB
-				$navigationMenuId = $this->insertObject($navigationMenu);
-				$navigationMenu->setId($navigationMenuId);
-			}
+				// Check if the given area has a NM attached.
+				// If it does the NM is not being processed and a warning is being thrown
+				$navigationMenusWithArea = $this->getByArea($contextId, $area)->toArray();
+				if (count($navigationMenusWithArea) != 0) {
+					error_log("WARNING: The NavigationMenu (ContextId: $contextId, Title: $title, Area: $area) will be skipped because the specified area has already a NavigationMenu attached.");
+					continue;
+				}
 
-			$seq = 0;
-			foreach ($navigationMenuNode->getChildren() as $navigationMenuItemFirstLevelNode) {
-				$navigationMenuItemDao = DAORegistry::getDAO('NavigationMenuItemDAO');
-				$navigationMenuItemDao->installNodeSettings($contextId, $navigationMenuItemFirstLevelNode, $navigationMenu->getId(), null, $seq, true);
+				if ($this->navigationMenuExistsByTitle($contextId, $title)) {
+					$navigationMenu = $this->getByTitle($contextId, $title);
+					$navigationMenu->setAreaName($area);
 
-				$seq++;
+					// update the navigationMenu into the DB
+					$navigationMenuId = $this->updateObject($navigationMenu);
+				} else {
+					$navigationMenu = $this->newDataObject();
+					$navigationMenu->setTitle($title);
+					$navigationMenu->setContextId($contextId);
+					$navigationMenu->setAreaName($area);
+
+					// insert the navigationMenu into the DB
+					$navigationMenuId = $this->insertObject($navigationMenu);
+					$navigationMenu->setId($navigationMenuId);
+				}
+
+				$seq = 0;
+				foreach ($navigationMenuNode->getChildren() as $navigationMenuItemFirstLevelNode) {
+					$navigationMenuItemDao = DAORegistry::getDAO('NavigationMenuItemDAO'); /* @var $navigationMenuItemDao NavigationMenuItemDAO */
+					$navigationMenuItemDao->installNodeSettings($contextId, $navigationMenuItemFirstLevelNode, $navigationMenu->getId(), null, $seq, true);
+
+					$seq++;
+				}
+			} elseif ($navigationMenuNode->name == 'navigationMenuItem') {
+				$navigationMenuItemDao = DAORegistry::getDAO('NavigationMenuItemDAO'); /* @var $navigationMenuItemDao NavigationMenuItemDAO */
+				$navigationMenuItemDao->installNodeSettings($contextId, $navigationMenuNode, null, null, 0, true);
 			}
 		}
 
 		return true;
 	}
-}
 
-?>
+	/**
+	 * unCache the NM with id
+	 * @param int $id
+	 */
+	function unCache($id){
+		$cache = $this->getCache($id);
+		if ($cache) $cache->flush();
+	}
+
+	/**
+	 * Get the settings cache for a given ID
+	 * @param $id
+	 * @return array|null (Null indicates caching disabled)
+	 */
+	function getCache($id) {
+		static $navigationMenuCache;
+		if (!isset($navigationMenuCache)) {
+			$navigationMenuCache = array();
+		}
+		if (!isset($navigationMenuCache[$id])) {
+			$cacheManager = \CacheManager::getManager();
+			$navigationMenuCache[$id] = $cacheManager->getCache(
+				'navigationMenu', $id,
+				array($this, '_cacheMiss')
+			);
+		}
+		return $navigationMenuCache[$id];
+	}
+
+	/**
+	 * Callback for a cache miss.
+	 * @param $cache Cache
+	 * @param $id string
+	 * @return mixed
+	 */
+	function _cacheMiss($cache, $id) {
+		$navigationMenuDao = \DAORegistry::getDAO('NavigationMenuDAO');
+		$navigationMenu = $navigationMenuDao->GetById($cache->getCacheId());
+		import('classes.core.Services');
+		Services::get('navigationMenu')->getMenuTree($navigationMenu);
+
+		return $navigationMenu;
+	}
+}

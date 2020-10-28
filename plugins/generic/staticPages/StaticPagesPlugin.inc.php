@@ -3,9 +3,9 @@
 /**
  * @file StaticPagesPlugin.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @package plugins.generic.staticPages
  * @class StaticPagesPlugin
@@ -16,16 +16,14 @@ import('lib.pkp.classes.plugins.GenericPlugin');
 
 class StaticPagesPlugin extends GenericPlugin {
 	/**
-	 * Get the plugin's display (human-readable) name.
-	 * @return string
+	 * @copydoc Plugin::getDisplayName()
 	 */
 	function getDisplayName() {
 		return __('plugins.generic.staticPages.displayName');
 	}
 
 	/**
-	 * Get the plugin's display (human-readable) description.
-	 * @return string
+	 * @copydoc Plugin::getDescription()
 	 */
 	function getDescription() {
 		$description = __('plugins.generic.staticPages.description');
@@ -39,26 +37,23 @@ class StaticPagesPlugin extends GenericPlugin {
 	 * @return boolean True iff TinyMCE is installed.
 	 */
 	function isTinyMCEInstalled() {
-		$application = PKPApplication::getApplication();
+		$application = Application::get();
 		$products = $application->getEnabledProducts('plugins.generic');
 		return (isset($products['tinymce']));
 	}
 
 	/**
-	 * Register the plugin, attaching to hooks as necessary.
-	 * @param $category string
-	 * @param $path string
-	 * @return boolean
+	 * @copydoc Plugin::register()
 	 */
-	function register($category, $path) {
-		if (parent::register($category, $path)) {
-			if ($this->getEnabled()) {
+	function register($category, $path, $mainContextId = null) {
+		if (parent::register($category, $path, $mainContextId)) {
+			if ($this->getEnabled($mainContextId)) {
 				// Register the static pages DAO.
 				import('plugins.generic.staticPages.classes.StaticPagesDAO');
 				$staticPagesDao = new StaticPagesDAO();
 				DAORegistry::registerDAO('StaticPagesDAO', $staticPagesDao);
 
-				HookRegistry::register('Templates::Management::Settings::website', array($this, 'callbackShowWebsiteSettingsTabs'));
+				HookRegistry::register('Template::Settings::website', array($this, 'callbackShowWebsiteSettingsTabs'));
 
 				// Intercept the LoadHandler hook to present
 				// static pages when requested.
@@ -80,12 +75,12 @@ class StaticPagesPlugin extends GenericPlugin {
 	 * @return boolean Hook handling status
 	 */
 	function callbackShowWebsiteSettingsTabs($hookName, $args) {
+		$templateMgr = $args[1];
 		$output =& $args[2];
 		$request =& Registry::get('request');
 		$dispatcher = $request->getDispatcher();
 
-		// Add a new tab for static pages
-		$output .= '<li><a name="staticPages" href="' . $dispatcher->url($request, ROUTE_COMPONENT, null, 'plugins.generic.staticPages.controllers.grid.StaticPageGridHandler', 'index') . '">' . __('plugins.generic.staticPages.staticPages') . '</a></li>';
+		$output .= $templateMgr->fetch($this->getTemplateResource('staticPagesTab.tpl'));
 
 		// Permit other plugins to continue interacting with this hook
 		return false;
@@ -98,7 +93,7 @@ class StaticPagesPlugin extends GenericPlugin {
 	 * @return boolean Hook handling status
 	 */
 	function callbackHandleContent($hookName, $args) {
-		$request = $this->getRequest();
+		$request = Application::get()->getRequest();
 		$templateMgr = TemplateManager::getManager($request);
 
 		$page =& $args[0];
@@ -193,18 +188,9 @@ class StaticPagesPlugin extends GenericPlugin {
 	}
 
 	/**
-	 * @copydoc PKPPlugin::getTemplatePath
-	 */
-	function getTemplatePath($inCore = false) {
-		return parent::getTemplatePath($inCore) . 'templates/';
-	}
-
-	/**
 	 * Get the JavaScript URL for this plugin.
 	 */
 	function getJavaScriptURL($request) {
 		return $request->getBaseUrl() . '/' . $this->getPluginPath() . '/js';
 	}
 }
-
-?>

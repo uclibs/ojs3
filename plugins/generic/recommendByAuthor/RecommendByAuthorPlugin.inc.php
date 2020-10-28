@@ -3,9 +3,9 @@
 /**
  * @file plugins/generic/recommendByAuthor/RecommendByAuthorPlugin.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class RecommendByAuthorPlugin
  * @ingroup plugins_generic_recommendByAuthor
@@ -24,13 +24,13 @@ class RecommendByAuthorPlugin extends GenericPlugin {
 	// Implement template methods from Plugin.
 	//
 	/**
-	 * @see Plugin::register()
+	 * @copydoc Plugin::register()
 	 */
-	function register($category, $path) {
-		$success = parent::register($category, $path);
+	function register($category, $path, $mainContextId = null) {
+		$success = parent::register($category, $path, $mainContextId);
 		if (!Config::getVar('general', 'installed') || defined('RUNNING_UPGRADE')) return $success;
 
-		if ($success && $this->getEnabled()) {
+		if ($success && $this->getEnabled($mainContextId)) {
 			HookRegistry::register('Templates::Article::Footer::PageFooter', array($this, 'callbackTemplateArticlePageFooter'));
 		}
 		return $success;
@@ -50,13 +50,6 @@ class RecommendByAuthorPlugin extends GenericPlugin {
 		return __('plugins.generic.recommendByAuthor.description');
 	}
 
-	/**
-	 * @copydoc Plugin::getTemplatePath()
-	 */
-	function getTemplatePath($inCore = false) {
-		return parent::getTemplatePath($inCore) . 'templates/';
-	}
-
 
 	//
 	// View level hook implementations.
@@ -69,9 +62,8 @@ class RecommendByAuthorPlugin extends GenericPlugin {
 		$output =& $params[2];
 
 		// Find articles of the same author(s).
-		$displayedArticle = $smarty->get_template_vars('article');
+		$displayedArticle = $smarty->getTemplateVars('article');
 		$authors = $displayedArticle->getAuthors();
-		$authorDao = DAORegistry::getDAO('AuthorDAO'); /* @var $authorDao AuthorDAO */
 		$foundArticles = array();
 		foreach($authors as $author) { /* @var $author Author */
 			// The following article search is by name only as authors are
@@ -79,26 +71,35 @@ class RecommendByAuthorPlugin extends GenericPlugin {
 			// false positives or miss some entries. But there's no other way
 			// until OJS allows users to consistently normalize authors (via name,
 			// email, ORCID, whatever).
-			$articles = $authorDao->getPublishedArticlesForAuthor(
-				null, $author->getFirstName(), $author->getMiddleName(),
-				$author->getLastName(), $author->getLocalizedAffiliation(),
-				$author->getCountry()
-			);
-			foreach ($articles as $article) { /* @var $article PublishedArticle */
-				if ($displayedArticle->getId() == $article->getId()) continue;
-				$foundArticles[] = $article->getId();
+			$authorsIterator = Services::get('author')->getMany([
+				'contextIds' => $displayedArticle->getData('contextId'),
+				'givenName' => $author->getLocalizedGivenName(),
+				'familyName' => $author->getLocalizedFamilyName(),
+			]);
+			$publicationIds = [];
+			foreach ($authorsIterator as $thisAuthor) {
+				$publicationIds[] = $thisAuthor->getData('publicationId');
 			}
+			$submissionIds = array_map(function($publicationId) {
+				$publication = Services::get('publication')->get($publicationId);
+				return $publication->getData('status') == STATUS_PUBLISHED ? $publication->getData('submissionId') : null;
+			}, array_unique($publicationIds));
+			$foundArticles = array_unique(array_merge($foundArticles, $submissionIds));
 		}
-		$results = array_unique($foundArticles);
+
+		$results = array_filter($foundArticles, function($value) use ($displayedArticle) {
+			if ($value !== $displayedArticle->getId()) return $value;
+			return null;
+		});
 
 		// Order results by metric.
-		$application = PKPApplication::getApplication();
+		$application = Application::get();
 		$metricType = $application->getDefaultMetricType();
 		if (empty($metricType)) $smarty->assign('noMetricSelected', true);
-		$column = STATISTICS_DIMENSION_ARTICLE_ID;
+		$column = STATISTICS_DIMENSION_SUBMISSION_ID;
 		$filter = array(
-				STATISTICS_DIMENSION_ASSOC_TYPE => array(ASSOC_TYPE_GALLEY, ASSOC_TYPE_ARTICLE),
-				STATISTICS_DIMENSION_ARTICLE_ID => array($results)
+				STATISTICS_DIMENSION_ASSOC_TYPE => array(ASSOC_TYPE_GALLEY, ASSOC_TYPE_SUBMISSION),
+				STATISTICS_DIMENSION_SUBMISSION_ID => array($results)
 		);
 		$orderBy = array(STATISTICS_METRIC => STATISTICS_ORDER_DESC);
 		$statsReport = $application->getMetrics($metricType, $column, $filter, $orderBy);
@@ -113,7 +114,7 @@ class RecommendByAuthorPlugin extends GenericPlugin {
 		$orderedResults = array_merge($orderedResults, $remainingResults);
 
 		// Pagination.
-		$request = PKPApplication::getRequest();
+		$request = Application::get()->getRequest();
 		$rangeInfo = Handler::getRangeInfo($request, 'articlesBySameAuthor');
 		if ($rangeInfo && $rangeInfo->isValid()) {
 			$page = $rangeInfo->getPage();
@@ -142,8 +143,8 @@ class RecommendByAuthorPlugin extends GenericPlugin {
 		import('lib.pkp.classes.core.VirtualArrayIterator');
 		$returner = new VirtualArrayIterator($pagedResults, $totalResults, $page, $itemsPerPage);
 		$smarty->assign('articlesBySameAuthor', $returner);
-		$output .= $smarty->fetch($this->getTemplatePath() . 'articleFooter.tpl');
+		$output .= $smarty->fetch($this->getTemplateResource('articleFooter.tpl'));
 		return false;
 	}
 }
-?>
+

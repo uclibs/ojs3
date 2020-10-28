@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/SubmissionFilesGridRow.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionFilesGridRow
  * @ingroup controllers_grid_files
@@ -74,7 +74,7 @@ class SubmissionFilesGridRow extends GridRow {
 	// Overridden template methods from GridRow
 	//
 	/**
-	 * @copydoc PKPHandler::initialize()
+	 * @copydoc GridRow::initialize()
 	 */
 	function initialize($request, $template = 'controllers/grid/gridRow.tpl') {
 		parent::initialize($request, $template);
@@ -106,4 +106,4 @@ class SubmissionFilesGridRow extends GridRow {
 	}
 }
 
-?>
+

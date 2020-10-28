@@ -3,9 +3,9 @@
 /**
  * @file classes/oai/PKPOAIDAO.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPOAIDAO
  * @ingroup oai
@@ -267,4 +267,4 @@ abstract class PKPOAIDAO extends DAO {
 	abstract function _getRecordsRecordSet($setIds, $from, $until, $set, $submissionId = null, $orderBy = 'journal_id, submission_id');
 }
 
-?>
+

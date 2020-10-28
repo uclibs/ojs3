@@ -3,9 +3,9 @@
 /**
  * @file classes/security/Validation.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Validation
  * @ingroup security
@@ -25,7 +25,7 @@ class Validation {
 	 */
 	static function login($username, $password, &$reason, $remember = false) {
 		$reason = null;
-		$userDao = DAORegistry::getDAO('UserDAO');
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$user = $userDao->getByUsername($username, true);
 		if (!isset($user)) {
 			// User does not exist
@@ -33,7 +33,7 @@ class Validation {
 		}
 
 		if ($user->getAuthId()) {
-			$authDao = DAORegistry::getDAO('AuthSourceDAO');
+			$authDao = DAORegistry::getDAO('AuthSourceDAO'); /* @var $authDao AuthSourceDAO */
 			$auth = $authDao->getPlugin($user->getAuthId());
 		} else {
 			$auth = null;
@@ -55,7 +55,7 @@ class Validation {
 		} else {
 			// Validate against user database
 			$rehash = null;
-			$valid = Validation::verifyPassword($username, $password, $user->getPassword(), $rehash);
+			$valid = self::verifyPassword($username, $password, $user->getPassword(), $rehash);
 
 			if ($valid && !empty($rehash)) {
 				// update to new hashing algorithm
@@ -81,14 +81,14 @@ class Validation {
 	 * @param string &$rehash if password needs rehash, this variable is used
 	 * @return boolean
 	 */
-	function verifyPassword($username, $password, $hash, &$rehash) {
+	static function verifyPassword($username, $password, $hash, &$rehash) {
 		if (password_needs_rehash($hash, PASSWORD_BCRYPT)) {
 			// update to new hashing algorithm
-			$oldHash = Validation::encryptCredentials($username, $password, false, true);
+			$oldHash = self::encryptCredentials($username, $password, false, true);
 
 			if ($oldHash === $hash) {
 				// update hash
-				$rehash = Validation::encryptCredentials($username, $password);
+				$rehash = self::encryptCredentials($username, $password);
 
 				return true;
 			}
@@ -133,7 +133,7 @@ class Validation {
 		}
 
 		$user->setDateLastLogin(Core::getCurrentDate());
-		$userDao = DAORegistry::getDAO('UserDAO');
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$userDao->updateObject($user);
 
 		return $user;
@@ -155,7 +155,7 @@ class Validation {
 			$sessionManager->updateSessionLifetime(0);
 		}
 
-		$sessionDao = DAORegistry::getDAO('SessionDAO');
+		$sessionDao = DAORegistry::getDAO('SessionDAO'); /* @var $sessionDao SessionDAO */
 		$sessionDao->updateObject($session);
 
 		return true;
@@ -175,7 +175,8 @@ class Validation {
 			$args['loginMessage'] = $message;
 		}
 
-		Request::redirect(null, 'login', null, null, $args);
+		$request = Application::get()->getRequest();
+		$request->redirect(null, 'login', null, null, $args);
 	}
 
 	/**
@@ -185,13 +186,13 @@ class Validation {
 	 * @return boolean
 	 */
 	static function checkCredentials($username, $password) {
-		$userDao = DAORegistry::getDAO('UserDAO');
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$user = $userDao->getByUsername($username, false);
 
 		$valid = false;
 		if (isset($user)) {
 			if ($user->getAuthId()) {
-				$authDao = DAORegistry::getDAO('AuthSourceDAO');
+				$authDao = DAORegistry::getDAO('AuthSourceDAO'); /* @var $authDao AuthSourceDAO */
 				$auth =& $authDao->getPlugin($user->getAuthId());
 			}
 
@@ -200,7 +201,7 @@ class Validation {
 			} else {
 				// Validate against user database
 				$rehash = null;
-				$valid = Validation::verifyPassword($username, $password, $user->getPassword(), $rehash);
+				$valid = self::verifyPassword($username, $password, $user->getPassword(), $rehash);
 
 				if ($valid && !empty($rehash)) {
 					// update to new hashing algorithm
@@ -222,14 +223,13 @@ class Validation {
 	 * @return boolean
 	 */
 	static function isAuthorized($roleId, $contextId = 0) {
-		if (!Validation::isLoggedIn()) {
+		if (!self::isLoggedIn()) {
 			return false;
 		}
 
 		if ($contextId === -1) {
 			// Get context ID from request
-			$application = PKPApplication::getApplication();
-			$request = $application->getRequest();
+			$request = Application::get()->getRequest();
 			$context = $request->getContext();
 			$contextId = $context == null ? 0 : $context->getId();
 		}
@@ -238,7 +238,7 @@ class Validation {
 		$session = $sessionManager->getUserSession();
 		$user = $session->getUser();
 
-		$roleDao = DAORegistry::getDAO('RoleDAO');
+		$roleDao = DAORegistry::getDAO('RoleDAO'); /* @var $roleDao RoleDAO */
 		return $roleDao->userHasRole($contextId, $user->getId(), $roleId);
 	}
 
@@ -277,10 +277,15 @@ class Validation {
 	/**
 	 * Generate a random password.
 	 * Assumes the random number generator has already been seeded.
-	 * @param $length int the length of the password to generate (default 8)
+	 * @param $length int the length of the password to generate (default is site minimum)
 	 * @return string
 	 */
-	static function generatePassword($length = 8) {
+	static function generatePassword($length = null) {
+		if (!$length) {
+			$siteDao = DAORegistry::getDAO('SiteDAO');
+			$site = $siteDao->getSite();
+			$length = $site->getMinPasswordLength();
+		}
 		$letters = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ';
 		$numbers = '23456789';
 
@@ -298,7 +303,7 @@ class Validation {
 	 * @return string (boolean false if user is invalid)
 	 */
 	static function generatePasswordResetHash($userId, $expiry = null) {
-		$userDao = DAORegistry::getDAO('UserDAO');
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		if (($user = $userDao->getById($userId)) == null) {
 			// No such user
 			return false;
@@ -333,7 +338,7 @@ class Validation {
 	 * @param $hash string
 	 * @return boolean
 	 */
-	function verifyPasswordResetHash($userId, $hash) {
+	static function verifyPasswordResetHash($userId, $hash) {
 		// append ":" to ensure the explode results in at least 2 elements
 		list(, $expiry) = explode(':', $hash . ':');
 
@@ -342,18 +347,24 @@ class Validation {
 			return false;
 		}
 
-		return ($hash === Validation::generatePasswordResetHash($userId, $expiry));
+		return ($hash === self::generatePasswordResetHash($userId, $expiry));
 	}
 
 	/**
 	 * Suggest a username given the first and last names.
+	 * @param $givenName string
+	 * @param $familyName string
 	 * @return string
 	 */
-	static function suggestUsername($firstName, $lastName) {
-		$initial = PKPString::substr($firstName, 0, 1);
+	static function suggestUsername($givenName, $familyName = null) {
+		$name = $givenName;
+		if (!empty($familyName)) {
+			$initial = PKPString::substr($givenName, 0, 1);
+			$name = $initial . $familyName;
+		}
 
-		$suggestion = PKPString::regexp_replace('/[^a-zA-Z0-9_-]/', '', PKPString::strtolower($initial . $lastName));
-		$userDao = DAORegistry::getDAO('UserDAO');
+		$suggestion = PKPString::regexp_replace('/[^a-zA-Z0-9_-]/', '', Stringy\Stringy::create($name)->toAscii()->toLowerCase());
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		for ($i = ''; $userDao->userExistsByUsername($suggestion . $i); $i++);
 		return $suggestion . $i;
 	}
@@ -387,7 +398,7 @@ class Validation {
 	 * @return boolean
 	 */
 	static function isSiteAdmin() {
-		return Validation::isAuthorized(ROLE_ID_SITE_ADMIN);
+		return self::isAuthorized(ROLE_ID_SITE_ADMIN);
 	}
 
 	/**
@@ -397,7 +408,7 @@ class Validation {
 	 * @return boolean True IFF the administration operation is permitted
 	 */
 	static function canAdminister($administeredUserId, $administratorUserId) {
-		$roleDao = DAORegistry::getDAO('RoleDAO');
+		$roleDao = DAORegistry::getDAO('RoleDAO'); /* @var $roleDao RoleDAO */
 
 		// You can administer yourself
 		if ($administeredUserId == $administratorUserId) return true;
@@ -410,7 +421,7 @@ class Validation {
 
 		// Check for administered user group assignments in other contexts
 		// that the administrator user doesn't have a manager role in.
-		$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
+		$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
 		$userGroups = $userGroupDao->getByUserId($administeredUserId);
 		while ($userGroup = $userGroups->next()) {
 			if ($userGroup->getContextId()!=CONTEXT_SITE && !$roleDao->userHasRole($userGroup->getContextId(), $administratorUserId, ROLE_ID_MANAGER)) {
@@ -431,5 +442,3 @@ class Validation {
 		return true;
 	}
 }
-
-?>

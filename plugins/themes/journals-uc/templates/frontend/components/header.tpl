@@ -20,7 +20,7 @@
 
 <!DOCTYPE html>
 <html lang="{$currentLocale|replace:"_":"-"}" xml:lang="{$currentLocale|replace:"_":"-"}">
-{if !$pageTitleTranslated}{translate|assign:"pageTitleTranslated" key=$pageTitle}{/if}
+{if !$pageTitleTranslated}{capture assign="pageTitleTranslated"}{translate key=$pageTitle}{/capture}{/if}
 {include file="core:frontend/components/headerHead.tpl"}
 <body class="pkp_page_{$requestedPage|escape|default:"index"} pkp_op_{$requestedOp|escape|default:"index"}{if $showingLogo} has_site_logo{/if}">
 <div class="pkp_structure_page">
@@ -41,7 +41,7 @@
     </nav>
 
     {* Header *}
-    <header class="navbar navbar-default" id="headerNavigationContainer" role="banner" style="background: #e00122 url('{$baseUrl}/templates/images/uc/wavy-banner.png') no-repeat bottom center; background-size: 100%;">
+    <header class="navbar navbar-default" id="headerNavigationContainer" role="banner" style="background: #e00122 url('{$baseUrl}/templates/images/uc/wavy-banner.png') no-repeat bottom center; background-size: cover;">
 
         <div class="row">
             <div class="col-sm-6">

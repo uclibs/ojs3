@@ -1,6 +1,5 @@
 ./files/
 ./tests/
-./lib/pkp/plugins/metadata/nlm30/tests/filter
 ./lib/pkp/plugins/metadata/mods34/tests/filter/test.xml
 ./lib/pkp/tests/phpunit-env1.xml
 ./lib/pkp/tests/phpunit-env2.xml
@@ -22,3 +21,4 @@
 ./plugins/paymethod/paypal/vendor
 ./lib/pkp/tests
 ./node_modules
+./lib/ui-library/node_modules

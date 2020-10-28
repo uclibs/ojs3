@@ -1,9 +1,9 @@
 {**
  * fileUploadConfirmationForm.tpl
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * File revision confirmation form.
  *
@@ -29,6 +29,7 @@
 <form class="pkp_form pkp_controllers_grid_files" id="uploadForm"
 		action="{url op="confirmRevision" submissionId=$submissionId stageId=$stageId fileStage=$fileStage uploadedFileId=$uploadedFile->getFileId() reviewRoundId=$reviewRoundId}"
 		method="post">
+	{include file="controllers/notification/inPlaceNotification.tpl" notificationId="uploadFormNotification"}
 	{csrf}
 	{fbvFormArea id="file"}
 		<div id="possibleRevision" class="pkp_controllers_grid_files_possibleRevision" style="display:none;">

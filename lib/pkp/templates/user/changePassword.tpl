@@ -1,16 +1,12 @@
 {**
  * templates/user/changePassword.tpl
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Form to change a user's password.
  *}
-
-{* Help Link *}
-{help file="user-profile.md" class="pkp_help_tab"}
-
 <script>
 	$(function() {ldelim}
 		// Attach the form handler.
@@ -19,6 +15,9 @@
 </script>
 
 <form class="pkp_form" id="changePasswordForm" method="post" action="{url op="savePassword"}">
+	{* Help Link *}
+	{help file="user-profile" class="pkp_help_tab"}
+
 	{csrf}
 
 	{include file="controllers/notification/inPlaceNotification.tpl" notificationId="changePasswordFormNotification"}
@@ -30,11 +29,16 @@
 			{fbvElement type="text" password="true" id="oldPassword" value=$oldPassword maxLength="32" size=$fbvStyles.size.MEDIUM}
 		{/fbvFormSection}
 		{fbvFormSection label="user.profile.newPassword"}
-			{translate|assign:"passwordLengthRestriction" key="user.register.form.passwordLengthRestriction" length=$minPasswordLength}
+			{capture assign="passwordLengthRestriction"}{translate key="user.register.form.passwordLengthRestriction" length=$minPasswordLength}{/capture}
 			{fbvElement type="text" password="true" id="password" value=$oldPassword label=$passwordLengthRestriction subLabelTranslate=false maxLength="32" size=$fbvStyles.size.MEDIUM}
 			{fbvElement type="text" password="true" id="password2" value=$oldPassword maxLength="32" label="user.profile.repeatNewPassword" size=$fbvStyles.size.MEDIUM}
 		{/fbvFormSection}
 
 		{fbvFormButtons submitText="common.save"}
+
+		<p>
+			{capture assign="privacyUrl"}{url router=$smarty.const.ROUTE_PAGE page="about" op="privacy"}{/capture}
+			{translate key="user.privacyLink" privacyUrl=$privacyUrl}
+		</p>
 	{/fbvFormArea}
 </form>

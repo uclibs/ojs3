@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/queries/QueryNotesGridCellProvider.inc.php
  *
- * Copyright (c) 2016-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2016-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class QueryNotesGridCellProvider
  * @ingroup controllers_grid_queries
@@ -46,7 +46,7 @@ class QueryNotesGridCellProvider extends DataObjectGridCellProvider {
 
 		switch ($columnId) {
 			case 'from':
-				return array('label' => ($user?$user->getUsername():'&mdash;') . '<br />' . date('M d', strtotime($element->getDateCreated())));
+				return array('label' => ($user?$user->getUsername():'&mdash;') . '<br />' . strftime(Config::getVar('general','datetime_format_short'), strtotime($element->getDateCreated())));
 		}
 
 		return parent::getTemplateVarsFromRowColumn($row, $column);
@@ -55,11 +55,11 @@ class QueryNotesGridCellProvider extends DataObjectGridCellProvider {
 	/**
 	 * @copydoc GridCellProvider::getCellActions()
 	 */
-	function getCellActions($request, $row, $column) {
+	function getCellActions($request, $row, $column, $position = GRID_ACTION_POSITION_DEFAULT) {
 		switch ($column->getId()) {
 			case 'contents':
 				$element = $row->getData();
-				$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
+				$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
 				import('lib.pkp.classes.submission.SubmissionFile');
 				$submissionFiles = $submissionFileDao->getLatestRevisionsByAssocId(
 					ASSOC_TYPE_NOTE, $element->getId(),
@@ -73,8 +73,8 @@ class QueryNotesGridCellProvider extends DataObjectGridCellProvider {
 				}
 				return $actions;
 		}
-		return parent::getCellActions($request, $row, $column);
+		return parent::getCellActions($request, $row, $column, $position);
 	}
 }
 
-?>
+

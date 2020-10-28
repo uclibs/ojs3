@@ -3,9 +3,9 @@
 /**
  * @file pages/about/AboutSiteHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class AboutSiteHandler
  * @ingroup pages_about
@@ -21,7 +21,7 @@ class AboutSiteHandler extends Handler {
 	 */
 	function __construct() {
 		parent::__construct();
-		AppLocale::requireComponents(LOCALE_COMPONENT_APP_COMMON, LOCALE_COMPONENT_PKP_USER);
+		AppLocale::requireComponents(LOCALE_COMPONENT_APP_COMMON, LOCALE_COMPONENT_PKP_USER, LOCALE_COMPONENT_PKP_MANAGER);
 	}
 
 	/**
@@ -30,7 +30,7 @@ class AboutSiteHandler extends Handler {
 	 * @param $request PKPRequest
 	 */
 	function aboutThisPublishingSystem($args, $request) {
-		$versionDao = DAORegistry::getDAO('VersionDAO');
+		$versionDao = DAORegistry::getDAO('VersionDAO'); /* @var $versionDao VersionDAO */
 		$version = $versionDao->getCurrentVersion();
 
 		$templateMgr = TemplateManager::getManager($request);
@@ -44,6 +44,28 @@ class AboutSiteHandler extends Handler {
 
 		$templateMgr->display('frontend/pages/aboutThisPublishingSystem.tpl');
 	}
-}
 
-?>
+	/**
+	 * Display privacy policy page.
+	 * @param $args array
+	 * @param $request PKPRequest
+	 */
+	function privacy($args, $request) {
+		$templateMgr = TemplateManager::getManager($request);
+		$this->setupTemplate($request);
+		$context = $request->getContext();
+		$enableSiteWidePrivacyStatement = Config::getVar('general', 'sitewide_privacy_statement');
+		if (!$enableSiteWidePrivacyStatement && $context) {
+			$privacyStatement = $context->getLocalizedData('privacyStatement');
+		} else {
+			$privacyStatement = $request->getSite()->getLocalizedData('privacyStatement');
+		}
+		if (!$privacyStatement) {
+			$dispatcher = $this->getDispatcher();
+			$dispatcher->handle404();
+		}
+		$templateMgr->assign('privacyStatement', $privacyStatement);
+
+		$templateMgr->display('frontend/pages/privacy.tpl');
+	}
+}

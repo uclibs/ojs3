@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/subscriptions/SubscriptionTypesGridHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubscriptionTypesGridHandler
  * @ingroup controllers_grid_subscriptions
@@ -142,14 +142,12 @@ class SubscriptionTypesGridHandler extends GridHandler {
 
 	/**
 	 * @copydoc GridHandler::loadData()
-	 * @param $request PKPRequest
-	 * @return array Grid data.
 	 */
 	protected function loadData($request, $filter) {
 		// Get the context.
 		$journal = $request->getContext();
 
-		$subscriptionTypeDao = DAORegistry::getDAO('SubscriptionTypeDAO');
+		$subscriptionTypeDao = DAORegistry::getDAO('SubscriptionTypeDAO'); /* @var $subscriptionTypeDao SubscriptionTypeDAO */
 		$rangeInfo = $this->getGridRangeInfo($request, $this->getId());
 		return $subscriptionTypeDao->getByJournalId($journal->getId());
 	}
@@ -177,7 +175,7 @@ class SubscriptionTypesGridHandler extends GridHandler {
 	function editSubscriptionType($args, $request) {
 		// Form handling.
 		$subscriptionTypeForm = new SubscriptionTypeForm($request->getJournal()->getId(), $request->getUserVar('rowId'));
-		$subscriptionTypeForm->initData($args, $request);
+		$subscriptionTypeForm->initData();
 		return new JSONMessage(true, $subscriptionTypeForm->fetch($request));
 	}
 
@@ -194,7 +192,7 @@ class SubscriptionTypesGridHandler extends GridHandler {
 		$subscriptionTypeForm->readInputData();
 
 		if ($subscriptionTypeForm->validate()) {
-			$subscriptionTypeForm->execute($args, $request);
+			$subscriptionTypeForm->execute();
 			$notificationManager = new NotificationManager();
 			$notificationManager->createTrivialNotification($request->getUser()->getId(), NOTIFICATION_TYPE_SUCCESS);
 			// Prepare the grid row data.
@@ -218,10 +216,10 @@ class SubscriptionTypesGridHandler extends GridHandler {
 
 		// Identify the subscription type ID.
 		$subscriptionTypeId = $request->getUserVar('rowId');
-		$subscriptionTypeDao = DAORegistry::getDAO('SubscriptionTypeDAO');
+		$subscriptionTypeDao = DAORegistry::getDAO('SubscriptionTypeDAO'); /* @var $subscriptionTypeDao SubscriptionTypeDAO */
 		$subscriptionTypeDao->deleteById($subscriptionTypeId, $context->getId());
 		return DAO::getDataChangedEvent($subscriptionTypeId);
 	}
 }
 
-?>
+

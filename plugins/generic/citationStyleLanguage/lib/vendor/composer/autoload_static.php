@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit04e3668cf13fe896327af89db10d2fb4
+class ComposerStaticInit3020b713211e943828d81705414ee548
 {
     public static $files = array (
         '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
@@ -14,6 +14,8 @@ class ComposerStaticInit04e3668cf13fe896327af89db10d2fb4
         'S' => 
         array (
             'Symfony\\Polyfill\\Mbstring\\' => 26,
+            'Seboettg\\Collection\\' => 20,
+            'Seboettg\\CiteProc\\' => 18,
         ),
         'M' => 
         array (
@@ -26,23 +28,25 @@ class ComposerStaticInit04e3668cf13fe896327af89db10d2fb4
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-mbstring',
         ),
+        'Seboettg\\Collection\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/seboettg/collection/src/Seboettg/Collection',
+        ),
+        'Seboettg\\CiteProc\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/seboettg/citeproc-php/src',
+        ),
         'MyCLabs\\Enum\\' => 
         array (
             0 => __DIR__ . '/..' . '/myclabs/php-enum/src',
         ),
     );
 
-    public static $fallbackDirsPsr4 = array (
-        0 => __DIR__ . '/..' . '/seboettg/collection/src',
-        1 => __DIR__ . '/..' . '/seboettg/citeproc-php/src',
-    );
-
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit04e3668cf13fe896327af89db10d2fb4::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit04e3668cf13fe896327af89db10d2fb4::$prefixDirsPsr4;
-            $loader->fallbackDirsPsr4 = ComposerStaticInit04e3668cf13fe896327af89db10d2fb4::$fallbackDirsPsr4;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit3020b713211e943828d81705414ee548::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit3020b713211e943828d81705414ee548::$prefixDirsPsr4;
 
         }, null, ClassLoader::class);
     }

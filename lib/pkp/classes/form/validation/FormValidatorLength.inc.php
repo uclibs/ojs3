@@ -3,9 +3,9 @@
 /**
  * @file classes/form/validation/FormValidatorLength.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FormValidatorLength
  * @ingroup form_validation
@@ -47,9 +47,7 @@ class FormValidatorLength extends FormValidator {
 	 * @return string
 	 */
 	function getMessage() {
-		$siteDao = DAORegistry::getDAO('SiteDAO');
-		$site = $siteDao->getSite();
-		return __($this->_message, array('length' => $site->getMinPasswordLength()));
+		return __($this->_message, array('length' => $this->_length));
 	}
 
 
@@ -86,4 +84,4 @@ class FormValidatorLength extends FormValidator {
 	}
 }
 
-?>
+

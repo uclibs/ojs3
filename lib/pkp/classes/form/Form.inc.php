@@ -10,9 +10,9 @@
 /**
  * @file classes/form/Form.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Form
  * @ingroup core
@@ -31,17 +31,14 @@ import('lib.pkp.classes.form.validation.FormValidatorBoolean');
 import('lib.pkp.classes.form.validation.FormValidatorControlledVocab');
 import('lib.pkp.classes.form.validation.FormValidatorCustom');
 import('lib.pkp.classes.form.validation.FormValidatorReCaptcha');
-import('lib.pkp.classes.form.validation.FormValidatorDate');
 import('lib.pkp.classes.form.validation.FormValidatorEmail');
 import('lib.pkp.classes.form.validation.FormValidatorInSet');
 import('lib.pkp.classes.form.validation.FormValidatorLength');
-import('lib.pkp.classes.form.validation.FormValidatorListbuilder');
 import('lib.pkp.classes.form.validation.FormValidatorLocale');
 import('lib.pkp.classes.form.validation.FormValidatorLocaleEmail');
 import('lib.pkp.classes.form.validation.FormValidatorCSRF');
 import('lib.pkp.classes.form.validation.FormValidatorPost');
 import('lib.pkp.classes.form.validation.FormValidatorRegExp');
-import('lib.pkp.classes.form.validation.FormValidatorUri');
 import('lib.pkp.classes.form.validation.FormValidatorUrl');
 import('lib.pkp.classes.form.validation.FormValidatorLocaleUrl');
 import('lib.pkp.classes.form.validation.FormValidatorISSN');
@@ -189,11 +186,10 @@ class Form {
 				'isError' => !$this->isValid(),
 				'errors' => $this->getErrorsArray(),
 				'formLocales' => $this->supportedLocales,
-				'formLocale' => $this->getFormLocale(),
+				'formLocale' => $this->getDefaultFormLocale(),
 			)
 		));
 
-		$templateMgr->register_function('form_language_chooser', array($this, 'smartyFormLanguageChooser'));
 		if ($display) {
 			$templateMgr->display($this->_template);
 			$returner = null;
@@ -221,11 +217,10 @@ class Form {
 	 * @param $key string|array If a string, then set a single field. If an associative array, then set many.
 	 * @param $value mixed
 	 */
-	function setData($key, $value) {
+	function setData($key, $value = null) {
 		if (is_array($key)) foreach($key as $aKey => $aValue) {
 			$this->setData($aKey, $aValue);
 		} else {
-			if (is_string($value)) $value = Core::cleanVar($value);
 			$this->_data[$key] = $value;
 		}
 	}
@@ -252,6 +247,7 @@ class Form {
 
 	/**
 	 * Validate form data.
+	 * @param $callHooks boolean True (default) iff hooks are to be called.
 	 */
 	function validate($callHooks = true) {
 		if (!isset($this->errorsArray)) {
@@ -286,8 +282,7 @@ class Form {
 		}
 
 		if (!defined('SESSION_DISABLE_INIT')) {
-			$application = PKPApplication::getApplication();
-			$request = $application->getRequest();
+			$request = Application::get()->getRequest();
 			$user = $request->getUser();
 
 			if (!$this->isValid() && $user) {
@@ -306,15 +301,17 @@ class Form {
 	/**
 	 * Execute the form's action.
 	 * (Note that it is assumed that the form has already been validated.)
+	 * @param mixed $functionArgs,... Arguments from the caller to be passed to the hook consumer
+	 * @return mixed Result from the consumer to be passed to the caller.  Send a true-ish result if you want the caller to do something with the return value.
 	 */
-	function execute() {
+	function execute(...$functionArgs) {
 		// Call hooks based on the calling entity, assuming
 		// this method is only called by a subclass. Results
 		// in hook calls named e.g. "papergalleyform::execute"
 		// Note that class and function names are always lower
 		// case.
 		$returner = null;
-		HookRegistry::call(strtolower_codesafe(get_class($this) . '::execute'), array_merge(array($this), func_get_args(), array(&$returner)));
+		HookRegistry::call(strtolower_codesafe(get_class($this) . '::execute'), array_merge(array($this), $functionArgs, array(&$returner)));
 		return $returner;
 	}
 
@@ -331,16 +328,6 @@ class Form {
 		$returner = array();
 		HookRegistry::call(strtolower_codesafe(get_class($this) . '::getLocaleFieldNames'), array($this, &$returner));
 		return $returner;
-	}
-
-	/**
-	 * Determine whether or not the current request results from a resubmit
-	 * of locale data resulting from a form language change.
-	 * @return boolean
-	 */
-	function isLocaleResubmit() {
-		$formLocale = Request::getUserVar('formLocale');
-		return (!empty($formLocale));
 	}
 
 	/**
@@ -362,15 +349,17 @@ class Form {
 	}
 
 	/**
-	 * Get the current form locale.
-	 * @return string
+	 * Add a supported locale.
+	 * @param $supportedLocale string
 	 */
-	function getFormLocale() {
-		$formLocale = Request::getUserVar('formLocale');
-		if (!$formLocale || !isset($this->supportedLocales[$formLocale])) {
-			$formLocale = $this->getDefaultFormLocale();
+	function addSupportedFormLocale($supportedLocale) {
+		if (!in_array($supportedLocale, $this->supportedLocales)) {
+			$site = Application::get()->getRequest()->getSite();
+			$siteSupportedLocales = $site->getSupportedLocaleNames();
+			if (array_key_exists($supportedLocale, $siteSupportedLocales)) {
+				$this->supportedLocales[$supportedLocale] = $siteSupportedLocales[$supportedLocale];
+			}
 		}
-		return $formLocale;
 	}
 
 	/**
@@ -384,8 +373,9 @@ class Form {
 		// Note that class and function names are always lower
 		// case.
 		HookRegistry::call(strtolower_codesafe(get_class($this) . '::readUserVars'), array($this, &$vars));
+		$request = Application::get()->getRequest();
 		foreach ($vars as $k) {
-			$this->setData($k, Request::getUserVar($k));
+			$this->setData($k, $request->getUserVar($k));
 		}
 	}
 
@@ -437,35 +427,6 @@ class Form {
 		return $this->errorsArray;
 	}
 
-	/**
-	 * Add hidden form parameters for the localized fields for this form
-	 * and display the language chooser field
-	 * @param $params array
-	 * @param $smarty object
-	 */
-	function smartyFormLanguageChooser($params, &$smarty) {
-		$returner = '';
-
-		// Print back all non-current language field values so that they
-		// are not lost.
-		$formLocale = $this->getFormLocale();
-		foreach ($this->getLocaleFieldNames() as $field) {
-			$values = $this->getData($field);
-			if (!is_array($values)) continue;
-			foreach ($values as $locale => $value) {
-				if ($locale != $formLocale) $returner .= $this->_decomposeArray($field, $value, array($locale));
-			}
-		}
-
-		// Display the language selector widget.
-		$returner .= '<div id="languageSelector"><select size="1" name="formLocale" id="formLocale" onchange="changeFormAction(\'' . htmlentities($params['form'], ENT_COMPAT, LOCALE_ENCODING) . '\', \'' . htmlentities($params['url'], ENT_QUOTES, LOCALE_ENCODING) . '\')" class="selectMenu">';
-		foreach ($this->supportedLocales as $locale => $name) {
-			$returner .= '<option ' . ($locale == $formLocale?'selected="selected" ':'') . 'value="' . htmlentities($locale, ENT_COMPAT, LOCALE_ENCODING) . '">' . htmlentities($name, ENT_COMPAT, LOCALE_ENCODING) . '</option>';
-		}
-		$returner .= '</select></div>';
-		return $returner;
-	}
-
 	//
 	// Private helper methods
 	//
@@ -499,4 +460,4 @@ class Form {
 	}
 }
 
-?>
+

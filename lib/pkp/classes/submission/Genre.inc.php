@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/Genre.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Genre
  * @ingroup submission
@@ -17,8 +17,6 @@
 define('GENRE_CATEGORY_DOCUMENT', 1);
 define('GENRE_CATEGORY_ARTWORK', 2);
 define('GENRE_CATEGORY_SUPPLEMENTARY', 3);
-
-define('GENRE_SORTABLE_DESIGNATION', '##');
 
 class Genre extends DataObject {
 
@@ -113,22 +111,6 @@ class Genre extends DataObject {
 	}
 
 	/**
-	 * Get sortable flag of the context type
-	 * @return bool
-	 */
-	function getSortable() {
-		return $this->getData('sortable');
-	}
-
-	/**
-	 * Set sortable flag of the context type
-	 * @param $sortable bool
-	 */
-	function setSortable($sortable) {
-		$this->setData('sortable', $sortable);
-	}
-
-	/**
 	 * Get context file category (e.g. artwork or document)
 	 * @return int GENRE_CATEGORY_...
 	 */
@@ -175,6 +157,16 @@ class Genre extends DataObject {
 	function setSupplementary($supplementary) {
 		$this->setData('supplementary', $supplementary);
 	}
+
+	/**
+	 * Is this a default genre.
+	 * @return bool
+	 */
+	function isDefault() {
+		$genreDao = DAORegistry::getDAO('GenreDAO'); /* @var $genreDao GenreDAO */
+		$defaultKeys = $genreDao->getDefaultKeys();
+		return in_array($this->getKey(), $defaultKeys);
+	}
 }
 
-?>
+

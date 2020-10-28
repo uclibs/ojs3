@@ -6,9 +6,9 @@
 /**
  * @file controllers/api/user/UserApiHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class UserApiHandler
  * @ingroup controllers_api_user
@@ -83,7 +83,7 @@ class UserApiHandler extends PKPHandler {
 		}
 
 		// Persist the validated setting.
-		$userSettingsDao = DAORegistry::getDAO('UserSettingsDAO');
+		$userSettingsDao = DAORegistry::getDAO('UserSettingsDAO'); /* @var $userSettingsDao UserSettingsDAO */
 		$userSettingsDao->updateSetting($user->getId(), $settingName, $settingValue, $settingType);
 
 		// Return a success message.
@@ -99,8 +99,8 @@ class UserApiHandler extends PKPHandler {
 	 */
 	function suggestUsername($args, $request) {
 		$suggestion = Validation::suggestUsername(
-			$request->getUserVar('firstName'),
-			$request->getUserVar('lastName')
+			$request->getUserVar('givenName'),
+			$request->getUserVar('familyName')
 		);
 
 		return new JSONMessage(true, $suggestion);
@@ -130,4 +130,4 @@ class UserApiHandler extends PKPHandler {
 	}
 }
 
-?>
+

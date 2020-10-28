@@ -3,9 +3,9 @@
 /**
  * @file controllers/api/file/ManageFileApiHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ManageFileApiHandler
  * @ingroup controllers_api_file
@@ -41,7 +41,7 @@ class ManageFileApiHandler extends PKPManageFileApiHandler {
 		$stageId = $request->getUserVar('stageId');
 		import('controllers.tab.pubIds.form.PublicIdentifiersForm');
 		$form = new PublicIdentifiersForm($submissionFile, $stageId);
-		$form->initData($request);
+		$form->initData();
 		return new JSONMessage(true, $form->fetch($request));
 	}
 
@@ -57,8 +57,8 @@ class ManageFileApiHandler extends PKPManageFileApiHandler {
 		import('controllers.tab.pubIds.form.PublicIdentifiersForm');
 		$form = new PublicIdentifiersForm($submissionFile, $stageId);
 		$form->readInputData();
-		if ($form->validate($request)) {
-			$form->execute($request);
+		if ($form->validate()) {
+			$form->execute();
 			return DAO::getDataChangedEvent($submissionFile->getId());
 		} else {
 			return new JSONMessage(true, $form->fetch($request));
@@ -92,8 +92,8 @@ class ManageFileApiHandler extends PKPManageFileApiHandler {
 		// update the submission's search index if this was a proof file
 		if ($submissionFile->getFileStage() == SUBMISSION_FILE_PROOF) {
 			import('lib.pkp.classes.search.SubmissionSearch');
-			import('classes.search.ArticleSearchIndex');
-			ArticleSearchIndex::deleteTextIndex($submission->getId(), SUBMISSION_SEARCH_GALLEY_FILE, $submissionFile->getFileId());
+			$articleSearchIndex = Application::getSubmissionSearchIndex();
+			$articleSearchIndex->deleteTextIndex($submission->getId(), SUBMISSION_SEARCH_GALLEY_FILE, $submissionFile->getFileId());
 		}
 	}
 
@@ -102,7 +102,7 @@ class ManageFileApiHandler extends PKPManageFileApiHandler {
 	 * @param $request PKPRequest
 	 * @param $submission Submission
 	 * @param $submissionFile SubmissionFile
-	 * @param $user PKPUser
+	 * @param $user User
 	 */
 	function logDeletionEvent($request, $submission, $submissionFile, $user) {
 		// log the deletion event.
@@ -122,6 +122,29 @@ class ManageFileApiHandler extends PKPManageFileApiHandler {
 		}
 
 	}
+
+	/**
+	 * @copydoc PKPManageFileApiHandler::detachEntities
+	 */
+	function detachEntities($submissionFile, $submissionId, $stageId) {
+		parent::detachEntities($submissionFile, $submissionId, $stageId);
+
+		switch ($submissionFile->getFileStage()) {
+			case SUBMISSION_FILE_PROOF:
+				$galleyDao = DAORegistry::getDAO('ArticleGalleyDAO'); /* @var $galleyDao ArticleGalleyDAO */
+				assert($submissionFile->getAssocType() == ASSOC_TYPE_REPRESENTATION);
+				$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
+				$allRevisions = $submissionFileDao->getAllRevisionsByAssocId(ASSOC_TYPE_REPRESENTATION, $submissionFile->getAssocId());
+				$galley = $galleyDao->getById($submissionFile->getAssocId());
+				if ($galley) {
+					if (count($allRevisions) <= 1) {
+						$galley->_data['fileId'] = null; // Work around pkp/pkp-lib#5740
+						$galleyDao->updateObject($galley);
+					}
+				}
+				break;
+		}
+	}
 }
 
-?>
+

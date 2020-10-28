@@ -3,9 +3,9 @@
 /**
  * @file plugins/importexport/native/filter/PKPAuthorNativeXmlFilter.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPAuthorNativeXmlFilter
  * @ingroup plugins_importexport_native
@@ -79,18 +79,21 @@ class PKPAuthorNativeXmlFilter extends NativeExportFilter {
 
 		// Create the author node
 		$authorNode = $doc->createElementNS($deployment->getNamespace(), 'author');
+
 		if ($author->getPrimaryContact()) $authorNode->setAttribute('primary_contact', 'true');
 		if ($author->getIncludeInBrowse()) $authorNode->setAttribute('include_in_browse', 'true');
 
-		$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
+		$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
 		$userGroup = $userGroupDao->getById($author->getUserGroupId());
 		assert(isset($userGroup));
 		$authorNode->setAttribute('user_group_ref', $userGroup->getName($context->getPrimaryLocale()));
+		$authorNode->setAttribute('seq', $author->getSequence());
+
+		$authorNode->setAttribute('id', $author->getId());
 
 		// Add metadata
-		$authorNode->appendChild($doc->createElementNS($deployment->getNamespace(), 'firstname', htmlspecialchars($author->getFirstName(), ENT_COMPAT, 'UTF-8')));
-		$this->createOptionalNode($doc, $authorNode, 'middlename', $author->getMiddleName());
-		$authorNode->appendChild($doc->createElementNS($deployment->getNamespace(), 'lastname', htmlspecialchars($author->getLastName(), ENT_COMPAT, 'UTF-8')));
+		$this->createLocalizedNodes($doc, $authorNode, 'givenname', $author->getGivenName(null));
+		$this->createLocalizedNodes($doc, $authorNode, 'familyname', $author->getFamilyName(null));
 
 		$this->createLocalizedNodes($doc, $authorNode, 'affiliation', $author->getAffiliation(null));
 
@@ -105,4 +108,4 @@ class PKPAuthorNativeXmlFilter extends NativeExportFilter {
 	}
 }
 
-?>
+

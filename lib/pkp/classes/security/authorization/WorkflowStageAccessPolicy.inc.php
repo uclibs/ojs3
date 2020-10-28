@@ -2,9 +2,9 @@
 /**
  * @file classes/security/authorization/WorkflowStageAccessPolicy.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class WorkflowStageAccessPolicy
  * @ingroup security_authorization
@@ -24,8 +24,10 @@ class WorkflowStageAccessPolicy extends ContextPolicy {
 	 * @param $roleAssignments array
 	 * @param $submissionParameterName string
 	 * @param $stageId integer One of the WORKFLOW_STAGE_ID_* constants.
+	 * @param $workflowType string|null Which workflow the stage access must be granted
+	 *  for. One of WORKFLOW_TYPE_*.
 	 */
-	function __construct($request, &$args, $roleAssignments, $submissionParameterName, $stageId) {
+	function __construct($request, &$args, $roleAssignments, $submissionParameterName, $stageId, $workflowType = null) {
 		parent::__construct($request);
 
 		// A workflow stage component requires a valid workflow stage.
@@ -35,10 +37,11 @@ class WorkflowStageAccessPolicy extends ContextPolicy {
 		// A workflow stage component can only be called if there's a
 		// valid submission in the request.
 		import('lib.pkp.classes.security.authorization.internal.SubmissionRequiredPolicy');
-		$this->addPolicy(new SubmissionRequiredPolicy($request, $args, $submissionParameterName));
+		$submissionRequiredPolicy = new SubmissionRequiredPolicy($request, $args, $submissionParameterName);
+		$this->addPolicy($submissionRequiredPolicy);
 
 		import('lib.pkp.classes.security.authorization.internal.UserAccessibleWorkflowStageRequiredPolicy');
-		$this->addPolicy(new UserAccessibleWorkflowStageRequiredPolicy($request));
+		$this->addPolicy(new UserAccessibleWorkflowStageRequiredPolicy($request, $workflowType));
 
 		// Users can access all whitelisted operations for submissions and workflow stages...
 		$roleBasedPolicy = new PolicySet(COMBINING_PERMIT_OVERRIDES);
@@ -49,8 +52,8 @@ class WorkflowStageAccessPolicy extends ContextPolicy {
 
 		// ... if they can access the requested workflow stage.
 		import('lib.pkp.classes.security.authorization.internal.UserAccessibleWorkflowStagePolicy');
-		$this->addPolicy(new UserAccessibleWorkflowStagePolicy($stageId));
+		$this->addPolicy(new UserAccessibleWorkflowStagePolicy($stageId, $workflowType));
 	}
 }
 
-?>
+

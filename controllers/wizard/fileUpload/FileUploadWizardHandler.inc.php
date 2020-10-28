@@ -8,9 +8,9 @@
 /**
  * @file controllers/wizard/fileUpload/FileUploadWizardHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FileUploadWizardHandler
  * @ingroup controllers_wizard_fileUpload
@@ -23,27 +23,15 @@
 import('lib.pkp.controllers.wizard.fileUpload.PKPFileUploadWizardHandler');
 
 class FileUploadWizardHandler extends PKPFileUploadWizardHandler {
-
 	//
 	// Implement template methods from PKPHandler
 	//
-
 	function authorize($request, &$args, $roleAssignments) {
-		// This is validated in parent's authorization policy.
-		$stageId = (int)$request->getUserVar('stageId');
-
-		// Authorize review round id when this handler is used in review stages.
-		import('lib.pkp.classes.submission.SubmissionFile');
-		if ($stageId == WORKFLOW_STAGE_ID_EXTERNAL_REVIEW && $request->getUserVar('fileStage') != SUBMISSION_FILE_QUERY) {
-			import('lib.pkp.classes.security.authorization.internal.ReviewRoundRequiredPolicy');
-			$this->addPolicy(new ReviewRoundRequiredPolicy($request, $args));
-		}
-
 		// We validate file stage outside a policy because
 		// we don't need to validate in another places.
 		$fileStage = $request->getUserVar('fileStage');
 		if ($fileStage) {
-			$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
+			$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
 			$fileStages = $submissionFileDao->getAllFileStages();
 			if (!in_array($fileStage, $fileStages)) {
 				return false;
@@ -69,7 +57,19 @@ class FileUploadWizardHandler extends PKPFileUploadWizardHandler {
 		}
 		if ($fileIdToValidate) {
 			import('lib.pkp.classes.security.authorization.SubmissionFileAccessPolicy');
-			$this->addPolicy(new SubmissionFileAccessPolicy($request, $args, $roleAssignments, SUBMISSION_FILE_ACCESS_READ, $fileIdToValidate));
+			$this->addPolicy(new SubmissionFileAccessPolicy($request, $args, $roleAssignments, SUBMISSION_FILE_ACCESS_MODIFY, $fileIdToValidate));
+		}
+
+		// Allow both reviewers (if in review) and context roles.
+		$stageId = (int)$request->getUserVar('stageId');
+		import('lib.pkp.classes.security.authorization.ReviewStageAccessPolicy');
+		$this->addPolicy(new ReviewStageAccessPolicy($request, $args, $roleAssignments, 'submissionId', $stageId));
+
+		// Authorize review round id when this handler is used in review stages.
+		import('lib.pkp.classes.submission.SubmissionFile'); // Constants
+		if ($stageId == WORKFLOW_STAGE_ID_EXTERNAL_REVIEW && !in_array($request->getUserVar('fileStage'), array(SUBMISSION_FILE_QUERY, SUBMISSION_FILE_DEPENDENT))) {
+			import('lib.pkp.classes.security.authorization.internal.ReviewRoundRequiredPolicy');
+			$this->addPolicy(new ReviewRoundRequiredPolicy($request, $args));
 		}
 
 		return parent::authorize($request, $args, $roleAssignments);
@@ -83,9 +83,9 @@ class FileUploadWizardHandler extends PKPFileUploadWizardHandler {
 
 		switch ($submissionFile->getFileStage()) {
 			case SUBMISSION_FILE_PROOF:
-				$galleyDao = DAORegistry::getDAO('ArticleGalleyDAO');
+				$galleyDao = DAORegistry::getDAO('ArticleGalleyDAO'); /* @var $galleyDao ArticleGalleyDAO */
 				assert($submissionFile->getAssocType() == ASSOC_TYPE_REPRESENTATION);
-				$galley = $galleyDao->getById($submissionFile->getAssocId(), $submissionFile->getSubmissionId());
+				$galley = $galleyDao->getById($submissionFile->getAssocId());
 				if ($galley) {
 					$galley->setFileId($submissionFile->getFileId());
 					$galleyDao->updateObject($galley);
@@ -95,4 +95,4 @@ class FileUploadWizardHandler extends PKPFileUploadWizardHandler {
 	}
 }
 
-?>
+

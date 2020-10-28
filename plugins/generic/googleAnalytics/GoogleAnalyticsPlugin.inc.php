@@ -3,9 +3,9 @@
 /**
  * @file plugins/generic/googleAnalytics/GoogleAnalyticsPlugin.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class GoogleAnalyticsPlugin
  * @ingroup plugins_generic_googleAnalytics
@@ -17,15 +17,12 @@ import('lib.pkp.classes.plugins.GenericPlugin');
 
 class GoogleAnalyticsPlugin extends GenericPlugin {
 	/**
-	 * Called as a plugin is registered to the registry
-	 * @param $category String Name of category plugin was registered to
-	 * @return boolean True iff plugin initialized successfully; if false,
-	 * 	the plugin will not be registered.
+	 * @copydoc Plugin::register()
 	 */
-	function register($category, $path) {
-		$success = parent::register($category, $path);
+	function register($category, $path, $mainContextId = null) {
+		$success = parent::register($category, $path, $mainContextId);
 		if (!Config::getVar('general', 'installed') || defined('RUNNING_UPGRADE')) return true;
-		if ($success && $this->getEnabled()) {
+		if ($success && $this->getEnabled($mainContextId)) {
 			// Insert Google Analytics page tag to footer
 			HookRegistry::register('TemplateManager::display', array($this, 'registerScript'));
 		}
@@ -33,16 +30,14 @@ class GoogleAnalyticsPlugin extends GenericPlugin {
 	}
 
 	/**
-	 * Get the plugin display name.
-	 * @return string
+	 * @copydoc Plugin::getDisplayName()
 	 */
 	function getDisplayName() {
 		return __('plugins.generic.googleAnalytics.displayName');
 	}
 
 	/**
-	 * Get the plugin description.
-	 * @return string
+	 * @copydoc Plugin::getDescription()
 	 */
 	function getDescription() {
 		return __('plugins.generic.googleAnalytics.description');
@@ -80,7 +75,7 @@ class GoogleAnalyticsPlugin extends GenericPlugin {
 
 				AppLocale::requireComponents(LOCALE_COMPONENT_APP_COMMON,  LOCALE_COMPONENT_PKP_MANAGER);
 				$templateMgr = TemplateManager::getManager($request);
-				$templateMgr->register_function('plugin_url', array($this, 'smartyPluginUrl'));
+				$templateMgr->registerPlugin('function', 'plugin_url', array($this, 'smartyPluginUrl'));
 
 				$this->import('GoogleAnalyticsSettingsForm');
 				$form = new GoogleAnalyticsSettingsForm($this, $context->getId());
@@ -100,19 +95,12 @@ class GoogleAnalyticsPlugin extends GenericPlugin {
 	}
 
 	/**
-	 * @copydoc PKPPlugin::getTemplatePath
-	 */
-	function getTemplatePath($inCore = false) {
-		return parent::getTemplatePath($inCore) . 'templates/';
-	}
-
-	/**
 	 * Register the Google Analytics script tag
 	 * @param $hookName string
 	 * @param $params array
 	 */
 	function registerScript($hookName, $params) {
-		$request = $this->getRequest();
+		$request = Application::get()->getRequest();
 		$context = $request->getContext();
 		if (!$context) return false;
 		$router = $request->getRouter();
@@ -145,4 +133,3 @@ ga('send', 'pageview');
 	}
 }
 
-?>

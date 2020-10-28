@@ -1,9 +1,9 @@
 {**
  * templates/controllers/grid/announcements/form/announcementForm.tpl
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Announcement form to read/create/edit announcements.
  *}
@@ -52,7 +52,7 @@
 				{fbvElement type="textarea" multilingual="true" id="description" value=$description label="manager.announcements.form.descriptionInstructions" rich=true}
 			{/fbvFormSection}
 			{fbvFormSection title="manager.announcements.form.dateExpire" for="dataExpire"}
-				{fbvElement type="text" id="dateExpire" value=$dateExpire|date_format:$dateFormatShort label="manager.announcements.form.dateExpireInstructions" class="datepicker"}
+				{fbvElement type="text" id="dateExpire" name="dateExpire" value=$dateExpire label="manager.announcements.form.dateExpireInstructions" class="datepicker"}
 			{/fbvFormSection}
 			{if $announcement}{assign var="checked" value=false}{else}{assign var="checked" value=true}{/if}
 			{fbvFormSection for="sendAnnouncementNotification" list="true"}

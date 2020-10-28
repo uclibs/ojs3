@@ -3,9 +3,9 @@
 /**
  * @file plugins/generic/usageEvent/UsageEventPlugin.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class UsageEventPlugin
  * @ingroup plugins_generic_usageEvent
@@ -68,12 +68,12 @@ class UsageEventPlugin extends PKPUsageEventPlugin {
 					// different hook.
 					if ($op == 'view' && count($args) > 1) break;
 
-					$journal = $templateMgr->get_template_vars('currentContext');
-					$issue = $templateMgr->get_template_vars('issue');
-					$publishedArticle = $templateMgr->get_template_vars('article');
+					$journal = $templateMgr->getTemplateVars('currentContext');
+					$issue = $templateMgr->getTemplateVars('issue');
+					$submission = $templateMgr->getTemplateVars('article');
 
 					// No published objects, no usage event.
-					if (!$journal && !$issue && !$publishedArticle) break;
+					if (!$journal && !$issue && !$submission) break;
 
 					if ($journal) {
 						$pubObject = $journal;
@@ -88,9 +88,9 @@ class UsageEventPlugin extends PKPUsageEventPlugin {
 						$idParams = array('s' . $issue->getId());
 					}
 
-					if ($publishedArticle) {
-						$pubObject = $publishedArticle;
-						$assocType = ASSOC_TYPE_ARTICLE;
+					if ($submission) {
+						$pubObject = $submission;
+						$assocType = ASSOC_TYPE_SUBMISSION;
 						$canonicalUrlParams = array($pubObject->getId());
 						$idParams = array('m' . $pubObject->getId());
 					}
@@ -124,7 +124,7 @@ class UsageEventPlugin extends PKPUsageEventPlugin {
 					$canonicalUrlParams = array($article->getId(), $galley->getId(), $fileId);
 					$idParams = array('a' . $article->getId(), 'g' . $galley->getId(), 'f' . $fileId);
 					$downloadSuccess = false;
-					$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
+					$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
 					$pubObject = $submissionFileDao->getLatestRevision($fileId);
 					break;
 				default:
@@ -143,7 +143,7 @@ class UsageEventPlugin extends PKPUsageEventPlugin {
 		return array(
 			ASSOC_TYPE_JOURNAL,
 			ASSOC_TYPE_ISSUE,
-			ASSOC_TYPE_ARTICLE
+			ASSOC_TYPE_SUBMISSION,
 		);
 	}
 
@@ -151,9 +151,9 @@ class UsageEventPlugin extends PKPUsageEventPlugin {
 	 * @see PKPUsageEventPlugin::isPubIdObjectType()
 	 */
 	protected function isPubIdObjectType($pubObject) {
-		return is_a($pubObject, 'PublishedArticle');
+		return is_a($pubObject, 'Submission');
 	}
 
 }
 
-?>
+

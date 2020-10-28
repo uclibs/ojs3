@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/navigationMenus/NavigationMenusGridCellProvider.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class NavigationMenusGridCellProvider
  * @ingroup controllers_grid_navigationMenus
@@ -34,7 +34,7 @@ class NavigationMenusGridCellProvider extends GridCellProvider {
 						__('grid.action.edit'),
 						null,
 						true),
-					$navigationMenu->getTitle()
+					htmlspecialchars($navigationMenu->getTitle())
 				));
 		}
 		return parent::getCellActions($request, $row, $column, $position);
@@ -53,14 +53,28 @@ class NavigationMenusGridCellProvider extends GridCellProvider {
 		assert(is_a($navigationMenu, 'NavigationMenu') && !empty($columnId));
 
 		switch ($columnId) {
-		    case 'title':
-		        return array('label' => '');
-		    default:
-		        break;
+			case 'title':
+				return array('label' => '');
+			case 'nmis':
+				$navigationMenuItemDao = DAORegistry::getDAO('NavigationMenuItemDAO'); /* @var $navigationMenuItemDao NavigationMenuItemDAO */
+				$items = $navigationMenuItemDao->getByMenuId($navigationMenu->getId())->toArray();
+
+				$navigationMenusTitles = '';
+
+				$templateMgr = TemplateManager::getManager(Application::get()->getRequest());
+				import('classes.core.Services');
+				foreach ($items as $item) {
+					Services::get('navigationMenu')->transformNavMenuItemTitle($templateMgr, $item);
+					$navigationMenusTitles = $navigationMenusTitles.$item->getLocalizedTitle().', ';
+				}
+
+				$navigationMenusTitles = trim($navigationMenusTitles, ', ');
+
+				return array('label' => $navigationMenusTitles);
+			default:
+				break;
 		}
 
 		return parent::getTemplateVarsFromRowColumn($row, $column);
 	}
 }
-
-?>

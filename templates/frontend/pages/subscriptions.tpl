@@ -1,9 +1,9 @@
 {**
  * templates/frontend/pages/subscriptions.tpl
  *
- * Copyright (c) 2013-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2013-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * About the Journal Subscriptions.
  *
@@ -12,6 +12,9 @@
 
 <div class="page page_subscriptions">
 	{include file="frontend/components/breadcrumbs.tpl" currentTitleKey="about.subscriptions"}
+	<h1>
+		{translate key="about.subscriptions"}
+	</h1>
 	{include file="frontend/components/subscriptionContact.tpl"}
 
 	<a name="subscriptionTypes"></a>
@@ -43,6 +46,13 @@
 				{/iterate}
 			</table>
 		</div>
+		{if $isUserLoggedIn}
+			<div class="subscriptions_individual_purchase">
+				<a class="action" href="{url page="user" op="purchaseSubscription" path="individual"}">
+					{translate key="user.subscriptions.purchaseNewSubscription"}
+				</a>
+			</div>
+		{/if}
 	{/if}
 
 	{if !$institutionalSubscriptionTypes->wasEmpty()}
@@ -71,6 +81,13 @@
 				</tr>
 			{/iterate}
 		</table>
+		{if $isUserLoggedIn}
+			<div class="subscriptions_institutional_purchase">
+				<a class="action" href="{url page="user" op="purchaseSubscription" path="institutional"}">
+					{translate key="user.subscriptions.purchaseNewSubscription"}
+				</a>
+			</div>
+		{/if}
 	{/if}
 </div>
 

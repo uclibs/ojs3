@@ -3,9 +3,9 @@
 /**
  * @file pages/login/LoginHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class LoginHandler
  * @ingroup pages_login
@@ -106,9 +106,10 @@ class LoginHandler extends Handler {
 			} else {
 				$source = $request->getUserVar('source');
 				$redirectNonSsl = Config::getVar('security', 'force_login_ssl') && !Config::getVar('security', 'force_ssl');
-				if (isset($source) && !empty($source)) {
+				if (preg_match('#^/\w#', $source) === 1) {
 					$request->redirectUrl($source);
-				} elseif ($redirectNonSsl) {
+				}
+				if ($redirectNonSsl) {
 					$request->redirectNonSSL();
 				} else {
 					$this->_redirectAfterLogin($request);
@@ -165,7 +166,7 @@ class LoginHandler extends Handler {
 		$templateMgr = TemplateManager::getManager($request);
 
 		$email = $request->getUserVar('email');
-		$userDao = DAORegistry::getDAO('UserDAO');
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$user = $userDao->getUserByEmail($email);
 
 		if ($user == null || ($hash = Validation::generatePasswordResetHash($user->getId())) == false) {
@@ -203,7 +204,7 @@ class LoginHandler extends Handler {
 		$this->setupTemplate($request);
 
 		$username = isset($args[0]) ? $args[0] : null;
-		$userDao = DAORegistry::getDAO('UserDAO');
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$confirmHash = $request->getUserVar('confirm');
 
 		if ($username == null || ($user = $userDao->getByUsername($username)) == null) {
@@ -225,7 +226,7 @@ class LoginHandler extends Handler {
 			$newPassword = Validation::generatePassword();
 
 			if ($user->getAuthId()) {
-				$authDao = DAORegistry::getDAO('AuthSourceDAO');
+				$authDao = DAORegistry::getDAO('AuthSourceDAO'); /* @var $authDao AuthSourceDAO */
 				$auth = $authDao->getPlugin($user->getAuthId());
 			}
 
@@ -250,7 +251,11 @@ class LoginHandler extends Handler {
 				'siteTitle' => $site->getLocalizedTitle()
 			));
 			$mail->addRecipient($user->getEmail(), $user->getFullName());
-			$mail->send();
+			if (!$mail->send()) {
+				import('classes.notification.NotificationManager');
+				$notificationMgr = new NotificationManager();
+				$notificationMgr->createTrivialNotification($user->getId(), NOTIFICATION_TYPE_ERROR, array('contents' => __('email.compose.error')));
+			}
 
 			$templateMgr->assign(array(
 				'pageTitle' => 'user.login.resetPassword',
@@ -309,7 +314,6 @@ class LoginHandler extends Handler {
 		if (isset($args[0]) && !empty($args[0])) {
 			$userId = (int)$args[0];
 			$session = $request->getSession();
-
 			if (!Validation::canAdminister($userId, $session->getUserId())) {
 				$this->setupTemplate($request);
 				// We don't have administrative rights
@@ -324,7 +328,7 @@ class LoginHandler extends Handler {
 				return $templateMgr->display('frontend/pages/error.tpl');
 			}
 
-			$userDao = DAORegistry::getDAO('UserDAO');
+			$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 			$newUser = $userDao->getById($userId);
 
 			if (isset($newUser) && $session->getUserId() != $newUser->getId()) {
@@ -332,12 +336,13 @@ class LoginHandler extends Handler {
 				$session->setSessionVar('userId', $userId);
 				$session->setUserId($userId);
 				$session->setSessionVar('username', $newUser->getUsername());
-				$this->sendHome($request);
+				$this->_redirectByURL($request);
 			}
 		}
 
 		$request->redirect(null, $request->getRequestedPage());
 	}
+
 
 	/**
 	 * Restore original user account after signing in as a user.
@@ -351,7 +356,7 @@ class LoginHandler extends Handler {
 		if (isset($signedInAs) && !empty($signedInAs)) {
 			$signedInAs = (int)$signedInAs;
 
-			$userDao = DAORegistry::getDAO('UserDAO');
+			$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 			$oldUser = $userDao->getById($signedInAs);
 
 			$session->unsetSessionVar('signedInAs');
@@ -362,8 +367,21 @@ class LoginHandler extends Handler {
 				$session->setSessionVar('username', $oldUser->getUsername());
 			}
 		}
+		$this->_redirectByURL($request);
+	}
 
-		$this->sendHome($request);
+
+	/**
+	 * Redirect to redirectURL if exists else send to Home
+	 * @param $request PKPRequest
+	 */
+	function _redirectByURL($request) {
+		$requestVars  = $request->getUserVars();
+		if (isset($requestVars['redirectUrl']) && !empty($requestVars['redirectUrl'])) {
+			$request->redirectUrl($requestVars['redirectUrl']);
+		} else {
+			$this->sendHome($request);
+		}
 	}
 
 
@@ -398,4 +416,4 @@ class LoginHandler extends Handler {
 	}
 }
 
-?>
+

@@ -4,3 +4,5 @@
 * [Español](es/)
 * [French](fr/)
 * [German](de/)
+* [Persian](fa/)
+* [Portuguese](pt/)

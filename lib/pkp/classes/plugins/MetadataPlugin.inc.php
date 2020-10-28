@@ -3,9 +3,9 @@
 /**
  * @file classes/plugins/MetadataPlugin.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class MetadataPlugin
  * @ingroup plugins
@@ -25,10 +25,10 @@ abstract class MetadataPlugin extends Plugin {
 	// Override public methods from Plugin
 	//
 	/**
-	 * @see Plugin::register()
+	 * @copydoc Plugin::register()
 	 */
-	function register($category, $path) {
-		if (!parent::register($category, $path)) return false;
+	function register($category, $path, $mainContextId = null) {
+		if (!parent::register($category, $path, $mainContextId)) return false;
 		$this->addLocaleData();
 		return true;
 	}
@@ -73,4 +73,4 @@ abstract class MetadataPlugin extends Plugin {
 	abstract function getSchemaObject($format);
 }
 
-?>
+

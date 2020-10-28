@@ -3,9 +3,9 @@
 /**
  * @file controllers/tab/workflow/PKPReviewRoundTabHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewRoundTabHandler
  * @ingroup controllers_tab_workflow
@@ -70,10 +70,15 @@ class PKPReviewRoundTabHandler extends Handler {
 		$stageId = $this->getAuthorizedContextObject(ASSOC_TYPE_WORKFLOW_STAGE);
 		$reviewRound = $this->getAuthorizedContextObject(ASSOC_TYPE_REVIEW_ROUND);
 
+		// Is this round the most recent round?
+		$reviewRoundDao = DAORegistry::getDAO('ReviewRoundDAO'); /* @var $reviewRoundDao ReviewRoundDAO */
+		$lastReviewRound = $reviewRoundDao->getLastReviewRoundBySubmissionId($submission->getId(), $stageId);
+
 		// Add the round information to the template.
 		$templateMgr = TemplateManager::getManager($request);
 		$templateMgr->assign('stageId', $stageId);
 		$templateMgr->assign('reviewRoundId', $reviewRound->getId());
+		$templateMgr->assign('isLastReviewRound', $reviewRound->getId() == $lastReviewRound->getId());
 		$templateMgr->assign('submission', $submission);
 
 		// Assign editor decision actions to the template, only if
@@ -85,8 +90,18 @@ class PKPReviewRoundTabHandler extends Handler {
 		);
 		$templateMgr->assign('reviewRoundNotificationRequestOptions', $notificationRequestOptions);
 
+		// If a user is also assigned as an author to this submission, they
+		// shouldn't see any editorial actions
+		$userAccessibleStages = $this->getAuthorizedContextObject(ASSOC_TYPE_ACCESSIBLE_WORKFLOW_STAGES);
+		foreach ($userAccessibleStages as $accessibleStageId => $roles) {
+			if (in_array(ROLE_ID_AUTHOR, $roles)) {
+				$templateMgr->assign('isAssignedAsAuthor', true);
+				break;
+			}
+		}
+
 		return $templateMgr->fetchJson('workflow/reviewRound.tpl');
 	}
 }
 
-?>
+

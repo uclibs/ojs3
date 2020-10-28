@@ -5,9 +5,9 @@
 /**
  * @file styles/form.less
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @ingroup pkp_form
  *
@@ -21,7 +21,7 @@
 	font-size: @font-sml;
 	line-height: @line-sml;
 
-	fieldset {
+	fieldset:not(.pkpFilter__input--sliderMultirange) {
 		margin: 0 0 @double 0;
 		padding: 0;
 		border: none;
@@ -135,17 +135,26 @@
 			margin-right: 0.5em;
 		}
 
+		p {
+			display: inline-block;
+		}
+
 		li label {
 			font-size: @font-sml;
 			font-weight: @normal;
 		}
 	}
 
-	// Required feilds
+	// Required fields
 	.req {
 		font-weight: @bold;
 		color: @no;
 		padding-left: 0.25em;
+	}
+
+	// display required asterisk next to last <p> element
+	.section > label > p:last-of-type {
+		display: inline-block;
 	}
 
 	// Disabled fields
@@ -155,6 +164,10 @@
 		background: @bg;
 		color: @text-light;
 		color: @text-light-rgba;
+	}
+
+	input[type="range"][disabled] {
+		background: transparent;
 	}
 
 	// Field descriptions and labels beneath fields
@@ -237,7 +250,8 @@
 		}
 	}
 
-	.localization_popover_container_focus {
+	.localization_popover_container_focus,
+	.localization_popover_container_focus_forced {
 		display: block;
 		padding: @half;
 		background-color: @bg;
@@ -263,6 +277,13 @@
 		z-index: 99;
 		padding: @half;
 		background-color: @bg;
+	}
+
+	.localization_popover_container_focus_forced .localization_popover {
+		display: block;
+		position: relative;
+		margin-top: @half;
+		padding: 0;
 	}
 
 	// Position locale label off-screen but accessible to screen readers
@@ -294,6 +315,16 @@
 	// Hide form elements when in wizard mode
 	.is_wizard_mode {
 		display: none;
+	}
+
+	// Star selection in radio buttons
+	.pkp_star_selection {
+		font-size: @font-sml;
+		font-weight: @normal;
+
+		.fa {
+			color: @star-on;
+		}
 	}
 }
 
@@ -707,6 +738,15 @@ a[id^="publicIdentifiersForm-clearObjectsPubIds-button"] {
 		.item_buttons .fa {
 			color: @text-light;
 		}
+	}
+}
+
+// Override form styles that are effecting reviewer selection grid filters
+.pkp_form {
+
+	.pkpListPanel__filterInputLabel {
+		font-size: @font-sml;
+		font-weight: @normal;
 	}
 }
 

@@ -3,9 +3,9 @@
 /**
  * @file plugins/generic/tinymce/TinyMCEPlugin.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class TinyMCEPlugin
  * @ingroup plugins_generic_tinymce
@@ -17,15 +17,11 @@ import('lib.pkp.classes.plugins.GenericPlugin');
 
 class TinyMCEPlugin extends GenericPlugin {
 	/**
-	 * Register the plugin, if enabled; note that this plugin
-	 * runs under both context and site levels.
-	 * @param $category string
-	 * @param $path string
-	 * @return boolean
+	 * @copydoc Plugin::register()
 	 */
-	function register($category, $path) {
-		if (parent::register($category, $path)) {
-			if ($this->getEnabled()) {
+	function register($category, $path, $mainContextId = null) {
+		if (parent::register($category, $path, $mainContextId)) {
+			if ($this->getEnabled($mainContextId)) {
 				HookRegistry::register('TemplateManager::display',array(&$this, 'registerJS'));
 				HookRegistry::register('TemplateManager::registerJSLibraryData',array(&$this, 'registerJSData'));
 			}
@@ -35,28 +31,25 @@ class TinyMCEPlugin extends GenericPlugin {
 	}
 
 	/**
-	 * Get the name of the settings file to be installed on new context
-	 * creation.
-	 * @return string
+	 * @copydoc Plugin::getContextSpecificPluginSettingsFile()
 	 */
 	function getContextSpecificPluginSettingsFile() {
 		return $this->getPluginPath() . '/settings.xml';
 	}
 
 	/**
-	 * Get the name of the settings file to be installed site-wide when
-	 * the application is installed.
-	 * @return string
+	 * @copydoc Plugin::getInstallSitePluginSettingsFile()
 	 */
 	function getInstallSitePluginSettingsFile() {
 		return $this->getPluginPath() . '/settings.xml';
 	}
 
 	/**
-	 * @copydoc PKPPlugin::getTemplatePath
+	 * Determine whether the plugin can be disabled.
+	 * @return boolean
 	 */
-	function getTemplatePath($inCore = false) {
-		return parent::getTemplatePath($inCore) . 'templates/';
+	function getCanDisable() {
+		return false;
 	}
 
 	/**
@@ -81,51 +74,46 @@ class TinyMCEPlugin extends GenericPlugin {
 			)
 		);
 
-		return false;
-	}
-
-	/**
-	 * Register script data required by the JS library
-	 *
-	 * Hooked to the the `registerJSLibraryData` callback in TemplateManager.
-	 * This data is used to initialize the TinyMCE component.
-	 * @param $hookName string
-	 * @param $args array $args[0] is an array of plugin data.
-	 * @return boolean
-	 */
-	function registerJSData($hookName, $args) {
-		$request =& Registry::get('request');
-
-		$tinymceParams = array();
-
+		// Load the script data used by the JS library
+		$data = [];
 		$localeKey = substr(AppLocale::getLocale(), 0, 2);
 		$localePath = $request->getBaseUrl() . '/plugins/generic/tinymce/langs/' . $localeKey . '.js';
-
 		if (file_exists($localePath)) {
-			$tinymceParams['language']     = $localeKey;
-			$tinymceParams['language_url'] = $localePath;
+			$data['tinymceParams'] = [
+				'language' => $localeKey,
+				'language_url' => $localePath,
+			];
 		}
+		$context = $request->getContext();
+		if ($context) {
+			$data['uploadUrl'] = $request->getDispatcher()->url($request, ROUTE_API, $context->getPath(), '_uploadPublicFile');
+		}
+		$templateManager->addJavaScript(
+			'tinymceData',
+			'$.pkp.plugins.generic = $.pkp.plugins.generic || {};' .
+				'$.pkp.plugins.generic.' . strtolower(get_class($this)) . ' = ' . json_encode($data) . ';',
+			[
+				'inline' => true,
+				'contexts' => 'backend',
+			]
+		);
 
-		$args[0][$this->getJavascriptNameSpace()] = array( 'tinymceParams' => json_encode($tinymceParams) . ';');
 
 		return false;
 	}
 
 	/**
-	 * Get the display name of this plugin
-	 * @return string
+	 * @copydoc Plugin::getDisplayName()
 	 */
 	function getDisplayName() {
 		return __('plugins.generic.tinymce.name');
 	}
 
 	/**
-	 * Get the description of this plugin
-	 * @return string
+	 * @copydoc Plugin::getDescription()
 	 */
 	function getDescription() {
 		return __('plugins.generic.tinymce.description');
 	}
 }
 
-?>

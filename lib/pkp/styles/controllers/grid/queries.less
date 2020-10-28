@@ -1,9 +1,9 @@
 /**
  * @file styles/controllers/grid/queries.less
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @ingroup pkp_controllers_query
  *
@@ -27,23 +27,32 @@
         margin-bottom: @double;
     }
 
-    .add_note {
-        text-align: right;
+    .queryEditButtons {
 
-        a {
-            &:extend(.pkp_button all);
+        > div {
+            display: inline-block;
         }
 
         .pkp_spinner {
             opacity: 0;
-            margin-right: 1em;
         }
 
         &.is_loading {
-
             .pkp_spinner {
                 opacity: 1;
             }
+        }
+    }
+
+    .leave_query {
+        a {
+            &:extend(.pkp_button_link_offset all);
+        }
+    }
+
+    .add_note {
+        a {
+            &:extend(.pkp_button all);
         }
     }
 
@@ -105,29 +114,5 @@
 
     .pkp_controllers_grid {
         margin-bottom: 0;
-    }
-}
-
-.query_participants {
-
-    ul {
-        &:extend(.pkp_unstyled_list);
-
-        label {
-            padding-top: 0.25em;
-            padding-bottom: 0.25em;
-            font-size: @font-sml;
-            line-height: @line-sml;
-            font-weight: @normal;
-        }
-    }
-
-    input {
-        margin-right: 0.5em;
-    }
-
-    .role {
-        margin-left: 0.5em;
-        color: @text-light;
     }
 }

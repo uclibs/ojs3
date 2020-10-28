@@ -3,9 +3,9 @@
 /**
  * @file classes/core/PKPComponentRouter.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPComponentRouter
  * @ingroup core
@@ -223,6 +223,7 @@ class PKPComponentRouter extends PKPRouter {
 
 			$componentInstance =& instantiate($component, 'PKPHandler', $allowedPackages, $requiredMethods);
 			if (!is_object($componentInstance)) return $nullVar;
+			$this->setHandler($componentInstance);
 
 			//
 			// Callable service endpoint
@@ -261,7 +262,9 @@ class PKPComponentRouter extends PKPRouter {
 	 */
 	function url($request, $newContext = null, $component = null, $op = null, $path = null,
 			$params = null, $anchor = null, $escape = false) {
-		assert(is_null($path));
+		if (!is_null($path)) {
+			throw new Exception('Path must be null when calling PKPComponentRouter::url()');
+		}
 		$pathInfoEnabled = $request->isPathInfoEnabled();
 
 		//
@@ -492,4 +495,4 @@ class PKPComponentRouter extends PKPRouter {
 		return $rpcServiceEndpointParts;
 	}
 }
-?>
+

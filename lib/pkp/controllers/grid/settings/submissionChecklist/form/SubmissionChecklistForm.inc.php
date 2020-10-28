@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/settings/submissionChecklist/form/SubmissionChecklistForm.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionChecklistForm
  * @ingroup controllers_grid_settings_submissionChecklist_form
@@ -35,13 +35,14 @@ class SubmissionChecklistForm extends Form {
 
 	/**
 	 * Initialize form data from current settings.
+	 * @see Form::initData
 	 * @param $args array
-	 * @param $request PKPRequest
 	 */
-	function initData($args, $request) {
+	function initData($args) {
+		$request = Application::get()->getRequest();
 		$context = $request->getContext();
 
-		$submissionChecklistAll = $context->getSetting('submissionChecklist');
+		$submissionChecklistAll = $context->getData('submissionChecklist');
 		$checklistItem = array();
 		// preparea  localizable array for this checklist Item
 		foreach (AppLocale::getSupportedLocales() as $locale => $name) {
@@ -68,13 +69,11 @@ class SubmissionChecklistForm extends Form {
 	}
 
 	/**
-	 * Fetch
-	 * @param $request PKPRequest
-	 * @see Form::fetch()
+	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		AppLocale::requireComponents(LOCALE_COMPONENT_APP_MANAGER);
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
@@ -87,12 +86,13 @@ class SubmissionChecklistForm extends Form {
 	}
 
 	/**
-	 * Save checklist entry.
+	 * @copydoc Form::execute()
 	 */
-	function execute($args, $request) {
+	function execute(...$functionArgs) {
+		$request = Application::get()->getRequest();
 		$router = $request->getRouter();
 		$context = $router->getContext($request);
-		$submissionChecklistAll = $context->getSetting('submissionChecklist');
+		$submissionChecklistAll = $context->getData('submissionChecklist');
 		$locale = AppLocale::getPrimaryLocale();
 		//FIXME: a bit of kludge to get unique submissionChecklist id's
 		$this->submissionChecklistId = ($this->submissionChecklistId != null ? $this->submissionChecklistId:(max(array_keys($submissionChecklistAll[$locale])) + 1));
@@ -114,8 +114,9 @@ class SubmissionChecklistForm extends Form {
 		}
 
 		$context->updateSetting('submissionChecklist', $submissionChecklistAll, 'object', true);
+		parent::execute(...$functionArgs);
 		return true;
 	}
 }
 
-?>
+

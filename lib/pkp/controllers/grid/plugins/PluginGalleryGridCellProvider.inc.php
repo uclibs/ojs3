@@ -2,9 +2,9 @@
 /**
  * @file controllers/grid/plugins/PluginGalleryGridCellProvider.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PluginGalleryGridCellProvider
  * @ingroup controllers_grid_plugins
@@ -77,11 +77,11 @@ class PluginGalleryGridCellProvider extends GridCellProvider {
 					'moreInformation',
 					new AjaxModal(
 						$router->url($request, null, null, 'viewPlugin', null, array('rowId' => $row->getId()+1)),
-						$element->getLocalizedName(),
+						htmlspecialchars($element->getLocalizedName()),
 						'modal_information',
 						true
 					),
-					$element->getLocalizedName(),
+					htmlspecialchars($element->getLocalizedName()),
 					'details'
 				));
 		}
@@ -89,4 +89,4 @@ class PluginGalleryGridCellProvider extends GridCellProvider {
 	}
 }
 
-?>
+

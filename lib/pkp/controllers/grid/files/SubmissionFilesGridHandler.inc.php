@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/SubmissionFilesGridHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionFilesGridHandler
  * @ingroup controllers_grid_files
@@ -19,6 +19,7 @@ import('lib.pkp.classes.controllers.grid.GridHandler');
 // Import submission files grid specific classes.
 import('lib.pkp.controllers.grid.files.SubmissionFilesGridRow');
 import('lib.pkp.controllers.grid.files.FileNameGridColumn');
+import('lib.pkp.controllers.grid.files.FileDateGridColumn');
 
 // Import submission file class which contains the SUBMISSION_FILE_* constants.
 import('lib.pkp.classes.submission.SubmissionFile');
@@ -130,6 +131,9 @@ class SubmissionFilesGridHandler extends GridHandler {
 		// Add grid actions
 		$capabilities = $this->getCapabilities();
 		$dataProvider = $this->getDataProvider();
+
+		$submission = $this->getSubmission();
+
 		if($capabilities->canAdd()) {
 			assert(isset($dataProvider));
 			$this->addAction($dataProvider->getAddFileAction($request));
@@ -137,7 +141,6 @@ class SubmissionFilesGridHandler extends GridHandler {
 
 		// Test whether an archive tool is available for the export to work, if so, add 'download all' grid action
 		if ($capabilities->canDownloadAll() && $this->hasGridDataElements($request)) {
-			$submission = $this->getSubmission();
 			$stageId = $this->getStageId();
 			$linkParams = array('submissionId' => $submission->getId(), 'stageId' => $stageId);
 			$files = $this->getFilesToDownload($request);
@@ -147,6 +150,9 @@ class SubmissionFilesGridHandler extends GridHandler {
 
 		// The file name column is common to all file grid types.
 		$this->addColumn(new FileNameGridColumn($capabilities->canViewNotes(), $this->getStageId()));
+
+		// Additional column with file upload date/creation date
+		$this->addColumn(new FileDateGridColumn($capabilities->canViewNotes()));
 
 		// Set the no items row text
 		$this->setEmptyRowText('grid.noFiles');
@@ -212,4 +218,3 @@ class SubmissionFilesGridHandler extends GridHandler {
 	}
 }
 
-?>

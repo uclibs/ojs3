@@ -3,9 +3,9 @@
 /**
  * @file classes/user/UserStageAssignmentDAO.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class UserStageAssignmentDAO
  * @ingroup user
@@ -14,8 +14,7 @@
  * @brief Operations for users as related to their stage assignments
  */
 
-import('classes.user.UserDAO');
-
+import('lib.pkp.classes.user.UserDAO');
 class UserStageAssignmentDAO extends UserDAO {
 
 	/**
@@ -71,9 +70,20 @@ class UserStageAssignmentDAO extends UserDAO {
 	 * @return object DAOResultFactory
 	 */
 	function filterUsersNotAssignedToStageInUserGroup($submissionId, $stageId, $userGroupId, $name = null, $rangeInfo = null) {
-		$params = array((int) $submissionId, (int) $stageId, (int) $userGroupId);
+		$site = Application::get()->getRequest()->getSite();
+		$primaryLocale = $site->getPrimaryLocale();
+		$locale = AppLocale::getLocale();
+		$params = array(
+			(int) $submissionId,
+			(int) $stageId,
+			IDENTITY_SETTING_GIVENNAME, $primaryLocale,
+			IDENTITY_SETTING_FAMILYNAME, $primaryLocale,
+			IDENTITY_SETTING_GIVENNAME, $locale,
+			IDENTITY_SETTING_FAMILYNAME, $locale,
+			(int) $userGroupId,
+		);
 		if ($name !== null) {
-			$params = array_merge($params, array('%'.(string) $name.'%', '%'.(string) $name.'%', '%'.(string) $name.'%', '%'.(string) $name.'%', '%'.(string) $name.'%'));
+			$params = array_merge($params, array_fill(0, 6, '%'.(string) $name.'%'));
 		}
 		$result = $this->retrieveRange(
 				'SELECT	u.*
@@ -81,10 +91,15 @@ class UserStageAssignmentDAO extends UserDAO {
 				LEFT JOIN user_user_groups uug ON (u.user_id = uug.user_id)
 				LEFT JOIN stage_assignments s ON (s.user_id = uug.user_id AND s.user_group_id = uug.user_group_id AND s.submission_id = ?)
 				JOIN user_group_stage ugs ON (uug.user_group_id = ugs.user_group_id AND ugs.stage_id = ?)
+				LEFT JOIN user_settings usgs_pl ON (usgs_pl.user_id = u.user_id AND usgs_pl.setting_name = ? AND usgs_pl.locale = ?)
+				LEFT JOIN user_settings usfs_pl ON (usfs_pl.user_id = u.user_id AND usfs_pl.setting_name = ? AND usfs_pl.locale = ?)
+				LEFT JOIN user_settings usgs_l ON (usgs_l.user_id = u.user_id AND usgs_l.setting_name = ? AND usgs_l.locale = ?)
+				LEFT JOIN user_settings usfs_l ON (usfs_l.user_id = u.user_id AND usfs_l.setting_name = ? AND usfs_l.locale = ?)
+
 			WHERE	uug.user_group_id = ? AND
 				s.user_group_id IS NULL'
-				. ($name !== null ? ' AND (u.first_name LIKE ? OR u.middle_name LIKE ? OR u.last_name LIKE ? OR u.username LIKE ? OR u.email LIKE ?)' : '')
-			. ' ORDER BY u.last_name',
+				. ($name !== null ? ' AND (usgs_pl.setting_value LIKE ? OR usgs_l.setting_value LIKE ? OR usfs_pl.setting_value LIKE ? OR usfs_l.setting_value LIKE ? OR u.username LIKE ? OR u.email LIKE ?)' : '')
+			. ' ORDER BY COALESCE(usfs_l.setting_value, usfs_pl.setting_value)',
 				$params,
 				$rangeInfo);
 		return new DAOResultFactory($result, $this, '_returnUserFromRowWithData');
@@ -138,4 +153,4 @@ class UserStageAssignmentDAO extends UserDAO {
 	}
 }
 
-?>
+

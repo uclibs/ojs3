@@ -3,9 +3,9 @@
 /**
  * @file classes/payment/ojs/OJSCompletedPaymentDAO.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class OJSCompletedPaymentDAO
  * @ingroup payment
@@ -19,7 +19,7 @@ import('lib.pkp.classes.payment.CompletedPayment');
 
 class OJSCompletedPaymentDAO extends DAO {
 	/**
-	 * Retrieve a ComplatedPayment by its ID.
+	 * Retrieve a CompletedPayment by its ID.
 	 * @param $completedPaymentId int
 	 * @param $contextId int optional
 	 * @return CompletedPayment
@@ -35,7 +35,7 @@ class OJSCompletedPaymentDAO extends DAO {
 
 		$returner = null;
 		if ($result->RecordCount() != 0) {
-			$returner = $this->_returnPaymentFromRow($result->GetRowAssoc(false));
+			$returner = $this->_fromRow($result->GetRowAssoc(false));
 		}
 
 		$result->Close();
@@ -125,8 +125,8 @@ class OJSCompletedPaymentDAO extends DAO {
 		if ($assocId) $params[] = (int) $assocId;
 		$result = $this->retrieve(
 			'SELECT * FROM completed_payments WHERE 1=1' .
-			($paymentType?' AND payment_type = ?':'') .
 			($userId?' AND user_id = ?':'') .
+			($paymentType?' AND payment_type = ?':'') .
 			($assocId?' AND assoc_id = ?':''),
 			$params
 		);

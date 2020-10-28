@@ -3,9 +3,9 @@
 /**
  * @file plugins/oaiMetadataFormats/marcxml/OAIMetadataFormat_MARC21.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class OAIMetadataFormat_MARC21
  * @ingroup oai_format
@@ -41,8 +41,9 @@ class OAIMetadataFormat_MARC21 extends OAIMetadataFormat {
 			'language' => AppLocale::get3LetterIsoFromLocale($article->getLocale())
 		));
 
-		return $templateMgr->fetch(dirname(__FILE__) . '/record.tpl');
+		$plugin = PluginRegistry::getPlugin('oaiMetadataFormats', 'OAIFormatPlugin_MARC21');
+		return $templateMgr->fetch($plugin->getTemplateResource('record.tpl'));
 	}
 }
 
-?>
+

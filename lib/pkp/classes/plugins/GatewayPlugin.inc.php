@@ -3,9 +3,9 @@
 /**
  * @file classes/plugins/GatewayPlugin.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class GatewayPlugin
  * @ingroup plugins
@@ -61,9 +61,18 @@ abstract class GatewayPlugin extends Plugin {
 	 * can be found.
 	 */
 	function getCurrentContextId() {
-		$context = PKPApplication::getRequest()->getContext();
+		$context = Application::get()->getRequest()->getContext();
 		return is_null($context) ? 0 : $context->getId();
 	}
-}
 
-?>
+	/**
+	 * Get policies to the authorization process
+	 * @param $request PKPRequest
+	 * @return array Set of authorization policies
+	 */
+
+	function getPolicies($request) {
+		return array();
+	}
+
+}

@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE install SYSTEM "../../lib/pkp/dtd/install.dtd">
 <!--
-  * install.xml
+  * dbscripts/xml/install.xml
   *
-  * Copyright (c) 2014-2017 Simon Fraser University
-  * Copyright (c) 2003-2017 John Willinsky
-  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+  * Copyright (c) 2014-2020 Simon Fraser University
+  * Copyright (c) 2003-2020 John Willinsky
+  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
   *
   * Installation descriptor file.
   -->
 
-<install version="3.1.0.0">
+<install version="3.2.1.1">
+	<code function="checkPhpVersion" />
+
 	<code function="createDirectories"/>
 	<code function="createDatabase"/>
 
@@ -25,6 +27,7 @@
 	<schema file="lib/pkp/xml/schema/reviewForms.xml" />
 	<schema file="lib/pkp/xml/schema/submissions.xml" />
 	<schema file="lib/pkp/xml/schema/submissionFiles.xml" />
+	<schema file="lib/pkp/xml/schema/categories.xml" />
 	<schema file="lib/pkp/xml/schema/notes.xml" />
 	<schema file="lib/pkp/xml/schema/views.xml" />
 	<schema file="lib/pkp/xml/schema/metadata.xml" />
@@ -32,7 +35,6 @@
 	<schema file="lib/pkp/xml/schema/tombstone.xml" />
 	<schema file="lib/pkp/xml/schema/rolesAndUserGroups.xml" />
 	<schema file="lib/pkp/xml/schema/metrics.xml" />
-	<schema file="lib/pkp/xml/schema/views.xml" />
 	<schema file="lib/pkp/xml/schema/libraryFiles.xml" />
 	<schema file="lib/pkp/xml/schema/navigationMenus.xml" />
 

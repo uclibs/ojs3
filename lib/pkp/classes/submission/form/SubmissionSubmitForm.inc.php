@@ -6,9 +6,9 @@
 /**
  * @file classes/submission/form/SubmissionSubmitForm.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionSubmitForm
  * @ingroup submission_form
@@ -47,9 +47,9 @@ class SubmissionSubmitForm extends Form {
 	}
 
 	/**
-	 * Fetch the form.
+	 * @copydoc Form::fetch
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$templateMgr = TemplateManager::getManager($request);
 
 		$templateMgr->assign('submissionId', $this->submissionId);
@@ -61,8 +61,8 @@ class SubmissionSubmitForm extends Form {
 			$submissionProgress = 1;
 		}
 		$templateMgr->assign('submissionProgress', $submissionProgress);
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 }
 
-?>
+

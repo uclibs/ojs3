@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/issues/IssueGridHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class IssueGridHandler
  * @ingroup controllers_grid_issues
@@ -21,7 +21,7 @@ class FutureIssueGridHandler extends IssueGridHandler {
 	// Implement template methods from PKPHandler
 	//
 	/**
-	 * @copydoc PKPHandler::initialize()
+	 * @copydoc IssueGridHandler::initialize()
 	 */
 	function initialize($request, $args = null) {
 		// Basic grid configuration.
@@ -51,7 +51,7 @@ class FutureIssueGridHandler extends IssueGridHandler {
 	 */
 	protected function loadData($request, $filter) {
 		$journal = $request->getJournal();
-		$issueDao = DAORegistry::getDAO('IssueDAO');
+		$issueDao = DAORegistry::getDAO('IssueDAO'); /* @var $issueDao IssueDAO */
 		return $issueDao->getUnpublishedIssues($journal->getId());
 	}
 
@@ -64,4 +64,4 @@ class FutureIssueGridHandler extends IssueGridHandler {
 	}
 }
 
-?>
+

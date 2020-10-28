@@ -2,9 +2,9 @@
 /**
  * @filecontrollers/grid/files/attachment/ReviewerReviewAttachmentsGridHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewerReviewAttachmentsGridHandler
  * @ingroup controllers_grid_files_attachment
@@ -41,19 +41,19 @@ class ReviewerReviewAttachmentsGridHandler extends FileListGridHandler {
 	/**
 	 * @copydoc FileListGridHandler::initialize()
 	 */
-	function initialize($request) {
+	function initialize($request, $args = null) {
 		// Watch for flag from including template to warn about the
 		// review already being complete. If so, remove some capabilities.
 		$capabilities = $this->getCapabilities();
-		if ($request->getUserVar('reviewIsComplete')) {
+		if ($request->getUserVar('reviewIsClosed')) {
 			$capabilities->setCanAdd(false);
 			$capabilities->setCanDelete(false);
 		}
 
 		AppLocale::requireComponents(LOCALE_COMPONENT_PKP_REVIEWER);
 
-		parent::initialize($request);
+		parent::initialize($request, $args);
 	}
 }
 
-?>
+

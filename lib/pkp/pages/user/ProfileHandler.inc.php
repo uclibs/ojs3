@@ -3,9 +3,9 @@
 /**
  * @file pages/user/ProfileHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ProfileHandler
  * @ingroup pages_user
@@ -46,6 +46,18 @@ class ProfileHandler extends UserHandler {
 	 * @param $request PKPRequest
 	 */
 	function profile($args, $request) {
+		$context = $request->getContext();
+		if (!$context) {
+			$user = $request->getUser();
+			$contextDao = Application::getContextDAO();
+			$workingContexts = $contextDao->getAvailable($user?$user->getId():null);
+			if ($workingContexts && $workingContexts->getCount() == 1) {
+				$workingContext = $workingContexts->next();
+				$contextPath = $workingContext->getPath();
+				$request->redirect($contextPath, 'user', 'profile', null, $args);
+			}
+		}
+
 		if ($anchor = array_shift($args)) {
 			// Some requests will try to specify a tab name in the args. Redirect
 			// to use this as an anchor name instead.
@@ -59,4 +71,4 @@ class ProfileHandler extends UserHandler {
 	}
 }
 
-?>
+

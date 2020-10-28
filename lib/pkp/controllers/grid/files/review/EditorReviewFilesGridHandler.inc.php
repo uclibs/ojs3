@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/review/EditorReviewFilesGridHandler.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2000-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class EditorReviewFilesGridHandler
  * @ingroup controllers_grid_files_review
@@ -56,9 +56,9 @@ class EditorReviewFilesGridHandler extends FileListGridHandler {
 		import('lib.pkp.controllers.grid.files.review.form.ManageReviewFilesForm');
 		$manageReviewFilesForm = new ManageReviewFilesForm($submission->getId(), $this->getRequestArg('stageId'), $this->getRequestArg('reviewRoundId'));
 
-		$manageReviewFilesForm->initData($args, $request);
+		$manageReviewFilesForm->initData();
 		return new JSONMessage(true, $manageReviewFilesForm->fetch($request));
 	}
 }
 
-?>
+

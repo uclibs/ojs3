@@ -3,9 +3,9 @@
 /**
  * @file classes/install/form/InstallForm.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class InstallForm
  * @ingroup install
@@ -70,7 +70,7 @@ class InstallForm extends MaintenanceForm {
 			// <adodb-driver> => array(<php-module>, <name>)
 			'mysql' => array('mysql', 'MySQL'),
 			'mysqli' => array('mysqli', 'MySQLi'),
-			'postgres' => array('pgsql', 'PostgreSQL'),
+			'postgres9' => array('pgsql', 'PostgreSQL'),
 			'oracle' => array('oci8', 'Oracle'),
 			'mssql' => array('mssql', 'MS SQL Server'),
 			'fbsql' => array('fbsql', 'FrontBase'),
@@ -82,6 +82,7 @@ class InstallForm extends MaintenanceForm {
 		);
 
 		// Validation checks for this form
+		$form = $this;
 		$this->addCheck(new FormValidatorInSet($this, 'locale', 'required', 'installer.form.localeRequired', array_keys($this->supportedLocales)));
 		$this->addCheck(new FormValidatorCustom($this, 'locale', 'required', 'installer.form.localeRequired', array('AppLocale', 'isLocaleValid')));
 		$this->addCheck(new FormValidatorInSet($this, 'clientCharset', 'required', 'installer.form.clientCharsetRequired', array_keys($this->supportedClientCharsets)));
@@ -89,7 +90,9 @@ class InstallForm extends MaintenanceForm {
 		$this->addCheck(new FormValidator($this, 'adminUsername', 'required', 'installer.form.usernameRequired'));
 		$this->addCheck(new FormValidatorUsername($this, 'adminUsername', 'required', 'installer.form.usernameAlphaNumeric'));
 		$this->addCheck(new FormValidator($this, 'adminPassword', 'required', 'installer.form.passwordRequired'));
-		$this->addCheck(new FormValidatorCustom($this, 'adminPassword', 'required', 'installer.form.passwordsDoNotMatch', create_function('$password,$form', 'return $password == $form->getData(\'adminPassword2\');'), array($this)));
+		$this->addCheck(new FormValidatorCustom($this, 'adminPassword', 'required', 'installer.form.passwordsDoNotMatch', function($password) use ($form) {
+			return $password == $form->getData('adminPassword2');
+		}));
 		$this->addCheck(new FormValidatorEmail($this, 'adminEmail', 'required', 'installer.form.emailRequired'));
 		$this->addCheck(new FormValidatorInSet($this, 'databaseDriver', 'required', 'installer.form.databaseDriverRequired', array_keys($this->supportedDatabaseDrivers)));
 		$this->addCheck(new FormValidator($this, 'databaseName', 'required', 'installer.form.databaseNameRequired'));
@@ -106,7 +109,6 @@ class InstallForm extends MaintenanceForm {
 			'localesComplete' => $this->localesComplete,
 			'clientCharsetOptions' => $this->supportedClientCharsets,
 			'connectionCharsetOptions' => $this->supportedConnectionCharsets,
-			'databaseCharsetOptions' => $this->supportedDatabaseCharsets,
 			'allowFileUploads' => get_cfg_var('file_uploads') ? __('common.yes') : __('common.no'),
 			'maxFileUploadSize' => get_cfg_var('upload_max_filesize'),
 			'databaseDriverOptions' => $this->checkDBDrivers(),
@@ -122,7 +124,7 @@ class InstallForm extends MaintenanceForm {
 	}
 
 	/**
-	 * Initialize form data.
+	 * @copydoc MaintenanceForm::initData
 	 */
 	function initData() {
 		$docRoot = dirname($_SERVER['DOCUMENT_ROOT']);
@@ -139,7 +141,6 @@ class InstallForm extends MaintenanceForm {
 			'additionalLocales' => array(),
 			'clientCharset' => 'utf-8',
 			'connectionCharset' => 'utf8',
-			'databaseCharset' => 'utf8',
 			'filesDir' =>  $docRoot . 'files',
 			'databaseDriver' => 'mysql',
 			'databaseHost' => 'localhost',
@@ -161,7 +162,6 @@ class InstallForm extends MaintenanceForm {
 			'additionalLocales',
 			'clientCharset',
 			'connectionCharset',
-			'databaseCharset',
 			'filesDir',
 			'adminUsername',
 			'adminPassword',
@@ -184,8 +184,12 @@ class InstallForm extends MaintenanceForm {
 
 	/**
 	 * Perform installation.
+	 * @param ...$functionArgs Function arguments
+	 * @return mixed
 	 */
-	function execute() {
+	function execute(...$functionArgs) {
+		parent::execute(...$functionArgs);
+
 		$templateMgr = TemplateManager::getManager($this->_request);
 		$installer = new Install($this->_data);
 
@@ -229,4 +233,4 @@ class InstallForm extends MaintenanceForm {
 	}
 }
 
-?>
+

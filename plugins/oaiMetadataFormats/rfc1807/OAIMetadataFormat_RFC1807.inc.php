@@ -3,9 +3,9 @@
 /**
  * @file plugins/oaiMetadataFormats/rfc1807/OAIMetadataFormat_RFC1807.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class OAIMetadataFormat_RFC1807
  * @ingroup oai_format
@@ -27,7 +27,7 @@ class OAIMetadataFormat_RFC1807 extends OAIMetadataFormat {
 
 		// Publisher
 		$publisher = $journal->getLocalizedName(); // Default
-		$publisherInstitution = $journal->getLocalizedSetting('publisherInstitution');
+		$publisherInstitution = $journal->getLocalizedData('publisherInstitution');
 		if (!empty($publisherInstitution)) {
 			$publisher = $publisherInstitution;
 		}
@@ -41,7 +41,7 @@ class OAIMetadataFormat_RFC1807 extends OAIMetadataFormat {
 		$creators = array();
 		$authors = $article->getAuthors();
 		for ($i = 0, $num = count($authors); $i < $num; $i++) {
-			$authorName = $authors[$i]->getFullName(true);
+			$authorName = $authors[$i]->getFullName(false, true);
 			$affiliation = $authors[$i]->getLocalizedAffiliation();
 			if (!empty($affiliation)) {
 				$authorName .= '; ' . $affiliation;
@@ -59,7 +59,11 @@ class OAIMetadataFormat_RFC1807 extends OAIMetadataFormat {
 		// Coverage
 		$coverage = $article->getCoverage(null);
 
-		$url = Request::url($journal->getPath(), 'article', 'view', array($article->getBestArticleId()));
+		import('classes.issue.IssueAction');
+		$issueAction = new IssueAction();
+		$request = Application::get()->getRequest();
+		$url = $request->url($journal->getPath(), 'article', 'view', array($article->getBestId()));
+		$includeUrls = $journal->getSetting('publishingMode') != PUBLISHING_MODE_NONE || $issueAction->subscribedUser($request->getUser(), $journal, null, $article->getId());
 		$response = "<rfc1807\n" .
 			"\txmlns=\"http://info.internet.isi.edu:80/in-notes/rfc/files/rfc1807.txt\"\n" .
 			"\txmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" .
@@ -73,11 +77,10 @@ class OAIMetadataFormat_RFC1807 extends OAIMetadataFormat {
 			$this->formatElement('title', $article->getLocalizedTitle()) .
 			$this->formatElement('type', $section->getLocalizedIdentifyType()) .
 
-			$this->formatElement('type', $relation) .
 			$this->formatElement('author', $creators) .
 			($article->getDatePublished()?$this->formatElement('date', $article->getDatePublished()):'') .
-			$this->formatElement('copyright', strip_tags($journal->getLocalizedSetting('copyrightNotice'))) .
-			$this->formatElement('other_access', "url:$url") .
+			$this->formatElement('copyright', strip_tags($journal->getLocalizedData('licenseTerms'))) .
+			($includeUrls?$this->formatElement('other_access', "url:$url"):'') .
 			$this->formatElement('keyword', $subject) .
 			$this->formatElement('period', $coverage) .
 			$this->formatElement('monitoring', $article->getLocalizedSponsor()) .
@@ -105,5 +108,3 @@ class OAIMetadataFormat_RFC1807 extends OAIMetadataFormat {
 		return $response;
 	}
 }
-
-?>

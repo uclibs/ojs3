@@ -3,9 +3,9 @@
 /**
  * @file classes/subscription/SubscriptionAction.inc.php
  *
- * Copyright (c) 2014-2017 Simon Fraser University
- * Copyright (c) 2003-2017 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubscriptionAction
  * @ingroup subscriptions
@@ -32,31 +32,21 @@ class SubscriptionAction {
 
 		$journal = $request->getJournal();
 
-		$subscriptionContactName = $journal->getSetting('subscriptionName');
-		$subscriptionContactEmail = $journal->getSetting('subscriptionEmail');
+		$subscriptionContactName = $journal->getData('subscriptionName');
+		$subscriptionContactEmail = $journal->getData('subscriptionEmail');
 
 		if (empty($subscriptionContactEmail)) {
-			$subscriptionContactEmail = $journal->getSetting('contactEmail');
-			$subscriptionContactName = $journal->getSetting('contactName');
+			$subscriptionContactEmail = $journal->getData('contactEmail');
+			$subscriptionContactName = $journal->getData('contactName');
 		}
 
 		if (empty($subscriptionContactEmail)) return false;
 
-		$userDao = DAORegistry::getDAO('UserDAO');
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$user = $userDao->getById($subscription->getUserId());
 
-		$subscriptionTypeDao = DAORegistry::getDAO('SubscriptionTypeDAO');
+		$subscriptionTypeDao = DAORegistry::getDAO('SubscriptionTypeDAO'); /* @var $subscriptionTypeDao SubscriptionTypeDAO */
 		$subscriptionType = $subscriptionTypeDao->getById($subscription->getTypeId(), $journal->getId());
-
-		$roleDao = DAORegistry::getDAO('RoleDAO');
-		$role = $roleDao->newDataObject();
-		if ($roleDao->getJournalUsersRoleCount($journal->getId(), ROLE_ID_SUBSCRIPTION_MANAGER) > 0) {
-			$role->setId(ROLE_ID_SUBSCRIPTION_MANAGER);
-			$rolePath = $role->getPath();
-		} else {
-			$role->setId(ROLE_ID_MANAGER);
-			$rolePath = $role->getPath();
-		}
 
 		$paramArray = array(
 			'subscriptionType' => $subscriptionType->getSummaryString(),
@@ -67,11 +57,11 @@ class SubscriptionAction {
 		switch($mailTemplateKey) {
 			case 'SUBSCRIPTION_PURCHASE_INDL':
 			case 'SUBSCRIPTION_RENEW_INDL':
-				$paramArray['subscriptionUrl'] = $request->url($journal->getPath(), $rolePath, 'editSubscription', 'individual', array($subscription->getId()));
+				$paramArray['subscriptionUrl'] = $request->url($journal->getPath(), 'payments', null, null, null, 'individual');
 				break;
 			case 'SUBSCRIPTION_PURCHASE_INSTL':
 			case 'SUBSCRIPTION_RENEW_INSTL':
-				$paramArray['subscriptionUrl'] = $request->url($journal->getPath(), $rolePath, 'editSubscription', 'institutional', array($subscription->getId()));
+				$paramArray['subscriptionUrl'] = $request->url($journal->getPath(), 'payments', null, null, null, 'institutional');
 				$paramArray['institutionName'] = $subscription->getInstitutionName();
 				$paramArray['institutionMailingAddress'] = $subscription->getInstitutionMailingAddress();
 				$paramArray['domain'] = $subscription->getDomain();
@@ -86,8 +76,12 @@ class SubscriptionAction {
 		$mail->setSubject($mail->getSubject($journal->getPrimaryLocale()));
 		$mail->setBody($mail->getBody($journal->getPrimaryLocale()));
 		$mail->assignParams($paramArray);
-		$mail->send();
+		if (!$mail->send()) {
+			import('classes.notification.NotificationManager');
+			$notificationMgr = new NotificationManager();
+			$notificationMgr->createTrivialNotification($request->getUser()->getId(), NOTIFICATION_TYPE_ERROR, array('contents' => __('email.compose.error')));
+		}
 	}
 }
 
-?>
+
