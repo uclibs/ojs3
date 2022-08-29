@@ -1,3 +1,4 @@
+config.inc.php
 *.php
 *.html
 *.gz
