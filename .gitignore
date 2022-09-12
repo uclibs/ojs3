@@ -1,7 +1,0 @@
-config.inc.php
-*.php
-*.html
-*.gz
-*.css
-URI/
-HTML/

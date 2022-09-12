@@ -3,8 +3,8 @@
 /**
  * @file classes/subscription/SubscriptionAction.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubscriptionAction
@@ -48,11 +48,11 @@ class SubscriptionAction {
 		$subscriptionTypeDao = DAORegistry::getDAO('SubscriptionTypeDAO'); /* @var $subscriptionTypeDao SubscriptionTypeDAO */
 		$subscriptionType = $subscriptionTypeDao->getById($subscription->getTypeId(), $journal->getId());
 
-		$paramArray = array(
-			'subscriptionType' => $subscriptionType->getSummaryString(),
+		$paramArray = [
+			'subscriptionType' => htmlspecialchars($subscriptionType->getSummaryString()),
 			'userDetails' => $user->getContactSignature(),
-			'membership' => $subscription->getMembership()
-		);
+			'membership' => htmlspecialchars($subscription->getMembership())
+		];
 
 		switch($mailTemplateKey) {
 			case 'SUBSCRIPTION_PURCHASE_INDL':
@@ -62,9 +62,9 @@ class SubscriptionAction {
 			case 'SUBSCRIPTION_PURCHASE_INSTL':
 			case 'SUBSCRIPTION_RENEW_INSTL':
 				$paramArray['subscriptionUrl'] = $request->url($journal->getPath(), 'payments', null, null, null, 'institutional');
-				$paramArray['institutionName'] = $subscription->getInstitutionName();
-				$paramArray['institutionMailingAddress'] = $subscription->getInstitutionMailingAddress();
-				$paramArray['domain'] = $subscription->getDomain();
+				$paramArray['institutionName'] = htmlspecialchars($subscription->getInstitutionName());
+				$paramArray['institutionMailingAddress'] = nl2br(htmlspecialchars($subscription->getInstitutionMailingAddress()));
+				$paramArray['domain'] = htmlspecialchars($subscription->getDomain());
 				$paramArray['ipRanges'] = $subscription->getIPRangesString();
 				break;
 		}

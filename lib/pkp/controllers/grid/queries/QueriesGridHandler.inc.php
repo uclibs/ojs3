@@ -3,8 +3,8 @@
 /**
  * @file controllers/grid/queries/QueriesGridHandler.inc.php
  *
- * Copyright (c) 2016-2020 Simon Fraser University
- * Copyright (c) 2000-2020 John Willinsky
+ * Copyright (c) 2016-2021 Simon Fraser University
+ * Copyright (c) 2000-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class QueriesGridHandler
@@ -146,7 +146,8 @@ class QueriesGridHandler extends GridHandler {
 		AppLocale::requireComponents(
 			LOCALE_COMPONENT_PKP_SUBMISSION,
 			LOCALE_COMPONENT_PKP_USER,
-			LOCALE_COMPONENT_PKP_EDITOR
+			LOCALE_COMPONENT_PKP_EDITOR,
+			LOCALE_COMPONENT_APP_SUBMISSION
 		);
 
 		// Columns
@@ -547,6 +548,9 @@ class QueriesGridHandler extends GridHandler {
 			}
 			return DAO::getDataChangedEvent($query->getId());
 		}
+		// If this was new (placeholder) query that didn't validate, remember whether or not
+		// we need to delete it on cancellation.
+		if ($request->getUserVar('wasNew')) $queryForm->setIsNew(true);
 		return new JSONMessage(
 			true,
 			$queryForm->fetch(

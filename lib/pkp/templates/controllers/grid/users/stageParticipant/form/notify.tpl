@@ -1,8 +1,8 @@
 {**
  * templates/controllers/grid/users/stageParticipant/form/notify.tpl
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Display a form to notify other users about this file.
@@ -26,7 +26,7 @@
 			<input type="hidden" name="userId" value="{$userId|escape}"/>
 
 			{fbvFormSection title="stageParticipants.notify.startDiscussion"}
-				<p>{translate key="stageParticipants.notify.startDiscussion.description" userFullName=$userFullName}</p>
+				<p>{translate key="stageParticipants.notify.startDiscussion.description" userFullName=$userFullName|escape}</p>
 			{/fbvFormSection}
 
 			{fbvFormSection title="stageParticipants.notify.chooseMessage" for="template" size=$fbvStyles.size.medium}

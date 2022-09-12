@@ -1,6 +1,6 @@
 <?php
 /*
-@version   v5.20.17  31-Mar-2020
+@version   v5.20.18  28-Jun-2020
 @copyright (c) 2000-2013 John Lim (jlim#natsoft.com). All rights reserved.
 @copyright (c) 2014      Damien Regad, Mark Newnham and the ADOdb community
   Released under both BSD license and Lesser GPL library license.
@@ -696,7 +696,7 @@ Committed_AS:   348732 kB
 
 	// magic quotes
 
-	if (isset($_GET['sql']) && get_magic_quotes_gpc()) {
+	if (isset($_GET['sql']) && false) {
 		$_GET['sql'] = $_GET['sql'] = str_replace(array("\\'",'\"'),array("'",'"'),$_GET['sql']);
 	}
 
@@ -1002,7 +1002,7 @@ Committed_AS:   348732 kB
 
 	function undomq($m)
 	{
-	if (get_magic_quotes_gpc()) {
+	if (false) {
 		// undo the damage
 		$m = str_replace('\\\\','\\',$m);
 		$m = str_replace('\"','"',$m);

@@ -3,8 +3,8 @@
 /**
  * @file controllers/grid/users/author/form/PKPAuthorForm.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPAuthorForm
@@ -189,7 +189,7 @@ class PKPAuthorForm extends Form {
 			if ($publication->getId() !== $author->getData('publicationId')) fatalError('Invalid author!');
 		}
 
-		$author->setGivenName($this->getData('givenName'), null);
+		$author->setGivenName(array_map('trim',$this->getData('givenName')), null);
 		$author->setFamilyName($this->getData('familyName'), null);
 		$author->setPreferredPublicName($this->getData('preferredPublicName'), null);
 		$author->setAffiliation($this->getData('affiliation'), null); // localized

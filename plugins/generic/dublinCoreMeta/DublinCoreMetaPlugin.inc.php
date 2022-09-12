@@ -3,8 +3,8 @@
 /**
  * @file plugins/generic/dublinCoreMeta/DublinCoreMetaPlugin.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DublinCoreMetaPlugin
@@ -94,7 +94,6 @@ class DublinCoreMetaPlugin extends GenericPlugin {
 
 		$i=0;
 		if (is_a($article, 'Submission')) foreach($article->getGalleys() as $galley) {
-			if (is_a($galley, 'SupplementaryFile')) continue;
 			$templateMgr->addHeader('dublinCoreFormat' . $i++, '<meta name="DC.Format" scheme="IMT" content="' . htmlspecialchars($galley->getFileType()) . '"/>');
 		}
 
@@ -129,16 +128,16 @@ class DublinCoreMetaPlugin extends GenericPlugin {
 		$dao = DAORegistry::getDAO('SubmissionKeywordDAO');
 		$keywords = $dao->getKeywords($article->getCurrentPublication()->getId(), array(AppLocale::getLocale()));
 		foreach ($keywords as $locale => $localeKeywords) {
-			foreach ($localeKeywords as $keyword) {
-				$templateMgr->addHeader('dublinCoreSubject' . $locale, '<meta name="DC.Subject" xml:lang="' . htmlspecialchars(substr($locale, 0, 2)) . '" content="' . htmlspecialchars($keyword) . '"/>');
+			foreach ($localeKeywords as $i => $keyword) {
+				$templateMgr->addHeader('dublinCoreSubject' . $locale . $i, '<meta name="DC.Subject" xml:lang="' . htmlspecialchars(substr($locale, 0, 2)) . '" content="' . htmlspecialchars($keyword) . '"/>');
 			}
 		}
 
 		if ($publication) {
-			$templateMgr->addHeader('dublinCoreTitle', '<meta name="DC.Title" content="' . htmlspecialchars($publication->getLocalizedTitle()) . '"/>');
-			foreach ($publication->getData('title') as $locale => $title) {
+			$templateMgr->addHeader('dublinCoreTitle', '<meta name="DC.Title" content="' . htmlspecialchars($publication->getLocalizedFullTitle()) . '"/>');
+			foreach ($publication->getFullTitles() as $locale => $title) {
 				if (empty($title) || $locale === $publication->getData('locale')) continue;
-				$templateMgr->addHeader('dublinCoreAltTitle' . $locale, '<meta name="DC.Title.Alternative" xml:lang="' . htmlspecialchars(substr($locale, 0, 2)) . '" content="' . htmlspecialchars($publication->getLocalizedTitle($locale)) . '"/>');
+				$templateMgr->addHeader('dublinCoreAltTitle' . $locale, '<meta name="DC.Title.Alternative" xml:lang="' . htmlspecialchars(substr($locale, 0, 2)) . '" content="' . htmlspecialchars($publication->getLocalizedFullTitle($locale)) . '"/>');
 			}
 		}
 

@@ -3,8 +3,8 @@
 /**
  * @file classes/search/ArticleSearch.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ArticleSearch
@@ -310,7 +310,7 @@ class ArticleSearch extends SubmissionSearch {
 			if ($article->getData('status') === STATUS_PUBLISHED) {
 				// Retrieve keywords (if any).
 				$submissionSubjectDao = DAORegistry::getDAO('SubmissionKeywordDAO'); /* @var $submissionSubjectDao SubmissionKeywordDAO */
-				$allSearchTerms = array_filter($submissionSubjectDao->getKeywords($article->getId(), array(AppLocale::getLocale(), $article->getLocale(), AppLocale::getPrimaryLocale())));
+				$allSearchTerms = array_filter($submissionSubjectDao->getKeywords($article->getCurrentPublication()->getId(), array(AppLocale::getLocale(), $article->getLocale(), AppLocale::getPrimaryLocale())));
 				foreach ($allSearchTerms as $locale => $localeSearchTerms) {
 					$searchTerms += $localeSearchTerms;
 				}
@@ -328,6 +328,7 @@ class ArticleSearch extends SubmissionSearch {
 			SUBMISSION_SEARCH_GALLEY_FILE => 'galleyFullText',
 			SUBMISSION_SEARCH_DISCIPLINE => 'discipline',
 			SUBMISSION_SEARCH_SUBJECT => 'subject',
+			SUBMISSION_SEARCH_KEYWORD => 'keyword',
 			SUBMISSION_SEARCH_TYPE => 'type',
 			SUBMISSION_SEARCH_COVERAGE => 'coverage'
 		);

@@ -127,7 +127,7 @@ class dbObject {
 	*
 	* @access private
 	*/
-	function _tag_open( &$parser, $tag, $attributes ) {
+	function _tag_open( $parser, $tag, $attributes ) {
 
 	}
 
@@ -136,7 +136,7 @@ class dbObject {
 	*
 	* @access private
 	*/
-	function _tag_cdata( &$parser, $cdata ) {
+	function _tag_cdata( $parser, $cdata ) {
 
 	}
 
@@ -145,7 +145,7 @@ class dbObject {
 	*
 	* @access private
 	*/
-	function _tag_close( &$parser, $tag ) {
+	function _tag_close( $parser, $tag ) {
 
 	}
 
@@ -258,7 +258,7 @@ class dbTable extends dbObject {
 	*
 	* @access private
 	*/
-	function _tag_open( &$parser, $tag, $attributes ) {
+	function _tag_open( $parser, $tag, $attributes ) {
 		$this->currentElement = strtoupper( $tag );
 
 		switch( $this->currentElement ) {
@@ -317,7 +317,7 @@ class dbTable extends dbObject {
 	*
 	* @access private
 	*/
-	function _tag_cdata( &$parser, $cdata ) {
+	function _tag_cdata( $parser, $cdata ) {
 		switch( $this->currentElement ) {
 			// Table constraint
 			case 'CONSTRAINT':
@@ -341,7 +341,7 @@ class dbTable extends dbObject {
 	*
 	* @access private
 	*/
-	function _tag_close( &$parser, $tag ) {
+	function _tag_close( $parser, $tag ) {
 		$this->currentElement = '';
 
 		switch( strtoupper( $tag ) ) {
@@ -657,7 +657,7 @@ class dbIndex extends dbObject {
 	*
 	* @access private
 	*/
-	function _tag_open( &$parser, $tag, $attributes ) {
+	function _tag_open( $parser, $tag, $attributes ) {
 		$this->currentElement = strtoupper( $tag );
 
 		switch( $this->currentElement ) {
@@ -684,7 +684,7 @@ class dbIndex extends dbObject {
 	*
 	* @access private
 	*/
-	function _tag_cdata( &$parser, $cdata ) {
+	function _tag_cdata( $parser, $cdata ) {
 		switch( $this->currentElement ) {
 			// Index field name
 			case 'COL':
@@ -700,7 +700,7 @@ class dbIndex extends dbObject {
 	*
 	* @access private
 	*/
-	function _tag_close( &$parser, $tag ) {
+	function _tag_close( $parser, $tag ) {
 		$this->currentElement = '';
 
 		switch( strtoupper( $tag ) ) {
@@ -799,7 +799,7 @@ class dbData extends dbObject {
 	*
 	* @access private
 	*/
-	function _tag_open( &$parser, $tag, $attributes ) {
+	function _tag_open( $parser, $tag, $attributes ) {
 		$this->currentElement = strtoupper( $tag );
 
 		switch( $this->currentElement ) {
@@ -821,7 +821,7 @@ class dbData extends dbObject {
 	*
 	* @access private
 	*/
-	function _tag_cdata( &$parser, $cdata ) {
+	function _tag_cdata( $parser, $cdata ) {
 		switch( $this->currentElement ) {
 			// Index field name
 			case 'F':
@@ -837,7 +837,7 @@ class dbData extends dbObject {
 	*
 	* @access private
 	*/
-	function _tag_close( &$parser, $tag ) {
+	function _tag_close( $parser, $tag ) {
 		$this->currentElement = '';
 
 		switch( strtoupper( $tag ) ) {
@@ -1016,7 +1016,7 @@ class dbQuerySet extends dbObject {
 	*
 	* @access private
 	*/
-	function _tag_open( &$parser, $tag, $attributes ) {
+	function _tag_open( $parser, $tag, $attributes ) {
 		$this->currentElement = strtoupper( $tag );
 
 		switch( $this->currentElement ) {
@@ -1038,7 +1038,7 @@ class dbQuerySet extends dbObject {
 	/**
 	* XML Callback to process CDATA elements
 	*/
-	function _tag_cdata( &$parser, $cdata ) {
+	function _tag_cdata( $parser, $cdata ) {
 		switch( $this->currentElement ) {
 			// Line of queryset SQL data
 			case 'QUERY':
@@ -1054,7 +1054,7 @@ class dbQuerySet extends dbObject {
 	*
 	* @access private
 	*/
-	function _tag_close( &$parser, $tag ) {
+	function _tag_close( $parser, $tag ) {
 		$this->currentElement = '';
 
 		switch( strtoupper( $tag ) ) {
@@ -1304,9 +1304,9 @@ class adoSchema {
 	*/
 	function __construct( $db ) {
 		// Initialize the environment
-		$this->mgq = get_magic_quotes_runtime();
+		$this->mgq = false;
 		if ($this->mgq !== false) {
-			ini_set('magic_quotes_runtime', 0);
+			// ini_set('magic_quotes_runtime', 0);
 		}
 
 		$this->db = $db;
@@ -1649,7 +1649,7 @@ class adoSchema {
 	*
 	* @access private
 	*/
-	function _tag_open( &$parser, $tag, $attributes ) {
+	function _tag_open( $parser, $tag, $attributes ) {
 		switch( strtoupper( $tag ) ) {
 			case 'TABLE':
 				$this->obj = new dbTable( $this, $attributes );
@@ -1672,7 +1672,7 @@ class adoSchema {
 	*
 	* @access private
 	*/
-	function _tag_cdata( &$parser, $cdata ) {
+	function _tag_cdata( $parser, $cdata ) {
 	}
 
 	/**
@@ -1681,7 +1681,7 @@ class adoSchema {
 	* @access private
 	* @internal
 	*/
-	function _tag_close( &$parser, $tag ) {
+	function _tag_close( $parser, $tag ) {
 
 	}
 
@@ -2197,7 +2197,7 @@ class adoSchema {
 	*/
 	function Destroy() {
 		if ($this->mgq !== false) {
-			ini_set('magic_quotes_runtime', $this->mgq );
+			// ini_set('magic_quotes_runtime', $this->mgq );
 		}
 	}
 }

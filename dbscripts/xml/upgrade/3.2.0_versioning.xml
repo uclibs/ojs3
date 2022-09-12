@@ -4,8 +4,8 @@
 <!--
  * dbscripts/xml/upgrade/3.2.0_versioning.xml
  *
- * Copyright (c) 2013-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2013-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Copy submission data to temporary tables so it can be updated
@@ -219,6 +219,52 @@
 			SET setting_name='enablePublicationURN'
 			WHERE setting_name='enableSubmissionURN'
 				AND plugin_name='urnpubidplugin'
+		</query>
+
+		<!--
+		pkp/pkp-lib#7266 Assigned articles missing from future issues after upgrade to OJS 3.3.0-8
+		Constants:
+		  - STATUS_SCHEDULED = 5
+		  - WORKFLOW_STAGE_ID_EDITING = 4
+		  - WORKFLOW_STAGE_ID_PRODUCTION = 5
+		-->
+		<query driver="postgres,postgres64,postgres7,postgres8,postgres9">
+			UPDATE publications as p
+			SET status = 5
+			WHERE ctid IN (
+				SELECT p.ctid
+				FROM publications as p
+				LEFT JOIN publication_settings as pss ON p.publication_id = pss.publication_id
+				LEFT JOIN submissions as s ON p.submission_id = s.submission_id
+				WHERE pss.setting_name = 'issueId'
+				AND pss.setting_value IS NOT NULL
+				AND p.status = 1
+				AND s.stage_id IN (4, 5)
+			)
+		</query>
+		<query driver="postgres,postgres64,postgres7,postgres8,postgres9">
+			UPDATE "submissions" as "s"
+			SET "status" = 5
+			WHERE "ctid" IN (
+				SELECT "s"."ctid"
+				FROM "submissions" as "s"
+				LEFT JOIN "publications" as "p" ON "s"."submission_id" = "p"."submission_id"
+				LEFT JOIN "publication_settings" as "pss" ON "p"."publication_id" = "pss"."publication_id"
+				WHERE "pss"."setting_name" = 'issueId'
+				AND "pss"."setting_value" IS NOT NULL
+				AND "s"."status" = 1
+				AND "s"."stage_id" IN (4,5)
+			)
+		</query>
+		<query driver="mysql,mysqli">
+			UPDATE publications as p
+			LEFT JOIN publication_settings as pss ON p.publication_id = pss.publication_id
+			LEFT JOIN submissions as s ON p.submission_id = s.submission_id
+			SET p.status = 5, s.status = 5
+			WHERE pss.setting_name = 'issueId'
+			AND pss.setting_value IS NOT NULL
+			AND p.status = 1
+			AND s.stage_id in (4, 5)
 		</query>
 
 		<!-- remove deprecated and temporary tables. should be last commands -->

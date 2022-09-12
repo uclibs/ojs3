@@ -8,8 +8,8 @@
 /**
  * @file classes/core/Core.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2000-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2000-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Core
@@ -227,7 +227,7 @@ class Core {
 	 * @return string|bool The url without base url,
 	 * false if it was not possible to remove it.
 	 */
-	function removeBaseUrl($url) {
+	static function removeBaseUrl($url) {
 		list($baseUrl, $contextPath) = Core::_getBaseUrlAndPath($url);
 
 		if (!$baseUrl) return false;
@@ -280,7 +280,7 @@ class Core {
 	 * @param $url string
 	 * @return array With two elements, base url and context path.
 	 */
-	function _getBaseUrlAndPath($url) {
+	static function _getBaseUrlAndPath($url) {
 		$baseUrl = false;
 		$contextPath = false;
 
@@ -329,6 +329,13 @@ class Core {
 			}
 		}
 
+		// If we still have no base URL, this may be a situation where we have an install with some customized URLs, and some not.
+		// Return the default base URL.
+
+		if (!$baseUrl) {
+			$baseUrl = Config::getVar('general', 'base_url');
+		}
+
 		return array($baseUrl, $contextPath);
 	}
 
@@ -344,7 +351,7 @@ class Core {
 	 * path info.
 	 * @return boolean
 	 */
-	function _checkBaseUrl($baseUrl, $url) {
+	static function _checkBaseUrl($baseUrl, $url) {
 		// Check if both base url and url have host
 		// component or not.
 		$baseUrlHasHost = (boolean) parse_url($baseUrl, PHP_URL_HOST);

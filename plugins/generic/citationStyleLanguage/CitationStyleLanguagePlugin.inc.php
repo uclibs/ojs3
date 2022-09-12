@@ -316,18 +316,26 @@ class CitationStyleLanguagePlugin extends GenericPlugin {
 		$citationData = new stdClass();
 		$citationData->type = 'article-journal';
 		$citationData->id = $article->getId();
-		$citationData->title = htmlspecialchars($publication->getLocalizedFullTitle());
-		$citationData->{'container-title'} = htmlspecialchars($context->getLocalizedName());
+		$citationData->title = $publication->getLocalizedFullTitle();
+		$citationData->{'container-title'} = $context->getLocalizedName();
 		$citationData->{'publisher-place'} = $this->getSetting($context->getId(), 'publisherLocation');
 		$citationData->abstract = htmlspecialchars($publication->getLocalizedData('abstract'));
 
 		$abbreviation = $context->getData('abbreviation', $context->getPrimaryLocale()) ?? $context->getData('acronym', $context->getPrimaryLocale());
 		if ($abbreviation) $citationData->{'container-title-short'} = htmlspecialchars($abbreviation);
 
-		$citationData->volume = htmlspecialchars($issue->getData('volume'));
-		// Zotero prefers issue and Mendeley uses `number` to store revisions
-		$citationData->issue = htmlspecialchars($issue->getData('number'));
-		$citationData->section = htmlspecialchars($article->getSectionTitle());
+		if ($issue) {
+			$citationData->volume = htmlspecialchars($issue->getData('volume'));
+			// Zotero prefers issue and Mendeley uses `number` to store revisions
+			$citationData->issue = htmlspecialchars($issue->getData('number'));
+		}
+
+		$sectionDao = DAORegistry::getDAO('SectionDAO'); /** @var $sectionDao SectionDAO */
+		if ($sectionId = $publication->getData('sectionId')) {
+			$section = $sectionDao->getById($sectionId);
+			if ($section && !$section->getHideTitle()) $citationData->section = htmlspecialchars($section->getTitle($context->getPrimaryLocale()));
+		}
+
 		$citationData->URL = $request->getDispatcher()->url(
 			$request,
 			ROUTE_PAGE,
@@ -368,7 +376,7 @@ class CitationStyleLanguagePlugin extends GenericPlugin {
 					$citationData->{'original-date'}->raw = htmlspecialchars($originalPublication->getData('datePublished'));
 				}
 			}
-		} elseif ($issue->getPublished()) {
+		} elseif ($issue && $issue->getPublished()) {
 			$citationData->issued = new stdClass();
 			$citationData->issued->raw = htmlspecialchars($issue->getDatePublished());
 		}
@@ -465,9 +473,9 @@ class CitationStyleLanguagePlugin extends GenericPlugin {
 		// See: https://github.com/citation-style-language/styles/issues/2831
 		$citation = str_replace('\n', "\n", $citation);
 
-		$filename = substr(preg_replace('/[^a-zA-Z0-9_.-]/', '', str_replace(' ', '-', $article->getLocalizedTitle())), 0, 60);
+        $encodedFilename = urlencode(substr($article->getLocalizedTitle(), 0, 60)) . '.' . $styleConfig['fileExtension'];
 
-		header('Content-Disposition: attachment; filename="' . $filename . '.' . $styleConfig['fileExtension'] . '"');
+		header("Content-Disposition: attachment; filename*=UTF-8''\"$encodedFilename\"");
 		header('Content-Type: ' . $styleConfig['contentType']);
 		echo $citation;
 		exit;

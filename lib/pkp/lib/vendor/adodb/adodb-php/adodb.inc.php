@@ -14,7 +14,7 @@
 /**
 	\mainpage
 
-	@version   v5.20.17  31-Mar-2020
+	@version   v5.20.18  28-Jun-2020
 	@copyright (c) 2000-2013 John Lim (jlim#natsoft.com). All rights reserved.
 	@copyright (c) 2014      Damien Regad, Mark Newnham and the ADOdb community
 
@@ -862,7 +862,7 @@ if (!defined('_ADODB_LAYER')) {
 	 * Requested by "Karsten Dambekalns" <k.dambekalns@fishfarm.de>
 	 */
 	function QMagic($s) {
-		return $this->qstr($s,get_magic_quotes_gpc());
+		return $this->qstr($s,false);
 	}
 
 	function q(&$s) {
@@ -2064,7 +2064,7 @@ if (!defined('_ADODB_LAYER')) {
 		if (!$rs) {
 		// no cached rs found
 			if ($this->debug) {
-				if (get_magic_quotes_runtime() && !$this->memCache) {
+				if (false && !$this->memCache) {
 					ADOConnection::outp("Please disable magic_quotes_runtime - it corrupts cache files :(");
 				}
 				if ($this->debug !== -1) {
@@ -2956,7 +2956,7 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 		// undo magic quotes for "
 		$s = str_replace('\\"','"',$s);
 
-		if ($this->replaceQuote == "\\'" || ini_get('magic_quotes_sybase')) {
+		if ($this->replaceQuote == "\\'") {
 			// ' already quoted, no need to change anything
 			return $s;
 		} else {
@@ -2990,7 +2990,7 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 		// undo magic quotes for "
 		$s = str_replace('\\"','"',$s);
 
-		if ($this->replaceQuote == "\\'" || ini_get('magic_quotes_sybase')) {
+		if ($this->replaceQuote == "\\'") {
 			// ' already quoted, no need to change anything
 			return "'$s'";
 		} else {

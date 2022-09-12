@@ -3,8 +3,8 @@
 /**
  * @file plugins/paymethod/manual/ManualPaymentPlugin.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ManualPaymentPlugin
@@ -57,6 +57,7 @@ class ManualPaymentPlugin extends PaymethodPlugin {
 	 * @param $form FormComponent
 	 */
 	public function addSettings($hookName, $form) {
+		import('lib.pkp.classes.components.forms.context.PKPPaymentSettingsForm'); // Load constant
 		if ($form->id !== FORM_PAYMENT_SETTINGS) {
 			return;
 		}
@@ -148,11 +149,11 @@ class ManualPaymentPlugin extends PaymethodPlugin {
 				$mail->setReplyTo(null);
 				$mail->addRecipient($contactEmail, $contactName);
 				$mail->assignParams(array(
-					'contextName' => $context->getLocalizedName(),
-					'userFullName' => $user?$user->getFullName():('(' . __('common.none') . ')'),
-					'userName' => $user?$user->getUsername():('(' . __('common.none') . ')'),
-					'itemName' => $paymentManager->getPaymentName($queuedPayment),
-					'itemCost' => $queuedPayment->getAmount(),
+					'contextName' => htmlspecialchars($context->getLocalizedName()),
+					'userFullName' => htmlspecialchars($user?$user->getFullName():('(' . __('common.none') . ')')),
+					'userName' => htmlspecialchars($user?$user->getUsername():('(' . __('common.none') . ')')),
+					'itemName' => htmlspecialchars($paymentManager->getPaymentName($queuedPayment)),
+					'itemCost' => htmlspecialchars($queuedPayment->getAmount()),
 					'itemCurrencyCode' => $queuedPayment->getCurrencyCode()
 				));
 				$mail->send();

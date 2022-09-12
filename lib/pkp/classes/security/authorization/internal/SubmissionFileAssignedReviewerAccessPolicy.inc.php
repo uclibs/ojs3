@@ -2,8 +2,8 @@
 /**
  * @file classes/security/authorization/internal/SubmissionFileAssignedReviewerAccessPolicy.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2000-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2000-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionFileAssignedReviewerAccessPolicy
@@ -21,8 +21,8 @@ class SubmissionFileAssignedReviewerAccessPolicy extends SubmissionFileBaseAcces
 	 * Constructor
 	 * @param $request PKPRequest
 	 */
-	function __construct($request, $fileIdAndRevision = null) {
-		parent::__construct($request, $fileIdAndRevision);
+	function __construct($request, $submissionFileId = null) {
+		parent::__construct($request, $submissionFileId);
 	}
 
 
@@ -50,11 +50,25 @@ class SubmissionFileAssignedReviewerAccessPolicy extends SubmissionFileBaseAcces
 		foreach ($reviewAssignments as $reviewAssignment) {
 			if ($context->getData('restrictReviewerFileAccess') && !$reviewAssignment->getDateConfirmed()) continue;
 
+			// Determine which file stage the requested file should be in.
+			$reviewFileStage = null;
+			switch ($reviewAssignment->getStageId()) {
+			case WORKFLOW_STAGE_ID_INTERNAL_REVIEW:
+				$reviewFileStage = SUBMISSION_FILE_INTERNAL_REVIEW_FILE;
+				break;
+			case WORKFLOW_STAGE_ID_EXTERNAL_REVIEW:
+				$reviewFileStage = SUBMISSION_FILE_REVIEW_FILE;
+				break;
+			default: throw new Exception('Unknown review workflow stage ID!');
+			}
+
+			// Check to make sure that the requested file meets expectations.
 			if (
-				$submissionFile->getSubmissionId() == $reviewAssignment->getSubmissionId() &&
-				$submissionFile->getFileStage() == SUBMISSION_FILE_REVIEW_FILE &&
-				$reviewFilesDao->check($reviewAssignment->getId(), $submissionFile->getFileId())
+				$submissionFile->getData('submissionId') == $reviewAssignment->getSubmissionId() &&
+				$submissionFile->getData('fileStage') == $reviewFileStage &&
+				$reviewFilesDao->check($reviewAssignment->getId(), $submissionFile->getId())
 			) {
+				$this->addAuthorizedContextObject(ASSOC_TYPE_REVIEW_ASSIGNMENT, $reviewAssignment);
 				return AUTHORIZATION_PERMIT;
 			}
 		}

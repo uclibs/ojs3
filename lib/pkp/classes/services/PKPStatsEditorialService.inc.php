@@ -3,8 +3,8 @@
 /**
  * @file classes/services/PKPStatsEditorialService.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2000-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2000-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPStatsEditorialService
@@ -27,11 +27,12 @@ class PKPStatsEditorialService {
 	public function getOverview($args = []) {
 		import('classes.workflow.EditorDecisionActionsManager');
 		import('lib.pkp.classes.submission.PKPSubmission');
-		\AppLocale::requireComponents(LOCALE_COMPONENT_PKP_MANAGER);
-		\AppLocale::requireComponents(LOCALE_COMPONENT_APP_MANAGER);
+		\AppLocale::requireComponents(LOCALE_COMPONENT_PKP_MANAGER, LOCALE_COMPONENT_APP_MANAGER);
 
 		$received = $this->countSubmissionsReceived($args);
 		$accepted = $this->countByDecisions(SUBMISSION_EDITOR_DECISION_ACCEPT, $args);
+		$submissionsPublished = $this->countSubmissionsPublished($args);
+		$submissionsSkipped = $this->countSubmissionsSkipped($args);
 		$declinedDesk = $this->countByDecisions(SUBMISSION_EDITOR_DECISION_INITIAL_DECLINE, $args);
 		$declinedReview = $this->countByDecisions(SUBMISSION_EDITOR_DECISION_DECLINE, $args);
 		$declined = $declinedDesk + $declinedReview;
@@ -88,67 +89,72 @@ class PKPStatsEditorialService {
 		$overview = [
 			[
 				'key' => 'submissionsReceived',
-				'name' => __('stats.name.submissionsReceived'),
+				'name' => 'stats.name.submissionsReceived',
 				'value' => $received,
 			],
 			[
 				'key' => 'submissionsAccepted',
-				'name' => __('stats.name.submissionsAccepted'),
+				'name' => 'stats.name.submissionsAccepted',
 				'value' => $accepted,
 			],
 			[
 				'key' => 'submissionsDeclined',
-				'name' => __('stats.name.submissionsDeclined'),
+				'name' => 'stats.name.submissionsDeclined',
 				'value' => $declined,
 			],
 			[
 				'key' => 'submissionsDeclinedDeskReject',
-				'name' => __('stats.name.submissionsDeclinedDeskReject'),
+				'name' => 'stats.name.submissionsDeclinedDeskReject',
 				'value' => $declinedDesk,
 			],
 			[
 				'key' => 'submissionsDeclinedPostReview',
-				'name' => __('stats.name.submissionsDeclinedPostReview'),
+				'name' => 'stats.name.submissionsDeclinedPostReview',
 				'value' => $declinedReview,
 			],
 			[
 				'key' => 'submissionsPublished',
-				'name' => __('stats.name.submissionsPublished'),
-				'value' => $this->countSubmissionsPublished($args),
+				'name' => 'stats.name.submissionsPublished',
+				'value' => $submissionsPublished,
+			],
+			[
+				'key' => 'submissionsSkipped',
+				'name' => 'stats.name.submissionsSkipped',
+				'value' => $submissionsSkipped,
 			],
 			[
 				'key' => 'daysToDecision',
-				'name' => __('stats.name.daysToDecision'),
+				'name' => 'stats.name.daysToDecision',
 				'value' => $firstDecisionDaysRate,
 			],
 			[
 				'key' => 'daysToAccept',
-				'name' => __('stats.name.daysToAccept'),
+				'name' => 'stats.name.daysToAccept',
 				'value' => $acceptDecisionDaysRate,
 			],
 			[
 				'key' => 'daysToReject',
-				'name' => __('stats.name.daysToReject'),
+				'name' => 'stats.name.daysToReject',
 				'value' => $declineDecisionDaysRate,
 			],
 			[
 				'key' => 'acceptanceRate',
-				'name' => __('stats.name.acceptanceRate'),
+				'name' => 'stats.name.acceptanceRate',
 				'value' => round($acceptanceRate, 2),
 			],
 			[
 				'key' => 'declineRate',
-				'name' => __('stats.name.declineRate'),
+				'name' => 'stats.name.declineRate',
 				'value' => round($declineRate, 2),
 			],
 			[
 				'key' => 'declinedDeskRate',
-				'name' => __('stats.name.declinedDeskRate'),
+				'name' => 'stats.name.declinedDeskRate',
 				'value' => round($declinedDeskRate, 2),
 			],
 			[
 				'key' => 'declinedReviewRate',
-				'name' => __('stats.name.declinedReviewRate'),
+				'name' => 'stats.name.declinedReviewRate',
 				'value' => round($declinedReviewRate, 2),
 			],
 		];
@@ -346,6 +352,19 @@ class PKPStatsEditorialService {
 	}
 
 	/**
+	 * Get a count of the submissions which are skipped by the other statistics
+	 *
+	 * Date restrictions will not be applied. It will return the count of
+	 * all skipped submissions.
+	 *
+	 * @param array $args See self::getQueryBuilder()
+	 * @return int
+	 */
+	public function countSubmissionsSkipped($args = []) {
+		return $this->getQueryBuilder($args)->countSkipped();
+	}
+
+	/**
 	 * Get a count of the active submissions in one or more stages
 	 *
 	 * Date restrictions will not be applied. It will return the count of
@@ -436,7 +455,7 @@ class PKPStatsEditorialService {
 			$qb->filterByContexts($args['contextIds']);
 		}
 
-		\HookRegistry::call('Stats::editorial::queryBuilder', array($qb, $args));
+		\HookRegistry::call('Stats::editorial::queryBuilder', array(&$qb, $args));
 
 		return $qb;
 	}
