@@ -3,8 +3,8 @@
 /**
  * @file controllers/grid/languages/LanguageGridHandler.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2000-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2000-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class LanguageGridHandler
@@ -66,6 +66,7 @@ class LanguageGridHandler extends GridHandler {
 	 * @return JSONObject JSON message
 	 */
 	function saveLanguageSetting($args, $request) {
+		if (!$request->checkCSRF()) return new JSONMessage(false);
 		$locale = (string) $request->getUserVar('rowId');
 		$settingName = (string) $request->getUserVar('setting');
 		$settingValue = (boolean) $request->getUserVar('value');
@@ -109,7 +110,7 @@ class LanguageGridHandler extends GridHandler {
 			}
 		}
 
-		$context = $contextService->edit($context, [$settingName => $currentSettingValue], $request);
+		$context = $contextService->edit($context, [$settingName => array_values(array_unique($currentSettingValue))], $request);
 
 		$notificationManager = new NotificationManager();
 		$user = $request->getUser();
@@ -133,6 +134,7 @@ class LanguageGridHandler extends GridHandler {
 	 * @return JSONMessage JSON object
 	 */
 	function setContextPrimaryLocale($args, $request) {
+		if (!$request->checkCSRF()) return new JSONMessage(false);
 		$locale = (string) $request->getUserVar('rowId');
 		$context = $request->getContext();
 		$availableLocales = $this->getGridDataElements($request);

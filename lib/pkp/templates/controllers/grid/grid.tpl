@@ -1,8 +1,8 @@
 {**
  * templates/controllers/grid/grid.tpl
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2000-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2000-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Grid HTML markup and construction
@@ -29,7 +29,8 @@
 				{if $grid->getPublishChangeEvents()}
 					publishChangeEvents: {$grid->getPublishChangeEvents()|@json_encode},
 				{/if}
-				features: {include file='controllers/grid/feature/featuresOptions.tpl' features=$features}
+				features: {include file='controllers/grid/feature/featuresOptions.tpl' features=$features},
+				csrfToken: {csrf type="json"}
 			{rdelim}
 		);
 	{rdelim});

@@ -1,0 +1,55 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-02-18T12:00:38+00:00\n"
+"PO-Revision-Date: 2020-05-01 15:38+0000\n"
+"Last-Translator: Jordi LC <jordi.lacruz@uab.cat>\n"
+"Language-Team: Spanish <http://translate.pkp.sfu.ca/projects/plugins/"
+"controlpublicfiles/es_ES/>\n"
+"Language: es_ES\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 3.9.1\n"
+
+msgid "plugins.generic.controlPublicFiles.displayName"
+msgstr "Controlar archivos públicos"
+
+msgid "plugins.generic.controlPublicFiles.description"
+msgstr "Limite quién puede cargar archivos públicos y qué tipo de archivos pueden cargar."
+
+msgid "plugins.generic.controlPublicFiles.setting.allowedDirSize"
+msgstr "Tamaño concedido al directorio"
+
+msgid "plugins.generic.controlPublicFiles.setting.allowedDirSize.description"
+msgstr "Establezca para cada usuario un límite en el tamaño del archivo que carga en el directorio público, en bytes. El valor predeterminado es 25000 (25mb)."
+
+msgid "plugins.generic.controlPublicFiles.setting.allowedFileTypes"
+msgstr "Tipos de archivos permitidos"
+
+msgid "plugins.generic.controlPublicFiles.setting.allowedFileTypes.description"
+msgstr "Limite qué tipo de archivos se pueden cargar. Separe cada archivo con una coma. El valor predeterminado es \"gif,jpg,png\"."
+
+msgid "plugins.generic.controlPublicFiles.setting.disableAllUploads"
+msgstr "Deshabilitar todas las cargas"
+
+msgid "plugins.generic.controlPublicFiles.setting.disableAllUploads.description"
+msgstr "No permitir que ningún usuario cargue archivos a través del editor de texto."
+
+msgid "plugins.generic.controlPublicFiles.setting.disableRoles"
+msgstr "Deshabilitar por roles"
+
+msgid "plugins.generic.controlPublicFiles.setting.disableRoles.option"
+msgstr "No permitir que {$role} cargue archivos a través del editor de texto."
+
+msgid "plugins.generic.controlPublicFiles.settings.description"
+msgstr ""
+"<p>Los usuarios/as pueden cargar imágenes en cualquier lugar donde aparezca "
+"un editor de textos enriquecido que incluya el control de carga de imágenes. "
+"Esto comprende secciones como \"Acerca de la revista\", así como la "
+"biografía del usuario/a en cada área de perfil de usuario/a.</p><p>Las "
+"opciones de configuración que hay a continuación le permiten restringir "
+"quién puede hacer cargas, qué tipo de archivos pueden cargar y hasta que "
+"punto pueden crecer sus directorios de archivos.</p>"

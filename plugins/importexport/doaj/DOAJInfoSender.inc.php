@@ -3,8 +3,8 @@
 /**
  * @file plugins/importexport/doaj/DOAJInfoSender.inc.php
  *
- * Copyright (c) 2013-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2013-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DOAJInfoSender
@@ -53,6 +53,8 @@ class DOAJInfoSender extends ScheduledTask {
 		$journals = $this->_getJournals();
 
 		foreach ($journals as $journal) {
+			// load pubIds for this journal
+			PluginRegistry::loadCategory('pubIds', true, $journal->getId());
 			// Get unregistered articles
 			$unregisteredArticles = $plugin->getUnregisteredArticles($journal);
 			// If there are articles to be deposited

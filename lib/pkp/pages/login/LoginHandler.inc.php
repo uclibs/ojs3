@@ -3,8 +3,8 @@
 /**
  * @file pages/login/LoginHandler.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2000-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2000-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class LoginHandler
@@ -179,10 +179,10 @@ class LoginHandler extends Handler {
 			$mail = new MailTemplate('PASSWORD_RESET_CONFIRM');
 			$site = $request->getSite();
 			$this->_setMailFrom($request, $mail, $site);
-			$mail->assignParams(array(
+			$mail->assignParams([
 				'url' => $request->url(null, 'login', 'resetPassword', $user->getUsername(), array('confirm' => $hash)),
-				'siteTitle' => $site->getLocalizedTitle()
-			));
+				'siteTitle' => htmlspecialchars($site->getLocalizedTitle()),
+			]);
 			$mail->addRecipient($user->getEmail(), $user->getFullName());
 			$mail->send();
 
@@ -245,11 +245,11 @@ class LoginHandler extends Handler {
 			import('lib.pkp.classes.mail.MailTemplate');
 			$mail = new MailTemplate('PASSWORD_RESET');
 			$this->_setMailFrom($request, $mail, $site);
-			$mail->assignParams(array(
-				'username' => $user->getUsername(),
-				'password' => $newPassword,
-				'siteTitle' => $site->getLocalizedTitle()
-			));
+			$mail->assignParams([
+				'username' => htmlspecialchars($user->getUsername()),
+				'password' => htmlspecialchars($newPassword),
+				'siteTitle' => htmlspecialchars($site->getLocalizedTitle()),
+			]);
 			$mail->addRecipient($user->getEmail(), $user->getFullName());
 			if (!$mail->send()) {
 				import('classes.notification.NotificationManager');
@@ -272,10 +272,15 @@ class LoginHandler extends Handler {
 	 * @param $args array first argument may contain user's username
 	 */
 	function changePassword($args, $request) {
+		$this->_isBackendPage = true;
 		$this->setupTemplate($request);
+		$templateMgr = TemplateManager::getManager($request);
+		$templateMgr->setupBackendPage();
+		$templateMgr->assign([
+			'pageTitle' => __('user.changePassword'),
+		]);
 
 		import('lib.pkp.classes.user.form.LoginChangePasswordForm');
-
 		$passwordForm = new LoginChangePasswordForm($request->getSite());
 		$passwordForm->initData();
 		if (isset($args[0])) {
@@ -288,6 +293,7 @@ class LoginHandler extends Handler {
 	 * Save user's new password.
 	 */
 	function savePassword($args, $request) {
+		$this->_isBackendPage = true;
 		$this->setupTemplate($request);
 
 		import('lib.pkp.classes.user.form.LoginChangePasswordForm');

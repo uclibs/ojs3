@@ -3,8 +3,8 @@
 /**
  * @file controllers/grid/users/reviewer/form/CreateReviewerForm.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class CreateReviewerForm
@@ -135,7 +135,11 @@ class CreateReviewerForm extends ReviewerForm {
 				$request = Application::get()->getRequest();
 				$context = $request->getContext();
 				$mail->setReplyTo($context->getData('contactEmail'), $context->getData('contactName'));
-				$mail->assignParams(array('username' => $this->getData('username'), 'password' => $password, 'userFullName' => $user->getFullName()));
+				$mail->assignParams([
+					'username' => htmlspecialchars($this->getData('username')),
+					'password' => htmlspecialchars($password),
+					'userFullName' => htmlspecialchars($user->getFullName()),
+				]);
 				$mail->addRecipient($user->getEmail(), $user->getFullName());
 				if (!$mail->send($request)) {
 					import('classes.notification.NotificationManager');

@@ -3,8 +3,8 @@
 /**
  * @file classes/plugins/ReportPlugin.inc.php
  *
- * Copyright (c) 2013-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2013-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReportPlugin
@@ -134,7 +134,7 @@ abstract class ReportPlugin extends Plugin {
 					'settings',
 					new RedirectAction($dispatcher->url(
 						$request, ROUTE_PAGE,
-						null, 'management', 'tools', 'report', array('pluginName' => $this->getName())
+						null, 'stats', 'reports', 'report', array('pluginName' => $this->getName())
 					)),
 					__('manager.statistics.reports'),
 					null

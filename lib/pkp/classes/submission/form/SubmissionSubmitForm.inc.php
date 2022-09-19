@@ -6,8 +6,8 @@
 /**
  * @file classes/submission/form/SubmissionSubmitForm.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionSubmitForm
@@ -37,7 +37,12 @@ class SubmissionSubmitForm extends Form {
 	 * @param $step int
 	 */
 	function __construct($context, $submission, $step) {
-		parent::__construct(sprintf('submission/form/step%d.tpl', $step));
+		parent::__construct(
+			sprintf('submission/form/step%d.tpl', $step),
+			true,
+			$submission ? $submission->getLocale() : null,
+			$context->getSupportedSubmissionLocaleNames()
+		);
 		$this->addCheck(new FormValidatorPost($this));
 		$this->addCheck(new FormValidatorCSRF($this));
 		$this->step = (int) $step;

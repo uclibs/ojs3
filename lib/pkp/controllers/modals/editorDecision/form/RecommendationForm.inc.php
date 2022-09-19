@@ -3,8 +3,8 @@
 /**
  * @file controllers/modals/editorDecision/form/RecommendationForm.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class RecommendationForm
@@ -102,11 +102,10 @@ class RecommendationForm extends Form {
 		$dispatcher = $router->getDispatcher();
 		$user = $request->getUser();
 		$submissionUrl = $dispatcher->url($request, ROUTE_PAGE, null, 'workflow', 'index', array($submission->getId(), $this->getStageId()));
-		$emailParams = array(
-			'editors' => $editorsStr,
+		$email->assignParams([
+			'editors' => htmlspecialchars($editorsStr),
 			'submissionUrl' => $submissionUrl,
-		);
-		$email->assignParams($emailParams);
+		]);
 		$email->replaceParams();
 
 		// Get the recorded recommendations
@@ -128,6 +127,19 @@ class RecommendationForm extends Form {
 			$this->setData($key, $value);
 		}
 		return parent::initData();
+	}
+
+	/**
+	 * @copydoc Form::fetch()
+	 */
+	function fetch($request, $template = null, $display = false) {
+		$templateMgr = TemplateManager::getManager($request);
+		$templateMgr->assign(array(
+			'allowedVariables' => [
+				'recommendation' => __('editor.submission.recommendation'),
+			],
+		));
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
@@ -183,12 +195,12 @@ class RecommendationForm extends Form {
 
 			$dispatcher = $router->getDispatcher();
 			$submissionUrl = $dispatcher->url($request, ROUTE_PAGE, null, 'workflow', 'index', array($submission->getId(), $this->getStageId()));
-			$email->assignParams(array(
-				'editors' => $this->getData('editors'),
+			$email->assignParams([
+				'editors' => htmlspecialchars($this->getData('editors')),
 				'editorialContactSignature' => $user->getContactSignature(),
 				'submissionUrl' => $submissionUrl,
 				'recommendation' => __($recommendationOptions[$recommendation]),
-			));
+			]);
 			if (!$this->getData('skipEmail')) {
 				if (!$email->send($request)) {
 					import('classes.notification.NotificationManager');

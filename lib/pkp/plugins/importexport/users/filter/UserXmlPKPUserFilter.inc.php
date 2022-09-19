@@ -3,8 +3,8 @@
 /**
  * @file plugins/importexport/users/filter/UserXmlPKPUserFilter.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2000-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2000-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class UserXmlPKPUserFilter
@@ -232,7 +232,11 @@ class UserXmlPKPUserFilter extends NativeImportFilter {
 				import('lib.pkp.classes.mail.MailTemplate');
 				$mail = new MailTemplate('USER_REGISTER');
 				$mail->setReplyTo($context->getSetting('contactEmail'), $context->getSetting('contactName'));
-				$mail->assignParams(array('username' => $user->getUsername(), 'password' => $password, 'userFullName' => $user->getFullName()));
+				$mail->assignParams([
+					'username' => htmlspecialchars($user->getUsername()),
+					'password' => htmlspecialchars($password),
+					'userFullName' => htmlspecialchars($user->getFullName()),
+				]);
 				$mail->addRecipient($user->getEmail(), $user->getFullName());
 				$mail->send();
 			}

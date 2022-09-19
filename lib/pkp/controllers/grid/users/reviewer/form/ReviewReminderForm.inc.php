@@ -3,8 +3,8 @@
 /**
  * @file controllers/grid/users/reviewer/form/ReviewReminderForm.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewReminderForm
@@ -71,20 +71,19 @@ class ReviewReminderForm extends Form {
 
 		// Format the review due date
 		$reviewDueDate = strtotime($reviewAssignment->getDateDue());
-		$dateFormatShort = Config::getVar('general', 'date_format_short');
+		$dateFormatShort = $context->getLocalizedDateFormatShort();
 		if ($reviewDueDate == -1) $reviewDueDate = $dateFormatShort; // Default to something human-readable if no date specified
 		else $reviewDueDate = strftime($dateFormatShort, $reviewDueDate);
 
 		$dispatcher = $request->getDispatcher();
-		$paramArray = array(
-			'reviewerName' => $reviewer->getFullName(),
+		$email->assignParams([
+			'reviewerName' => htmlspecialchars($reviewer->getFullName()),
 			'reviewDueDate' => $reviewDueDate,
 			'editorialContactSignature' => $user->getContactSignature(),
-			'reviewerUserName' => $reviewer->getUsername(),
+			'reviewerUserName' => htmlspecialchars($reviewer->getUsername()),
 			'passwordResetUrl' => $dispatcher->url($request, ROUTE_PAGE, null, 'login', 'resetPassword', $reviewer->getUsername(), array('confirm' => Validation::generatePasswordResetHash($reviewer->getId()))),
 			'submissionReviewUrl' => $dispatcher->url($request, ROUTE_PAGE, null, 'reviewer', 'submission', null, array('submissionId' => $reviewAssignment->getSubmissionId()))
-		);
-		$email->assignParams($paramArray);
+		]);
 
 		$this->setData('stageId', $reviewAssignment->getStageId());
 		$this->setData('reviewAssignmentId', $reviewAssignment->getId());
@@ -158,13 +157,13 @@ class ReviewReminderForm extends Form {
 
 		$email->addRecipient($reviewer->getEmail(), $reviewer->getFullName());
 		$email->setBody($this->getData('message'));
-		$email->assignParams(array(
-			'reviewerName' => $reviewer->getFullName(),
+		$email->assignParams([
+			'reviewerName' => htmlspecialchars($reviewer->getFullName()),
 			'reviewDueDate' => $reviewDueDate,
 			'passwordResetUrl' => $dispatcher->url($request, ROUTE_PAGE, null, 'login', 'resetPassword', $reviewer->getUsername(), array('confirm' => Validation::generatePasswordResetHash($reviewer->getId()))),
 			'submissionReviewUrl' => $dispatcher->url($request, ROUTE_PAGE, null, 'reviewer', 'submission', null, $reviewUrlArgs),
 			'editorialContactSignature' => $user->getContactSignature(),
-		));
+		]);
 		if (!$email->send($request)) {
 			import('classes.notification.NotificationManager');
 			$notificationMgr = new NotificationManager();

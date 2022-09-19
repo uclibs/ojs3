@@ -3,8 +3,8 @@
 /**
  * @file controllers/grid/settings/roles/UserGroupGridHandler.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class UserGroupGridHandler
@@ -69,7 +69,7 @@ class UserGroupGridHandler extends GridHandler {
 			$this->addPolicy(new WorkflowStageRequiredPolicy($request->getUserVar('stageId')));
 		}
 
-		$userGroupRequiredOps = array_merge($workflowStageRequiredOps, array('editUserGroup', 'updateUserGroup', 'removeUserGroup'));
+		$userGroupRequiredOps = array_merge($workflowStageRequiredOps, array('editUserGroup', 'removeUserGroup'));
 		if (in_array($operation, $userGroupRequiredOps)) {
 			// Validate the user group object.
 			$userGroupId = $request->getUserVar('userGroupId');
@@ -364,6 +364,7 @@ class UserGroupGridHandler extends GridHandler {
 	 * @return JSONMessage JSON object
 	 */
 	private function _toggleAssignment($args, $request) {
+		if (!$request->checkCSRF()) return new JSONMessage(false);
 		$userGroup = $this->_userGroup;
 		$stageId = $this->getAuthorizedContextObject(ASSOC_TYPE_WORKFLOW_STAGE);
 		$contextId = $this->_getContextId();

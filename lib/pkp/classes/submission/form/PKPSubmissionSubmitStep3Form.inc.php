@@ -3,8 +3,8 @@
 /**
  * @file classes/submission/form/PKPSubmissionSubmitStep3Form.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPSubmissionSubmitStep3Form
@@ -51,10 +51,20 @@ class PKPSubmissionSubmitStep3Form extends SubmissionSubmitForm {
 
 		// Tell the form what fields are enabled (and which of those are required)
 		$metadataFields = Application::getMetadataFields();
+		$urlTemplate = $request->getDispatcher()->url($request, ROUTE_API, $context->getData('urlPath'), 'vocabs', null, null, ['vocab' => '__vocab__']);
+		$controlledVocabMap = [
+			'languages' => CONTROLLED_VOCAB_SUBMISSION_LANGUAGE,
+			'subjects' => CONTROLLED_VOCAB_SUBMISSION_SUBJECT,
+			'disciplines' => CONTROLLED_VOCAB_SUBMISSION_DISCIPLINE,
+			'keywords' => CONTROLLED_VOCAB_SUBMISSION_KEYWORD,
+			'agencies' => CONTROLLED_VOCAB_SUBMISSION_AGENCY
+		];
+		
 		foreach ($metadataFields as $field) {
 			$templateMgr->assign(array(
 				$field . 'Enabled' => $context->getData($field) === METADATA_REQUEST || $context->getData($field) === METADATA_REQUIRE,
 				$field . 'Required' => $context->getData($field) === METADATA_REQUIRE,
+				$field . 'SourceUrl' => isset($controlledVocabMap[$field]) ? str_replace('__vocab__', $controlledVocabMap[$field], $urlTemplate) : null
 			));
 		}
 

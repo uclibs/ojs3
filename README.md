@@ -2,7 +2,7 @@
 
 > Open Journal Systems (OJS) has been developed by the Public Knowledge Project. For general information about OJS and other open research systems, visit the [PKP web site][pkp].
 
-[![Build Status](https://travis-ci.org/pkp/ojs.svg?branch=master)](https://travis-ci.org/pkp/ojs)
+[![Build Status](https://travis-ci.org/pkp/ojs.svg?branch=stable-3_3_0)](https://travis-ci.org/pkp/ojs)
 
 ## Documentation
 
@@ -17,9 +17,9 @@ Checkout submodules and copy default configuration :
 
 Install or update dependencies via Composer (https://getcomposer.org/):
 
-    composer --working-dir=lib/pkp update
-    composer --working-dir=plugins/paymethod/paypal update
-    composer --working-dir=plugins/generic/citationStyleLanguage update
+    composer --working-dir=lib/pkp install
+    composer --working-dir=plugins/paymethod/paypal install
+    composer --working-dir=plugins/generic/citationStyleLanguage install
 
 Install or update dependencies via [NPM](https://www.npmjs.com/):
 

@@ -6,8 +6,8 @@
 /**
  * @file classes/user/form/RegistrationForm.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class RegistrationForm
@@ -323,11 +323,11 @@ class RegistrationForm extends Form {
 			$this->_setMailFrom($request, $mail);
 			$context = $request->getContext();
 			$contextPath = $context ? $context->getPath() : null;
-			$mail->assignParams(array(
-				'userFullName' => $user->getFullName(),
-				'contextName' => $context ? $context->getLocalizedName() : $site->getLocalizedTitle(),
-				'activateUrl' => $request->url($contextPath, 'user', 'activateUser', array($this->getData('username'), $accessKey))
-			));
+			$mail->assignParams([
+				'userFullName' => htmlspecialchars($user->getFullName()),
+				'contextName' => htmlspecialchars($context ? $context->getLocalizedName() : $site->getLocalizedTitle()),
+				'activateUrl' => $request->url($contextPath, 'user', 'activateUser', [$this->getData('username'), $accessKey])
+			]);
 			$mail->addRecipient($user->getEmail(), $user->getFullName());
 			if (!$mail->send()) {
 				import('classes.notification.NotificationManager');

@@ -3,8 +3,8 @@
 /**
  * @file plugins/importexport/datacite/classes/form/DataciteSettingsForm.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DataciteSettingsForm
@@ -79,6 +79,7 @@ class DataciteSettingsForm extends Form {
 		// The username is used in HTTP basic authentication and according to RFC2617 it therefore may not contain a colon.
 		$this->addCheck(new FormValidatorRegExp($this, 'username', FORM_VALIDATOR_OPTIONAL_VALUE, 'plugins.importexport.datacite.settings.form.usernameRequired', '/^[^:]+$/'));
 		$this->addCheck(new FormValidatorPost($this));
+		$this->addCheck(new FormValidatorCSRF($this));
 	}
 
 
@@ -101,6 +102,27 @@ class DataciteSettingsForm extends Form {
 	 */
 	function readInputData() {
 		$this->readUserVars(array_keys($this->getFormFields()));
+	}
+
+	/**
+	 * @copydoc Form::validate
+	 */
+	function validate($callHooks = true) {
+		// if in test mode, the test DOI prefix must exist
+		if ($this->getData('testMode')) {
+			if (empty($this->getData('testDOIPrefix'))) {
+				$this->addError('testDOIPrefix', __('plugins.importexport.datacite.settings.form.testDOIPrefixRequired'));
+				$this->addErrorField('testDOIPrefix');
+			}
+			// if username exist there will be the possibility to register from within OJS,
+			// so the test username must exist too
+			if (!empty($this->getData('username')) && empty($this->getData('testUsername'))) {
+				$this->addError('testUsername', __('plugins.importexport.datacite.settings.form.testUsernameRequired'));
+				$this->addErrorField('testUsername');
+			}
+		}
+
+		return parent::validate($callHooks);
 	}
 
 	/**
@@ -128,7 +150,10 @@ class DataciteSettingsForm extends Form {
 			'username' => 'string',
 			'password' => 'string',
 			'automaticRegistration' => 'bool',
-			'testMode' => 'bool'
+			'testMode' => 'bool',
+			'testUsername' => 'string',
+			'testPassword' => 'string',
+			'testDOIPrefix' => 'string',
 		);
 	}
 
@@ -138,7 +163,7 @@ class DataciteSettingsForm extends Form {
 	 * @return boolean
 	 */
 	function isOptional($settingName) {
-		return in_array($settingName, array('username', 'password', 'automaticRegistration', 'testMode'));
+		return in_array($settingName, array('username', 'password', 'automaticRegistration', 'testMode', 'testUsername', 'testPassword', 'testDOIPrefix'));
 	}
 
 }

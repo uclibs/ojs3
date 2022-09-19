@@ -3,8 +3,8 @@
 /**
  * @file controllers/grid/users/reviewer/form/ThankReviewerForm.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ThankReviewerForm
@@ -65,12 +65,12 @@ class ThankReviewerForm extends Form {
 		$email = new SubmissionMailTemplate($submission, 'REVIEW_ACK');
 
 		$dispatcher = $request->getDispatcher();
-		$email->assignParams(array(
-			'reviewerName' => $reviewer->getFullName(),
-			'reviewerUserName' => $reviewer->getUsername(),
+		$email->assignParams([
+			'reviewerName' => htmlspecialchars($reviewer->getFullName()),
+			'reviewerUserName' => htmlspecialchars($reviewer->getUsername()),
 			'passwordResetUrl' => $dispatcher->url($request, ROUTE_PAGE, null, 'login', 'resetPassword', $reviewer->getUsername(), array('confirm' => Validation::generatePasswordResetHash($reviewer->getId()))),
 			'submissionReviewUrl' => $dispatcher->url($request, ROUTE_PAGE, null, 'reviewer', 'submission', null, array('submissionId' => $reviewAssignment->getSubmissionId()))
-		));
+		]);
 		$email->replaceParams();
 
 		$this->setData('submissionId', $submission->getId());
@@ -113,12 +113,12 @@ class ThankReviewerForm extends Form {
 			$dispatcher = $request->getDispatcher();
 			$context = $request->getContext();
 			$user = $request->getUser();
-			$email->assignParams(array(
-				'reviewerName' => $reviewer->getFullName(),
+			$email->assignParams([
+				'reviewerName' => htmlspecialchars($reviewer->getFullName()),
 				'contextUrl' => $dispatcher->url($request, ROUTE_PAGE, $context->getPath()),
 				'editorialContactSignature' => $user->getContactSignature(),
-				'signatureFullName' => $user->getFullname(),
-			));
+				'signatureFullName' => htmlspecialchars($user->getFullname()),
+			]);
 			if (!$email->send($request)) {
 				import('classes.notification.NotificationManager');
 				$notificationMgr = new NotificationManager();

@@ -3,8 +3,8 @@
 /**
  * @file controllers/grid/issues/form/IssueForm.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class IssueForm
@@ -45,7 +45,7 @@ class IssueForm extends Form {
 		$this->addCheck(new FormValidatorCustom($this, 'showTitle', 'optional', 'editor.issues.titleRequired', function($showTitle) use ($form) {
 			return !$showTitle || implode('', $form->getData('title'))!='' ? true : false;
 		}));
-		$this->addCheck(new FormValidatorRegExp($this, 'urlPath', 'optional', 'validator.alpha_dash', '/^[-_a-z0-9]*$/'));
+		$this->addCheck(new FormValidatorRegExp($this, 'urlPath', 'optional', 'validator.alpha_dash_period', '/^[a-zA-Z0-9]+([\\.\\-_][a-zA-Z0-9]+)*$/'));
 		$this->addCheck(new FormValidatorPost($this));
 		$this->addCheck(new FormValidatorCSRF($this));
 		$this->issue = $issue;

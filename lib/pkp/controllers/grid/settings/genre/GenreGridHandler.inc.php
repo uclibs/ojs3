@@ -3,8 +3,8 @@
 /**
  * @file controllers/grid/settings/genre/GenreGridHandler.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class GenreGridHandler
@@ -215,11 +215,22 @@ class GenreGridHandler extends SetupGridHandler {
 		$context = $request->getContext();
 		$genreDao = DAORegistry::getDAO('GenreDAO'); /* @var $genreDao GenreDAO */
 		$genre = $genreDao->getById($genreId, $context->getId());
-		if ($genre && $request->checkCSRF()) {
-			$genreDao->deleteObject($genre);
-			return DAO::getDataChangedEvent($genre->getId());
+
+		if (!$request->checkCSRF()) {
+			return new JSONMessage(false, __('form.csrfInvalid'));
 		}
-		return new JSONMessage(false, __('manager.setup.errorDeletingItem'));
+
+		if (!$genre) {
+			return new JSONMessage(false, __('manager.setup.errorDeletingItem'));
+		}
+
+		$genreEmpty = $genreDao->genreEmpty($genreId);
+		if (!$genreEmpty) {
+			return new JSONMessage(false, __('manager.genres.alertDelete'));
+		}
+
+		$genreDao->deleteObject($genre);
+		return DAO::getDataChangedEvent($genre->getId());
 	}
 
 	/**

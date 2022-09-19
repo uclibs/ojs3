@@ -3,8 +3,8 @@
 /**
  * @file classes/controllers/grid/users/reviewer/PKPReviewerGridHandler.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2000-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2000-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPReviewerGridHandler
@@ -110,9 +110,9 @@ class PKPReviewerGridHandler extends GridHandler {
 					return false;
 				}
 
-				if (in_array($operation, $this->_getAuthorDeniedBlindOps())) {
+				if (in_array($operation, $this->_getAuthorDeniedAnonymousOps())) {
 					$reviewAssignment = $this->getAuthorizedContextObject(ASSOC_TYPE_REVIEW_ASSIGNMENT);
-					if ($reviewAssignment && in_array($reviewAssignment->getReviewMethod(), array(SUBMISSION_REVIEW_METHOD_BLIND, SUBMISSION_REVIEW_METHOD_DOUBLEBLIND))) {
+					if ($reviewAssignment && in_array($reviewAssignment->getReviewMethod(), array(SUBMISSION_REVIEW_METHOD_ANONYMOUS, SUBMISSION_REVIEW_METHOD_DOUBLEANONYMOUS))) {
 						return false;
 					}
 				}
@@ -872,14 +872,14 @@ class PKPReviewerGridHandler extends GridHandler {
 		$dispatcher = $request->getDispatcher();
 		$context = $request->getContext();
 
-		$template->assignParams(array(
+		$template->assignParams([
 			'contextUrl' => $dispatcher->url($request, ROUTE_PAGE, $context->getPath()),
 			'editorialContactSignature' => $user->getContactSignature(),
-			'signatureFullName' => $user->getFullname(),
+			'signatureFullName' => htmlspecialchars($user->getFullname()),
 			'passwordResetUrl' => $dispatcher->url($request, ROUTE_PAGE, $context->getPath(), 'login', 'lostPassword'),
 			'messageToReviewer' => __('reviewer.step1.requestBoilerplate'),
-			'abstractTermIfEnabled' => ($this->getSubmission()->getLocalizedAbstract() == '' ? '' : __('common.abstract')), // Deprecated; for OJS 2.x templates
-		));
+			'abstractTermIfEnabled' => $this->getSubmission()->getLocalizedAbstract() == '' ? '' : __('common.abstract'), // Deprecated; for OJS 2.x templates
+		]);
 		$template->replaceParams();
 
 		return new JSONMessage(true, $template->getBody());
@@ -978,10 +978,10 @@ class PKPReviewerGridHandler extends GridHandler {
 
 	/**
 	 * Get additional operations that an author is not allowed to access when the
-	 * review type is blind or double-blind.
+	 * review type is anonymous or double-anonymous.
 	 * @return array
 	 */
-	protected function _getAuthorDeniedBlindOps() {
+	protected function _getAuthorDeniedAnonymousOps() {
 		return array(
 			'readReview',
 			'reviewHistory',

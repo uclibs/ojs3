@@ -3,8 +3,8 @@
 /**
  * @file classes/subscription/form/SubscriptionForm.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubscriptionForm
@@ -204,7 +204,8 @@ class SubscriptionForm extends Form {
 		$subscriptionType = $subscriptionTypeDao->getById($subscription->getTypeId());
 		if (!$subscriptionType->getNonExpiring()) {
 			$subscription->setDateStart($this->getData('dateStart'));
-			$subscription->setDateEnd($this->getData('dateEnd'));
+			$dateEnd = strtotime($this->getData('dateEnd'));
+			$subscription->setDateEnd(mktime(23, 59, 59, (int) date("m", $dateEnd), (int) date("d", $dateEnd), (int) date("Y", $dateEnd)));
 		}
 	}
 
@@ -226,24 +227,16 @@ class SubscriptionForm extends Form {
 		$subscriptionEmail = $journal->getData('subscriptionEmail');
 		$subscriptionPhone = $journal->getData('subscriptionPhone');
 		$subscriptionMailingAddress = $journal->getData('subscriptionMailingAddress');
-		$subscriptionContactSignature = $subscriptionName;
+		$subscriptionContactSignature = htmlspecialchars($subscriptionName);
 
 		if ($subscriptionMailingAddress != '') {
-			$subscriptionContactSignature .= "\n" . $subscriptionMailingAddress;
+			$subscriptionContactSignature .= "\n" . htmlspecialchars($subscriptionMailingAddress);
 		}
 		if ($subscriptionPhone != '') {
-			$subscriptionContactSignature .= "\n" . __('user.phone') . ': ' . $subscriptionPhone;
+			$subscriptionContactSignature .= "\n" . __('user.phone') . ': ' . htmlspecialchars($subscriptionPhone);
 		}
 
-		$subscriptionContactSignature .= "\n" . __('user.email') . ': ' . $subscriptionEmail;
-
-		$paramArray = array(
-			'subscriberName' => $user->getFullName(),
-			'journalName' => $journalName,
-			'subscriptionType' => $subscriptionType->getSummaryString(),
-			'username' => $user->getUsername(),
-			'subscriptionContactSignature' => $subscriptionContactSignature
-		);
+		$subscriptionContactSignature .= "\n" . __('user.email') . ': ' . htmlspecialchars($subscriptionEmail);
 
 		import('lib.pkp.classes.mail.MailTemplate');
 		$mail = new MailTemplate($mailTemplateKey);
@@ -251,7 +244,14 @@ class SubscriptionForm extends Form {
 		$mail->addRecipient($user->getEmail(), $user->getFullName());
 		$mail->setSubject($mail->getSubject($journal->getPrimaryLocale()));
 		$mail->setBody($mail->getBody($journal->getPrimaryLocale()));
-		$mail->assignParams($paramArray);
+		$mail->assignParams([
+			'subscriberName' => htmlspecialchars($user->getFullName()),
+			'journalName' => htmlspecialchars($journalName),
+			'subscriptionType' => htmlspecialchars($subscriptionType->getSummaryString()),
+			'username' => htmlspecialchars($user->getUsername()),
+			'subscriptionContactSignature' => nl2br($subscriptionContactSignature),
+
+		]);
 
 		return $mail;
 	}

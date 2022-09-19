@@ -2,8 +2,8 @@
 /**
  * @file classes/components/form/publication/PKPTitleAbstractForm.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2000-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2000-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPTitleAbstractForm
@@ -25,6 +25,9 @@ class PKPTitleAbstractForm extends FormComponent {
 	/** @copydoc FormComponent::$method */
 	public $method = 'PUT';
 
+	/** @var Publication */
+	public $publication;
+
 	/**
 	 * Constructor
 	 *
@@ -34,8 +37,8 @@ class PKPTitleAbstractForm extends FormComponent {
 	 */
 	public function __construct($action, $locales, $publication) {
 		$this->action = $action;
-		$this->successMessage = __('publication.titleAbstract.success');
 		$this->locales = $locales;
+		$this->publication = $publication;
 
 		$this->addField(new FieldText('prefix', [
 				'label' => __('common.prefix'),

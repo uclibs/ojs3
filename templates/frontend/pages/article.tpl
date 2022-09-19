@@ -1,8 +1,8 @@
 {**
  * templates/frontend/pages/article.tpl
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @brief Display the page to view an article with all of it's details.
@@ -17,7 +17,7 @@
  * @uses $primaryGalleys array List of article galleys that are not supplementary or dependent
  * @uses $supplementaryGalleys array List of article galleys that are supplementary
  *}
-{include file="frontend/components/header.tpl" pageTitleTranslated=$article->getLocalizedTitle()|escape}
+{include file="frontend/components/header.tpl" pageTitleTranslated=$article->getLocalizedFullTitle()|escape}
 
 <div class="page page_article">
 	{if $section}

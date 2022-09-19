@@ -3,8 +3,8 @@
 /**
  * @file classes/submission/form/SubmissionSubmitStep4Form.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionSubmitStep4Form
@@ -73,17 +73,17 @@ class SubmissionSubmitStep4Form extends PKPSubmissionSubmitStep4Form {
 			}
 			$mail->bccAssignedSubEditors($submission->getId(), WORKFLOW_STAGE_ID_SUBMISSION);
 
-			$mail->assignParams(array(
-				'authorName' => $user->getFullName(),
-				'authorUsername' => $user->getUsername(),
-				'editorialContactSignature' => $context->getData('contactName'),
+			$mail->assignParams([
+				'authorName' => htmlspecialchars($user->getFullName()),
+				'authorUsername' => htmlspecialchars($user->getUsername()),
+				'editorialContactSignature' => htmlspecialchars($context->getData('contactName')),
 				'submissionUrl' => $router->url($request, null, 'authorDashboard', 'submission', $submission->getId()),
-			));
+			]);
 
-			$authorMail->assignParams(array(
-				'submitterName' => $user->getFullName(),
-				'editorialContactSignature' => $context->getData('contactName'),
-			));
+			$authorMail->assignParams([
+				'submitterName' => htmlspecialchars($user->getFullName()),
+				'editorialContactSignature' => htmlspecialchars($context->getData('contactName')),
+			]);
 
 			if (!$mail->send($request)) {
 				import('classes.notification.NotificationManager');

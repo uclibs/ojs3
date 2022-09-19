@@ -4,10 +4,11 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit3020b713211e943828d81705414ee548
+class ComposerStaticInit63ca1ed38edab361f9f2bd73091e86a5
 {
     public static $files = array (
         '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
+        'd9e2a8c16442dde496ed7a052bc063c9' => __DIR__ . '/..' . '/seboettg/citeproc-php/src/functions.php',
     );
 
     public static $prefixLengthsPsr4 = array (
@@ -30,7 +31,7 @@ class ComposerStaticInit3020b713211e943828d81705414ee548
         ),
         'Seboettg\\Collection\\' => 
         array (
-            0 => __DIR__ . '/..' . '/seboettg/collection/src/Seboettg/Collection',
+            0 => __DIR__ . '/..' . '/seboettg/collection/src',
         ),
         'Seboettg\\CiteProc\\' => 
         array (
@@ -42,11 +43,16 @@ class ComposerStaticInit3020b713211e943828d81705414ee548
         ),
     );
 
+    public static $classMap = array (
+        'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
+    );
+
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit3020b713211e943828d81705414ee548::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit3020b713211e943828d81705414ee548::$prefixDirsPsr4;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit63ca1ed38edab361f9f2bd73091e86a5::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit63ca1ed38edab361f9f2bd73091e86a5::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInit63ca1ed38edab361f9f2bd73091e86a5::$classMap;
 
         }, null, ClassLoader::class);
     }

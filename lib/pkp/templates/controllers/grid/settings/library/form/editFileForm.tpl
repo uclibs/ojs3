@@ -1,8 +1,8 @@
 {**
  * templates/controllers/grid/settings/library/form/editFileForm.tpl
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Library Files form for editing an existing file
@@ -12,13 +12,21 @@
 	// Attach the file upload form handler.
 	$(function() {ldelim}
 		$('#uploadForm').pkpHandler(
-			'$.pkp.controllers.form.AjaxFormHandler'
+			'$.pkp.controllers.form.FileUploadFormHandler',
+			{ldelim}
+				$uploader: $('#plupload'),
+				uploaderOptions: {ldelim}
+					uploadUrl: {url|json_encode op="uploadFile" fileType=$fileType escape=false},
+					baseUrl: {$baseUrl|json_encode}
+				{rdelim}
+			{rdelim}
 		);
 	{rdelim});
 </script>
 
 <form class="pkp_form" id="uploadForm" action="{url op="updateFile" fileId=$libraryFile->getId()}" method="post">
 	{csrf}
+	<input type="hidden" name="temporaryFileId" id="temporaryFileId" value="" />
 	{fbvFormArea id="name"}
 		{fbvFormSection title="common.name" required=true}
 			{fbvElement type="text" id="libraryFileName" value=$libraryFileName maxlength="255" multilingual=true required=true}
@@ -45,6 +53,10 @@
 			<tr valign="top">
 				<td class="label">{translate key="common.dateUploaded"}</td>
 				<td class="value">{$libraryFile->getDateUploaded()|date_format:$datetimeFormatShort}</td>
+			</tr>
+			<tr valign="top">
+				<td class="label">{translate key="common.replaceFile"}</td>
+				<td class="value">{include file="controllers/fileUploadContainer.tpl" id="plupload"}</td>
 			</tr>
 			</table>
 		{/fbvFormSection}

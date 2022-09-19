@@ -3,8 +3,8 @@
 /**
  * @file pages/search/SearchHandler.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SearchHandler
@@ -90,9 +90,13 @@ class SearchHandler extends Handler {
 		}
 
 		// Assign the year range.
-		$yearRange = Services::get('publication')->getDateBoundaries(['contextIds' => $journalId]);
-		$yearStart = substr($yearRange[1], 0, 4);
-		$yearEnd = substr($yearRange[0], 0, 4);
+		$yearRange = Services::get('publication')->getDateBoundaries(
+			$journalId
+			? ['contextIds' => $journalId]
+			: []
+		);
+		$yearStart = substr($yearRange[0], 0, 4);
+		$yearEnd = substr($yearRange[1], 0, 4);
 		$templateMgr->assign(array(
 			'yearStart' => $yearStart,
 			'yearEnd' => $yearEnd,

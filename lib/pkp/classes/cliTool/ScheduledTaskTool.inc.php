@@ -3,8 +3,8 @@
 /**
  * @file classes/cliTool/ScheduledTaskTool.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2000-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2000-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ScheduledTaskTool
@@ -20,6 +20,7 @@ define('TASKS_REGISTRY_FILE', 'registry/scheduledTasks.xml');
 import('lib.pkp.classes.scheduledTask.ScheduledTask');
 import('lib.pkp.classes.scheduledTask.ScheduledTaskHelper');
 import('lib.pkp.classes.scheduledTask.ScheduledTaskDAO');
+import('lib.pkp.classes.xml.PKPXMLParser');
 
 class ScheduledTaskTool extends CommandLineTool {
 	/** @var string the XML file listing the tasks to be executed */
@@ -71,7 +72,7 @@ class ScheduledTaskTool extends CommandLineTool {
 	 * @param $file string
 	 */
 	function parseTasks($file) {
-		$xmlParser = new XMLParser();
+		$xmlParser = new PKPXMLParser();
 		$tree = $xmlParser->parse($file);
 
 		if (!$tree) {

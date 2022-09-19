@@ -3,8 +3,8 @@
 /**
  * @file classes/task/ReviewReminder.inc.php
  *
- * Copyright (c) 2013-2020 Simon Fraser University
- * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2013-2021 Simon Fraser University
+ * Copyright (c) 2003-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewReminder
@@ -81,7 +81,7 @@ class ReviewReminder extends ScheduledTask {
 
 		// Format the review due date
 		$reviewDueDate = strtotime($reviewAssignment->getDateDue());
-		$dateFormatShort = Config::getVar('general', 'date_format_short');
+		$dateFormatShort = $context->getLocalizedDateFormatShort();
 		if ($reviewDueDate === -1 || $reviewDueDate === false) {
 			// Default to something human-readable if no date specified
 			$reviewDueDate = '_____';
@@ -99,18 +99,17 @@ class ReviewReminder extends ScheduledTask {
 
 		AppLocale::requireComponents(LOCALE_COMPONENT_PKP_REVIEWER);
 		AppLocale::requireComponents(LOCALE_COMPONENT_PKP_COMMON);
-		$paramArray = array(
-			'reviewerName' => $reviewer->getFullName(),
-			'reviewerUserName' => $reviewer->getUsername(),
+		$email->assignParams([
+			'reviewerName' => htmlspecialchars($reviewer->getFullName()),
+			'reviewerUserName' => htmlspecialchars($reviewer->getUsername()),
 			'reviewDueDate' => $reviewDueDate,
 			'responseDueDate' => $responseDueDate,
-			'editorialContactSignature' => $context->getData('contactName') . "\n" . $context->getLocalizedName(),
+			'editorialContactSignature' => htmlspecialchars($context->getData('contactName') . "\n" . $context->getLocalizedName()),
 			'passwordResetUrl' => $dispatcher->url($request, ROUTE_PAGE, $context->getPath(), 'login', 'resetPassword', $reviewer->getUsername(), array('confirm' => Validation::generatePasswordResetHash($reviewer->getId()))),
 			'submissionReviewUrl' => $submissionReviewUrl,
 			'messageToReviewer' => __('reviewer.step1.requestBoilerplate'),
-			'abstractTermIfEnabled' => ($submission->getLocalizedAbstract() == '' ? '' : __('common.abstract')),
-		);
-		$email->assignParams($paramArray);
+			'abstractTermIfEnabled' => htmlspecialchars($submission->getLocalizedAbstract() == '' ? '' : __('common.abstract')),
+		]);
 
 		$email->send();
 

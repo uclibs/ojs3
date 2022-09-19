@@ -1,0 +1,82 @@
+/**
+ * @file plugins/themes/defaultJournalsUc/styles/head.less
+ *
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Copyright (c) 2021 Sean Crowe
+ * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ *
+ * @brief Styles for the page header structural elements
+ *
+ */
+
+header {
+  position: relative;
+}
+
+.magnify-search-button {
+  padding-left: 5px !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-size: 20px !important;
+  line-height: 40px !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+  color: white !important;
+  &:after {
+			.fa();
+			content: @fa-var-search;
+  } 
+}
+
+.search-bar {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+}
+
+.pkp_search input[type="text"] {
+  border-radius: 6px;
+  position: absolute;
+  top: 12px;
+  right: 2px;
+}
+
+.pkp_structure_head {
+  height: 200px;
+}
+
+.pkp_site_nav_menu {
+  background: none !important;
+  position: unset !important;
+}
+
+.pkp_site_name {
+  margin-left: 30px;
+}
+
+.pkp_navigation_user {
+  padding-right: 30px !important;
+}
+
+@media (min-width: 992px) {
+	.pkp_site_name .is_img img {
+			max-height: 120px;
+	}
+}
+
+@media (max-width: 991px) {
+  .pkp_site_name .is_img img {
+    margin-top: 20px;
+    max-height: 100px !important;
+    margin-left: 100px;
+  }
+}
+
+@media (max-width: 600px) {
+  .pkp_site_name .is_img img {
+    margin-left: 1px;
+    max-height: 50px;
+  }
+}

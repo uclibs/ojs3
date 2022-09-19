@@ -3,8 +3,8 @@
 /**
  * @file classes/core/PKPString.inc.php
  *
- * Copyright (c) 2014-2020 Simon Fraser University
- * Copyright (c) 2000-2020 John Willinsky
+ * Copyright (c) 2014-2021 Simon Fraser University
+ * Copyright (c) 2000-2021 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPString
@@ -59,7 +59,6 @@ class PKPString {
 			// Set up required ini settings for mbstring
 			// FIXME Do any other mbstring settings need to be set?
 			mb_internal_encoding($clientCharset);
-			mb_substitute_character('63');		// question mark
 		}
 
 		// Define modifier to be used in regexp_* routines
@@ -347,25 +346,40 @@ class PKPString {
 		if ($suggestedExtension) {
 			$ext = $suggestedExtension;
 		}
-		// SUGGESTED_EXTENSION:DETECTED_MIME_TYPE => OVERRIDE_MIME_TYPE
-		$ambiguities = array(
+
+		$ambiguities = self::getAmbiguousExtensionsMap();
+		if (isset($ambiguities[strtolower($ext . ':' . $result)])) {
+			$result = $ambiguities[strtolower($ext . ':' . $result)];
+		}
+
+		return $result;
+	}
+
+	/**
+	 * @return string[]
+	 * @brief overrides for ambiguous mime types returned by finfo
+	 * SUGGESTED_EXTENSION:DETECTED_MIME_TYPE => OVERRIDE_MIME_TYPE
+	 */
+	public static function getAmbiguousExtensionsMap()
+	{
+		return [
 			'html:text/xml' => 'text/html',
 			'css:text/x-c' => 'text/css',
 			'css:text/plain' => 'text/css',
+			'csv:text/plain' => 'text/csv',
+			'js:text/plain' => 'text/javascript',
 			'xlsx:application/zip' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 			'xltx:application/zip' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.template',
 			'potx:application/zip' => 'application/vnd.openxmlformats-officedocument.presentationml.template',
 			'ppsx:application/zip' => 'application/vnd.openxmlformats-officedocument.presentationml.slideshow',
 			'pptx:application/zip' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 			'sldx:application/zip' => 'application/vnd.openxmlformats-officedocument.presentationml.slide',
+			'docm:application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'application/vnd.ms-word.document.macroEnabled.12',
 			'docx:application/zip' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 			'dotx:application/zip' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.template',
-		);
-		if (isset($ambiguities[strtolower($ext.':'.$result)])) {
-			$result = $ambiguities[strtolower($ext.':'.$result)];
-		}
-
-		return $result;
+			'wma:video/x-ms-asf' => 'audio/x-ms-wma',
+			'wmv:video/x-ms-asf' => 'video/x-ms-wmv',
+		];
 	}
 
 	/**
