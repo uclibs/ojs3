@@ -61,43 +61,6 @@ class PublicProfileForm extends BaseProfileForm {
 	}
 
 	/**
-	 * Upload a profile image.
-	 * @return boolean True iff success.
-	 */
-	function uploadProfileImage() {
-		if (!Application::get()->getRequest()->checkCSRF()) throw new Exception('CSRF mismatch!');
-
-		import('classes.file.PublicFileManager');
-		$publicFileManager = new PublicFileManager();
-
-		$user = $this->getUser();
-		$type = $publicFileManager->getUploadedFileType('uploadedFile');
-		$extension = $publicFileManager->getImageExtension($type);
-		if (!$extension) return false;
-
-		$uploadName = 'profileImage-' . (int) $user->getId() . $extension;
-		if (!$publicFileManager->uploadSiteFile('uploadedFile', $uploadName)) return false;
-		$filePath = $publicFileManager->getSiteFilesPath();
-		list($width, $height) = getimagesize($filePath . '/' . $uploadName);
-
-		if ($width > PROFILE_IMAGE_MAX_WIDTH || $height > PROFILE_IMAGE_MAX_HEIGHT || $width <= 0 || $height <= 0) {
-			$userSetting = null;
-			$user->updateSetting('profileImage', $userSetting);
-			$publicFileManager->removeSiteFile($filePath);
-			return false;
-		}
-
-		$user->updateSetting('profileImage', array(
-			'name' => $publicFileManager->getUploadedFileName('uploadedFile'),
-			'uploadName' => $uploadName,
-			'width' => $width,
-			'height' => $height,
-			'dateUploaded' => Core::getCurrentDate(),
-		));
-		return true;
-	}
-
-	/**
 	 * Delete a profile image.
 	 * @return boolean True iff success.
 	 */
