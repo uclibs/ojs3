@@ -12,51 +12,38 @@
 {help file="user-profile" class="pkp_help_tab"}
 
 <script type="text/javascript">
-	$(function() {ldelim}
-		// Attach the form handler.
-		$('#publicProfileForm').pkpHandler(
-			'$.pkp.controllers.form.FileUploadFormHandler',
-			{ldelim}
-				$uploader: $('#plupload'),
-				uploaderOptions: {ldelim}
-					uploadUrl: {url|json_encode op="uploadProfileImage" escape=false},
-					baseUrl: {$baseUrl|json_encode},
-					filters: {ldelim}
-						mime_types : [
-							{ldelim} title : "Image files", extensions : "jpg,jpeg,png,svg,gif" {rdelim}
-						]
-					{rdelim},
-					multipart_params: {ldelim}
-						csrfToken: {csrf type="json"}
-					{rdelim},
-					resize: {ldelim}
-						width: {$profileImageMaxWidth|intval},
-						height: {$profileImageMaxHeight|intval},
-						crop: true,
-					{rdelim}
-				{rdelim}
-			{rdelim}
-		);
-	{rdelim});
-</script>
+ 	$(function() {ldelim}
+ 		// Attach the form handler.
+ 		$('#publicProfileForm').pkpHandler(
+ 			'$.pkp.controllers.form.FileUploadFormHandler',
+ 			{ldelim}
+ 				$uploader: $('#plupload'),
+ 				uploaderOptions: {ldelim}
+ 					uploadUrl: {url|json_encode op="uploadProfileImage" escape=false},
+ 					baseUrl: {$baseUrl|json_encode},
+ 					filters: {ldelim}
+ 						mime_types : [
+ 							{ldelim} title : "Image files", extensions : "jpg,jpeg,png,svg,gif" {rdelim}
+ 						]
+ 					{rdelim},
+ 					multipart_params: {ldelim}
+ 						csrfToken: {csrf type="json"}
+ 					{rdelim},
+ 					resize: {ldelim}
+ 						width: {$profileImageMaxWidth|intval},
+ 						height: {$profileImageMaxHeight|intval},
+ 						crop: true,
+ 					{rdelim}
+ 				{rdelim}
+ 			{rdelim}
+ 		);
+ 	{rdelim});
+ </script>
 
 <form class="pkp_form" id="publicProfileForm" method="post" action="{url op="savePublicProfile"}" enctype="multipart/form-data">
 	{csrf}
 
 	{include file="controllers/notification/inPlaceNotification.tpl" notificationId="publicProfileNotification"}
-
-	{fbvFormSection title="user.profile.form.profileImage"}
-		{if $profileImage}
-			{* Add a unique ID to prevent caching *}
-			<img src="{$baseUrl}/{$publicSiteFilesPath}/{$profileImage.uploadName}?{""|uniqid}" alt="{translate key="user.profile.form.profileImage"}" />
-			<div>
-				<a class="pkp_button pkp_button_offset" href="{url op="deleteProfileImage"}">{translate key="common.delete"}</a>
-			</div>
-		{/if}
-	{/fbvFormSection}
-	{fbvFormSection}
-		{include file="controllers/fileUploadContainer.tpl" id="plupload"}
-	{/fbvFormSection}
 
 	{fbvFormSection}
 		{fbvElement type="textarea" label="user.biography" multilingual="true" name="biography" id="biography" rich=true value=$biography}
