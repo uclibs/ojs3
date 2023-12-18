@@ -8,34 +8,43 @@
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SetVersionTool
+ *
  * @ingroup tools
  *
  * @brief CLI tool to set a version number for each publication.
  */
 
-require(dirname(dirname(dirname(dirname(__FILE__)))) . '/tools/bootstrap.inc.php');
+use APP\core\Application;
+use APP\core\Services;
+use APP\facades\Repo;
 
-class SetVersionTool extends CommandLineTool {
+require(dirname(__FILE__, 4) . '/tools/bootstrap.php');
 
-	/**
-	 * Set the version numbers
-	 */
-	function execute() {
-		$request = Application::get()->getRequest();
-		$contextIds = Services::get('context')->getIds();
-		foreach ($contextIds as $contextId) {
-			$submissions = Services::get('submission')->getMany(['contextId' => $contextId]);
-			foreach ($submissions as $submission) {
-				$version = 1;
-				foreach ((array) $submission->getData('publications') as $publication) {
-					Services::get('publication')->edit($publication, ['version' => $version], $request);
-					$version++;
-				}
-			}
-		}
-	}
+class SetVersionTool extends \PKP\cliTool\CommandLineTool
+{
+    /**
+     * Set the version numbers
+     */
+    public function execute()
+    {
+        $request = Application::get()->getRequest();
+        $contextIds = Services::get('context')->getIds();
+        foreach ($contextIds as $contextId) {
+            $submissions = Repo::submission()
+                ->getCollector()
+                ->filterByContextIds([$contextId])
+                ->getIds();
+
+            foreach ($submissions as $submission) {
+                $version = 1;
+                foreach ($submission->getData('publications') as $publication) {
+                    Repo::publication()->edit($publication, ['version' => $version]);
+                    $version++;
+                }
+            }
+        }
+    }
 }
 
-$tool = new SetVersionTool(isset($argv) ? $argv : []);
+$tool = new SetVersionTool($argv ?? []);
 $tool->execute();
-

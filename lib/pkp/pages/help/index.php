@@ -12,9 +12,9 @@
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @ingroup pages_help
+ *
  * @brief Handle requests for help functions.
  *
  */
 $op = 'index';
-define('HANDLER_CLASS', 'HelpHandler');
-import('lib.pkp.pages.help.HelpHandler');
+define('HANDLER_CLASS', 'PKP\pages\help\HelpHandler');

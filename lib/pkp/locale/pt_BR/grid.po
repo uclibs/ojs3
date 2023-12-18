@@ -1,9 +1,10 @@
+# Diego José Macêdo <diegojmacedo@gmail.com>, 2021, 2022, 2023.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2019-09-30T11:54:13-07:00\n"
-"PO-Revision-Date: 2020-06-07 13:56+0000\n"
+"PO-Revision-Date: 2023-03-06 23:07+0000\n"
 "Last-Translator: Diego José Macêdo <diegojmacedo@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <http://translate.pkp.sfu.ca/projects/"
 "pkp-lib/grid/pt_BR/>\n"
@@ -12,7 +13,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 3.9.1\n"
+"X-Generator: Weblate 4.13.1\n"
 
 msgid "grid.noItems"
 msgstr "Nenhum item"
@@ -25,6 +26,9 @@ msgstr "Sem auditores"
 
 msgid "grid.remotelyHostedItem"
 msgstr "Este item é armazenado remotamente."
+
+msgid "grid.action.uninstall"
+msgstr "Desinstalar"
 
 msgid "grid.action.manageAccess"
 msgstr "Gerenciar Acesso"
@@ -128,6 +132,9 @@ msgstr "Atualizar"
 msgid "grid.action.order"
 msgstr "Ordenar"
 
+msgid "grid.action.saveOrdering"
+msgstr "Salvar Ordem"
+
 msgid "grid.action.cancelOrdering"
 msgstr "Cancelar ordenação"
 
@@ -194,12 +201,6 @@ msgstr "Importar ou exportar conteúdo ou dados do site"
 msgid "grid.action.orderItems"
 msgstr "Habilitar modo de ordenação"
 
-msgid "grid.action.editSubmissionChecklist"
-msgstr "Editar este item de verificação"
-
-msgid "grid.action.deleteSubmissionChecklist"
-msgstr "Excluir este item de verificação"
-
 msgid "grid.action.resetAll"
 msgstr "Restaurar todos os itens a seus valores originais"
 
@@ -232,6 +233,9 @@ msgstr "Incluir novo grupo de usuários"
 
 msgid "grid.action.editUserGroup"
 msgstr "Editar este grupo de usuários"
+
+msgid "grid.action.removeUserGroup"
+msgstr "Remover este grupo de usuários"
 
 msgid "grid.action.disable"
 msgstr "Desabilitar"
@@ -281,6 +285,9 @@ msgstr "Incluir tipo de notícia"
 msgid "grid.action.addAnnouncement"
 msgstr "Incluir notícia"
 
+msgid "grid.action.addInstitution"
+msgstr "Adicionar instituição"
+
 msgid "grid.action.mergeUser"
 msgstr "Mesclar usuários"
 
@@ -326,6 +333,9 @@ msgstr "Instalar"
 msgid "grid.action.moreItems"
 msgstr "Carregar mais"
 
+msgid "grid.action.users"
+msgstr "Visualizar/Selecionar usuários"
+
 msgid "grid.task.status.completed"
 msgstr "Tarefa concluída"
 
@@ -356,6 +366,9 @@ msgstr "Auditor"
 
 msgid "grid.columns.locale"
 msgstr "Tradução"
+
+msgid "grid.columns.locale.code"
+msgstr "Código"
 
 msgid "grid.sponsor.title"
 msgstr "Patrocinadores"
@@ -393,11 +406,16 @@ msgstr "Fontes de Apoio"
 msgid "grid.action.addContributor"
 msgstr "Incluir Coautor"
 
-msgid "grid.action.editContributor"
-msgstr "Editar coautor"
-
 msgid "grid.action.deleteContributor"
 msgstr "Excluir Coautor"
+
+msgid "grid.action.deleteContributor.confirmationMessage"
+msgstr ""
+"Tem certeza que deseja remover {$name} como um colaborador? Essa ação não "
+"pode ser desfeita."
+
+msgid "grid.action.newVersion"
+msgstr "Criar uma nova versão"
 
 msgid "grid.reviewForm.title"
 msgstr "Formulários de avaliação"
@@ -432,20 +450,33 @@ msgstr "Diretrizes para submissão"
 msgid "grid.submissionChecklist.column.checklistItem"
 msgstr "Item de verificação"
 
-msgid "author.users.contributor.name"
-msgstr "Nome"
-
-msgid "author.users.contributor.email"
-msgstr "E-mail"
-
-msgid "author.users.contributor.role"
-msgstr "Papel"
-
 msgid "author.users.contributor.principalContact"
 msgstr "Contato principal"
 
-msgid "author.users.contributor.includeInBrowse"
-msgstr "Nas Listas de Navegação"
+msgid "author.users.contributor.setPrincipalContact"
+msgstr "Definir contato principal"
+
+msgid "contributor.listPanel.preview"
+msgstr "Pré-visualizar"
+
+msgid "contributor.listPanel.preview.description"
+msgstr ""
+"Os colaboradores desta publicação serão identificados nos seguintes formatos."
+
+msgid "contributor.listPanel.preview.format"
+msgstr "Formato"
+
+msgid "contributor.listPanel.preview.display"
+msgstr "Exibição"
+
+msgid "contributor.listPanel.preview.abbreviated"
+msgstr "Abreviado"
+
+msgid "contributor.listPanel.preview.publicationLists"
+msgstr "Listas de Publicação"
+
+msgid "contributor.listPanel.preview.full"
+msgstr "Completo"
 
 msgid "grid.roles.currentRoles"
 msgstr "Papéis atuais"
@@ -496,13 +527,16 @@ msgid "grid.user.error"
 msgstr "Erro encontrado ao gerenciar usuário. Tente novamente."
 
 msgid "grid.user.errorEmail"
-msgstr "Erro encontrado ao enviar mensagem. Verifique se as configurações do servidor de e-mail estão funcionando e/ou entre em contato com o administrador do sistema."
+msgstr ""
+"Erro encontrado ao enviar mensagem. Verifique se as configurações do "
+"servidor de e-mail estão funcionando e/ou entre em contato com o "
+"administrador do sistema."
 
 msgid "grid.user.cannotAdminister"
-msgstr "Sem permisão para editar usuário. Para editar um usuário você deve ou ser administrador do site ou ser gerente em todas as revistas nas quais o usuário está cadastrado."
-
-msgid "grid.user.authSource"
-msgstr "Fonte de autenticação"
+msgstr ""
+"Sem permisão para editar usuário. Para editar um usuário você deve ou ser "
+"administrador do site ou ser gerente em todas as revistas nas quais o "
+"usuário está cadastrado."
 
 msgid "grid.user.mustProvideName"
 msgstr "Informe pelo menos o sobrenome para o usuário."
@@ -526,7 +560,8 @@ msgid "grid.user.mustChangePasswordDescription"
 msgstr "Usuário deverá alterar senha no próximo acesso."
 
 msgid "grid.user.mustChangePasswordDescriptionOld"
-msgstr "Exigir que o usuário mude sua senha ao acessar o sistema da próxima vez."
+msgstr ""
+"Exigir que o usuário mude sua senha ao acessar o sistema da próxima vez."
 
 msgid "grid.user.moreDetails"
 msgstr "Mais detalhes"
@@ -562,7 +597,8 @@ msgid "grid.user.pleaseSelectUser"
 msgstr "Escolha um usuário"
 
 msgid "grid.user.confirmLogInAs"
-msgstr "Acessar como este usuário? Todas as ações realizadas serão atribuídas a ele."
+msgstr ""
+"Acessar como este usuário? Todas as ações realizadas serão atribuídas a ele."
 
 msgid "grid.user.mergeUsers"
 msgstr "Mesclar usuários"
@@ -573,23 +609,15 @@ msgstr "Mesclar usuário"
 msgid "grid.user.mergeUsers.mergeIntoUser"
 msgstr "Mesclar neste usuário"
 
-msgid "grid.user.mergeUsers.into.description"
-msgstr "Agora você deve selecionar um usuário ao qual serão atribuídos o histórico de revisão, autorias, etc, do usuário anterior."
-
-msgid "grid.user.mergeUsers.from.description"
-msgstr "Selecione um usuário para mesclar em outra conta de usuário (por exemplo, quando alguém tem duas contas de usuário). A conta selecionada em primeiro lugar será eliminada e suas submissões, atribuições, etc, serão atribuídos à segunda conta."
-
 msgid "grid.user.mergeUsers.allUsers"
 msgstr "Todos os usuários registrados"
 
-msgid "grid.user.mergeUsers.mergeUserSelect.confirm"
-msgstr "Tem certeza de que deseja mesclar este usuário com outro? Você vai escolher o próximo usuário na tela seguinte."
-
 msgid "grid.user.mergeUsers.confirm"
-msgstr "Tem certeza de que deseja mesclar a conta com o nome de usuário \"{$oldUsername}\" para a conta com o nome de usuário \"{$newUsername}\"? A conta com o nome de usuário \"{$oldUsername}\" não existirá depois. Essa ação não é reversível."
-
-msgid "grid.user.mergeUsers.noneEnrolled"
-msgstr "Nenhum usuário com este papel."
+msgstr ""
+"Tem certeza de que deseja mesclar a conta com o nome de usuário "
+"\"{$oldUsername}\" para a conta com o nome de usuário \"{$newUsername}\"? A "
+"conta com o nome de usuário \"{$oldUsername}\" não existirá depois. Essa "
+"ação não é reversível."
 
 msgid "grid.preparedEmails.title"
 msgstr "Modelos prontos de mensagens"
@@ -643,7 +671,9 @@ msgid "grid.userGroup.cantRemoveDefaultUserGroup"
 msgstr "O papel {$userGroupName} é padrão do sistema e não pode ser removido."
 
 msgid "grid.userGroup.cantRemoveUserGroup"
-msgstr "Não é possível remover o papel {$userGroupName}. Atualmente {$usersCount} usuário(s) está(ão) associados a ele."
+msgstr ""
+"Não é possível remover o papel {$userGroupName}. Atualmente {$usersCount} "
+"usuário(s) está(ão) associados a ele."
 
 msgid "grid.userGroup.removed"
 msgstr "{$userGroupName} papel removido."
@@ -675,14 +705,43 @@ msgstr "Não há menus de navegação"
 msgid "grid.navigationMenus.navigationMenu.selectType"
 msgstr "Escolha um tipo..."
 
-msgid "grid.action.newVersion"
-msgstr "Criar uma nova versão"
+msgid "grid.action.view"
+msgstr "Visualizar"
 
-msgid "grid.action.users"
-msgstr "Visualizar/Selecionar usuários"
+msgid "author.users.contributor.name"
+msgstr "Nome"
 
-msgid "grid.action.removeUserGroup"
-msgstr "Remover este grupo de usuários"
+msgid "author.users.contributor.email"
+msgstr "E-mail"
 
-msgid "grid.action.uninstall"
-msgstr "Desinstalar"
+msgid "author.users.contributor.role"
+msgstr "Papel"
+
+msgid "author.users.contributor.includeInBrowse"
+msgstr "Nas Listas de Navegação"
+
+msgid "grid.action.editContributor"
+msgstr "Editar coautor"
+
+#~ msgid "grid.user.mergeUsers.into.description"
+#~ msgstr ""
+#~ "Agora você deve selecionar um usuário ao qual serão atribuídos o "
+#~ "histórico de revisão, autorias, etc, do usuário anterior."
+
+#~ msgid "grid.user.mergeUsers.from.description"
+#~ msgstr ""
+#~ "Selecione um usuário para mesclar em outra conta de usuário (por exemplo, "
+#~ "quando alguém tem duas contas de usuário). A conta selecionada em "
+#~ "primeiro lugar será eliminada e suas submissões, atribuições, etc, serão "
+#~ "atribuídos à segunda conta."
+
+#~ msgid "grid.user.mergeUsers.mergeUserSelect.confirm"
+#~ msgstr ""
+#~ "Tem certeza de que deseja mesclar este usuário com outro? Você vai "
+#~ "escolher o próximo usuário na tela seguinte."
+
+#~ msgid "grid.user.mergeUsers.noneEnrolled"
+#~ msgstr "Nenhum usuário com este papel."
+
+#~ msgid "grid.user.authSource"
+#~ msgstr "Fonte de autenticação"

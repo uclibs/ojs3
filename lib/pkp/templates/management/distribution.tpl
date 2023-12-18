@@ -28,6 +28,22 @@
 				@set="set"
 			/>
 		</tab>
+		<tab id="dois" label="{translate key="manager.dois.title"}">
+			<tabs :is-side-tabs="true" :track-history="true">
+				<tab id="doisSetup" label="{translate key="manager.setup.dois.setup"}">
+				<doi-setup-settings-form
+						v-bind="components.{PKP\components\forms\context\PKPDoiSetupSettingsForm::FORM_DOI_SETUP_SETTINGS}"
+						@set="set"
+				/>
+				</tab>
+				<tab id="doisRegistration" label="{translate key="manager.setup.dois.registration"}">
+					<doi-registration-settings-form
+						v-bind="components.{PKP\components\forms\context\PKPDoiRegistrationSettingsForm::FORM_DOI_REGISTRATION_SETTINGS}"
+						@set="set"
+					/>
+				</tab>
+			</tabs>
+		</tab>
 		<tab id="indexing" label="{translate key="manager.setup.searchEngineIndexing"}">
 			{help file="settings/distribution-settings" section="indexing" class="pkp_help_tab"}
 			<pkp-form
@@ -42,6 +58,15 @@
 				@set="set"
 			/>
 		</tab>
+		{if $displayStatisticsTab}
+		<tab id="statistics" label="{translate key="manager.setup.statistics"}">
+			{help file="settings/distribution-settings" section="statistics" class="pkp_help_tab"}
+			<pkp-form
+				v-bind="components.{$smarty.const.FORM_CONTEXT_STATISTICS}"
+				@set="set"
+			/>
+		</tab>
+		{/if}
 		{call_hook name="Template::Settings::distribution"}
 	</tabs>
 {/block}

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Sokil\IsoCodes\Database;
@@ -6,19 +7,28 @@ namespace Sokil\IsoCodes\Database;
 use Sokil\IsoCodes\AbstractNotPartitionedDatabase;
 use Sokil\IsoCodes\Database\Subdivisions\Subdivision;
 
+/**
+ * @method Subdivision|Subdivision[]|null find(string $indexedFieldName, string $fieldValue)
+ */
 class Subdivisions extends AbstractNotPartitionedDatabase implements SubdivisionsInterface
 {
+    /**
+     * ISO Standard Number
+     *
+     * @psalm-pure
+     */
     public static function getISONumber(): string
     {
         return '3166-2';
     }
 
     /**
-     * @param mixed[] $entry
+     * @param array<string, string> $entry
      */
     protected function arrayToEntry(array $entry): Subdivision
     {
         return new Subdivision(
+            $this->translationDriver,
             $entry['name'],
             $entry['code'],
             $entry['type'],
@@ -42,7 +52,10 @@ class Subdivisions extends AbstractNotPartitionedDatabase implements Subdivision
      */
     public function getByCode(string $subdivisionCode): ?Subdivision
     {
-        return $this->find('code', $subdivisionCode);
+        /** @var Subdivision|null $subdivision */
+        $subdivision = $this->find('code', $subdivisionCode);
+
+        return $subdivision;
     }
 
     /**
@@ -52,6 +65,7 @@ class Subdivisions extends AbstractNotPartitionedDatabase implements Subdivision
      */
     public function getAllByCountryCode(string $alpha2CountryCode): array
     {
+        /** @var Subdivision[]|null $subdivisions */
         $subdivisions = $this->find('country_code', $alpha2CountryCode);
 
         if (empty($subdivisions)) {

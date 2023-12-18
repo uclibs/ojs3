@@ -59,9 +59,6 @@ msgstr "Recomendação"
 msgid "plugins.reports.reviews.responseOverdue"
 msgstr "Dias de atraso de resposta"
 
-msgid "plugins.reports.reviews.unconsidered"
-msgstr "Não considerado"
-
 msgid "plugins.reports.reviews.submissionId"
 msgstr "ID da submissão"
 

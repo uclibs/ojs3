@@ -29,9 +29,6 @@ msgstr "Date de rappel"
 msgid "plugins.reports.reviews.dateCompleted"
 msgstr "Date de complétion"
 
-msgid "plugins.reports.reviews.unconsidered"
-msgstr "Non considéré-e"
-
 msgid "plugins.reports.reviews.dateAcknowledged"
 msgstr "Date de confirmation"
 

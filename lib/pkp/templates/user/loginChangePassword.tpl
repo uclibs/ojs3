@@ -45,11 +45,11 @@
 					{fieldLabel translate=true for=password key=$passwordLengthRestrictionLocaleKey length=$minPasswordLength}
 				{/fbvFormSection}
 				{fbvFormSection label="user.profile.repeatNewPassword" for="password2"}
-					{fbvElement type="text" required=true password=true id="password2" value=$password2|escape maxlength="32" size=$fbvStyles.size.MEDIUM}
+					{fbvElement type="text" required=true password=true id="password2" value=$password2|default:""|escape maxlength="32" size=$fbvStyles.size.MEDIUM}
 				{/fbvFormSection}
 
 				<p>
-					{capture assign="privacyUrl"}{url router=$smarty.const.ROUTE_PAGE page="about" op="privacy"}{/capture}
+					{capture assign="privacyUrl"}{url router=\PKP\core\PKPApplication::ROUTE_PAGE page="about" op="privacy"}{/capture}
 					{translate key="user.privacyLink" privacyUrl=$privacyUrl}
 				</p>
 

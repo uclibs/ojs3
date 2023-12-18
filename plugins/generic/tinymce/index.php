@@ -12,13 +12,9 @@
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @ingroup plugins_generic_tinymce
+ *
  * @brief Wrapper for TinyMCE plugin.
  *
  */
 
-
-
-require_once('TinyMCEPlugin.inc.php');
-
-return new TinyMCEPlugin();
-
+return new \APP\plugins\generic\tinymce\TinyMCEPlugin();

@@ -10,14 +10,13 @@
  *}
 <div id="reviewerFormFooter" class="reviewerFormFooterContainer">
 	<!--  message template choice -->
-	{if $templates|@count == 1}
-		{foreach from=$templates item=template key=templateKey}
-			<input type="hidden" name="template" value="{$templateKey|escape}"/>
-		{/foreach}
-	{else}
+	{if $hasCustomTemplates}
 		{fbvFormSection title="stageParticipants.notify.chooseMessage" for="template" size=$fbvStyles.size.medium}
 			{fbvElement type="select" from=$templates translate=false id="template"}
 		{/fbvFormSection}
+	{else}
+		<!-- REVIEW_REQUEST or REVIEW_REQUEST_SUBSEQUENT -->
+		<input type="hidden" name="template" value="{$templates|array_key_first}"/>
 	{/if}
 
 	<!--  Message to reviewer textarea -->
@@ -39,7 +38,7 @@
 
 	{capture assign="extraContent"}
 		<!-- Available review files -->
-		{capture assign=limitReviewFilesGridUrl}{url router=$smarty.const.ROUTE_COMPONENT component="grid.files.review.LimitReviewFilesGridHandler" op="fetchGrid" submissionId=$submissionId stageId=$stageId reviewRoundId=$reviewRoundId escape=false}{/capture}
+		{capture assign=limitReviewFilesGridUrl}{url router=\PKP\core\PKPApplication::ROUTE_COMPONENT component="grid.files.review.LimitReviewFilesGridHandler" op="fetchGrid" submissionId=$submissionId stageId=$stageId reviewRoundId=$reviewRoundId escape=false}{/capture}
 		{load_url_in_div id="limitReviewFilesGrid" url=$limitReviewFilesGridUrl}
 	{/capture}
 	<div id="filesAccordian" class="section">

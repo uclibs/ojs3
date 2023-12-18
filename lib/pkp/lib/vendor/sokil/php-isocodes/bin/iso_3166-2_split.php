@@ -1,8 +1,8 @@
 <?php
 
 define('DATABASES_DIR', rtrim($argv[1], '/'));
-define('SOURCE_DATABASE_PATH', DATABASES_DIR . '/iso_3166-2.json');
-define('TARGET_DATABASE_DIR', DATABASES_DIR . '/iso_3166-2');
+const SOURCE_DATABASE_PATH = DATABASES_DIR . '/iso_3166-2.json';
+const TARGET_DATABASE_DIR = DATABASES_DIR . '/iso_3166-2';
 
 if (!is_dir(DATABASES_DIR)) {
     throw new \InvalidArgumentException('Invalid databases dir specified');

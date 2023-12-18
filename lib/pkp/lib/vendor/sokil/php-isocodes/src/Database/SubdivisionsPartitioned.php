@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Sokil\IsoCodes\Database;
@@ -8,17 +9,23 @@ use Sokil\IsoCodes\Database\Subdivisions\Subdivision;
 
 class SubdivisionsPartitioned extends AbstractPartitionedDatabase implements SubdivisionsInterface
 {
+    /**
+     * ISO Standard Number
+     *
+     * @psalm-pure
+     */
     public static function getISONumber(): string
     {
         return '3166-2';
     }
 
     /**
-     * @param mixed[] $entry
+     * @param array<string, string> $entry
      */
     protected function arrayToEntry(array $entry): Subdivision
     {
         return new Subdivision(
+            $this->translationDriver,
             $entry['name'],
             $entry['code'],
             $entry['type'],

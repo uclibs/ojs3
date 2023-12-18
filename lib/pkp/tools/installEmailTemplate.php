@@ -8,63 +8,72 @@
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class installEmailTemplate
+ *
  * @ingroup tools
  *
  * @brief CLI tool to install email templates from PO files into the database.
  */
 
-require(dirname(dirname(dirname(dirname(__FILE__)))) . '/tools/bootstrap.inc.php');
+use PKP\cliTool\CommandLineTool;
+use PKP\facades\Repo;
 
-import('lib.pkp.classes.cliTool.CliTool');
+require(dirname(__FILE__, 4) . '/tools/bootstrap.php');
 
-class installEmailTemplates extends CommandLineTool {
-	/** @var string The email key of the email template to install. */
-	var $_emailKey;
 
-	/** @var string The list of locales in which to install the template. */
-	var $_locales;
+class installEmailTemplates extends CommandLineTool
+{
+    /** @var string The email key of the email template to install. */
+    public $_emailKey;
 
-	/**
-	 * Constructor.
-	 * @param $argv array command-line arguments
-	 */
-	function __construct($argv = array()) {
-		parent::__construct($argv);
+    /** @var string The list of locales in which to install the template. */
+    public $_locales;
 
-		$this->_emailKey = array_shift($this->argv);
-		$this->_locales = array_shift($this->argv);
+    /**
+     * Constructor.
+     *
+     * @param array $argv command-line arguments
+     */
+    public function __construct($argv = [])
+    {
+        parent::__construct($argv);
 
-		if ($this->_emailKey === null || $this->_locales === null) {
-			$this->usage();
-			exit();
-		}
-	}
+        $this->_emailKey = array_shift($this->argv);
+        $this->_locales = array_shift($this->argv);
 
-	/**
-	 * Print command usage information.
-	 */
-	function usage() {
-		echo "Command-line tool for installing email templates.\n"
-			. "Usage:\n"
-			. "\t{$this->scriptName} emailKey aa_BB[,cc_DD,...] [path/to/emails.po]\n"
-			. "\t\temailKey: The email key of the email to install, e.g. ANNOUNCEMENT\n"
-			. "\t\taa_BB[,cc_DD,...]: The comma-separated list of locales to install\n";
-	}
+        if ($this->_emailKey === null) {
+            $this->usage();
+            exit;
+        }
+    }
 
-	/**
-	 * Execute upgrade task
-	 */
-	function execute() {
-		// Load the necessary locale data
-		$locales = explode(',', $this->_locales);
-		foreach ($locales as $locale) AppLocale::requireComponents(LOCALE_COMPONENT_APP_EMAIL, $locale);
+    /**
+     * Print command usage information.
+     */
+    public function usage()
+    {
+        echo "Command-line tool for installing email templates.\n"
+            . "Usage:\n"
+            . "\t{$this->scriptName} emailKey aa_BB[,cc_DD,...] [path/to/emails.po]\n"
+            . "\t\temailKey: The email key of the email to install, e.g. ANNOUNCEMENT\n"
+            . "\t\taa_BB[,cc_DD,...]: The optional comma-separated list of locales to install. If none provided will be determined by site's installed locales\n";
+    }
 
-		// Install to the database
-		$emailTemplateDao = DAORegistry::getDAO('EmailTemplateDAO'); /* @var $emailTemplateDao EmailTemplateDAO */
-		$emailTemplateDao->installEmailTemplates($emailTemplateDao->getMainEmailTemplatesFilename(), $locales, false, $this->_emailKey);
-	}
+    /**
+     * Execute upgrade task
+     */
+    public function execute()
+    {
+        // Load the necessary locale data
+        $locales = explode(',', $this->_locales ?? '');
+
+        // Install to the database
+        Repo::emailTemplate()->dao->installEmailTemplates(
+            Repo::emailTemplate()->dao->getMainEmailTemplatesFilename(),
+            $locales,
+            $this->_emailKey
+        );
+    }
 }
 
-$tool = new installEmailTemplates(isset($argv) ? $argv : array());
+$tool = new installEmailTemplates($argv ?? []);
 $tool->execute();
-

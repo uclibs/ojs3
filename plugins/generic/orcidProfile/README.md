@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/pkp/orcidProfile.svg?branch=stable-3_3_0)](https://travis-ci.org/pkp/orcidProfile)
+[![Build Status](https://travis-ci.org/pkp/orcidProfile.svg?branch=main)](https://travis-ci.org/pkp/orcidProfile)
 
 Table of Contents
 =================
@@ -41,7 +41,7 @@ Licensed under GPLv3. See LICENSE.txt for details.
   * Extra e-mail template `ORCID_REQUEST_AUTHOR_AUTHORIZATION`  for requesting API access tokens.
   * Updated template text, e-mail templates for English and German locales.
   * Member API Email-Template activated upon selection of ORCID member API
-  * Support for synchronizing submission meta data to authorized records  in follwing stage changes:
+  * Support for synchronizing submission meta data to authorized records  in following stage changes:
     * Assign a submission to an already published issue
     * Publish a new issue
     * Author grants permission after the publication of the issue
@@ -70,7 +70,7 @@ Use the Plugin Gallery from within your PKP application to install the plugin. F
 "orcid": {
 	"url": "https://sandbox.orcid.org",
 	"apiPath": "https://api.sandbox.orcid.org",
- 	"api Type": "Member Sandbox"
+ 	"api Type": "Member Sandbox",
 	"clientId": "APP-T0XXXXXXXXXXX",
 	"clientSecret": "288455445-a3e4-454-9783-454545555",
 	"email": "coauthor@mailinator.com",
@@ -78,25 +78,13 @@ Use the Plugin Gallery from within your PKP application to install the plugin. F
   },
 ```
 
-### Run  all tests
+### Run all tests
 
  Navigate to `OJS folder`
 * ` npx cypress run --config integrationFolder=plugins/generic/orcidProfile/cypress/tests/functional`
-
-### Run Plugin setup
-* `npx cypress run --config integrationFolder=plugins/generic/orcidProfile/cypress/tests/functional/ --spec plugins/generic/orcidProfile/cypress/tests/functional/01-Orcid-Setup.spec.js`
-
-### Run Authorization
-* `npx cypress run --config integrationFolder=plugins/generic/orcidProfile/cypress/tests/functional/ --spec plugins/generic/orcidProfile/cypress/tests/functional/02-Orcid-API.spec.js`
-
-
 
 ### Debug
 
 * Navigate to `OJS Folder`
 * Navigate to `cypress` folder
 * check `logs` and `screenshots` for errors
-
-
-
-

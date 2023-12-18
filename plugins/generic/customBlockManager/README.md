@@ -12,7 +12,7 @@
 This plugin is intended to enable users to create customizable HTML blocks for
 the sidebars.
 
-[![Build Status](https://travis-ci.org/pkp/customBlockManager.svg?branch=stable-3_3_0)](https://travis-ci.org/pkp/customBlockManager)
+[![Build Status](https://travis-ci.org/pkp/customBlockManager.svg?branch=main)](https://travis-ci.org/pkp/customBlockManager)
 
 ## License
 

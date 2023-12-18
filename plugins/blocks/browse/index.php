@@ -11,6 +11,5 @@
  *
  */
 
-require_once('BrowseBlockPlugin.inc.php');
-return new BrowseBlockPlugin();
+return new \APP\plugins\blocks\browse\BrowseBlockPlugin();
 

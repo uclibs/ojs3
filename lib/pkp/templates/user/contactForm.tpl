@@ -36,18 +36,18 @@
 	{if count($availableLocales) > 1}
 		{fbvFormSection title="user.workingLanguages" list=true}
 			{foreach from=$availableLocales key=localeKey item=localeName}
-				{if $userLocales && in_array($localeKey, $userLocales)}
+				{if $locales && in_array($localeKey, $locales)}
 					{assign var="checked" value=true}
 				{else}
 					{assign var="checked" value=false}
 				{/if}
-				{fbvElement type="checkbox" name="userLocales[]" id="userLocales-$localeKey" value=$localeKey checked=$checked label=$localeName|escape translate=false}
+				{fbvElement type="checkbox" name="locales[]" id="locales-$localeKey" value=$localeKey checked=$checked label=$localeName|escape translate=false}
 			{/foreach}
 		{/fbvFormSection}
 	{/if}
 
 	<p>
-		{capture assign="privacyUrl"}{url router=$smarty.const.ROUTE_PAGE page="about" op="privacy"}{/capture}
+		{capture assign="privacyUrl"}{url router=\PKP\core\PKPApplication::ROUTE_PAGE page="about" op="privacy"}{/capture}
 		{translate key="user.privacyLink" privacyUrl=$privacyUrl}
 	</p>
 

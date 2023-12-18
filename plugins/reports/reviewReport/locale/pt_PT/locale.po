@@ -61,8 +61,5 @@ msgstr "Dias de Atraso de Resposta de Revisão"
 msgid "plugins.reports.reviews.reviewOverdue"
 msgstr "Dias de Atraso de Revisão"
 
-msgid "plugins.reports.reviews.unconsidered"
-msgstr "Desconsiderado"
-
 msgid "plugins.reports.reviews.dateAcknowledged"
 msgstr "Data de Confirmação"

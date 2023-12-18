@@ -5,8 +5,7 @@
 		"fileId",
 		"fileStage",
 		"name",
-		"submissionId",
-		"uploaderUserId"
+		"submissionId"
 	],
 	"properties": {
 		"_href": {
@@ -124,7 +123,27 @@
 		},
 		"genreId": {
 			"type": "integer",
+			"description": "The genre id of this file",
 			"apiSummary": true
+		},
+		"genreName": {
+			"type": "string",
+			"description": "The genre name of this file, suc as Article Text or Data Set.",
+			"isMultilingual": true,
+			"apiSummary": true,
+			"readOnly": true
+		},
+		"genreIsDependent": {
+			"type": "boolean",
+			"description": "Whether or not this is a dependent file, such as images displayed by a HTML file, that are be displayed with published content.",
+			"apiSummary": true,
+			"readOnly": true
+		},
+		"genreIsSupplementary": {
+			"type": "boolean",
+			"description": "Whether or not this is a supplementary file, such as data sets and research materials, that are displayed separately from the main publication files.",
+			"apiSummary": true,
+			"readOnly": true
 		},
 		"language": {
 			"type": "string",
@@ -136,9 +155,9 @@
 		},
 		"locale": {
 			"type": "string",
-			"apiSummary": "true",
+			"apiSummary": true,
 			"description": "The primary locale of the submission this file is attached to. This locale is used as the fallback when a language is missing from a multilingual property.",
-			"readOnly": "true"
+			"readOnly": true
 		},
 		"mimetype": {
 			"type": "string",
@@ -240,7 +259,15 @@
 		},
 		"uploaderUserId": {
 			"type": "integer",
-			"apiSummary": true
+			"apiSummary": true,
+			"validation": [
+				"nullable"
+			]
+		},
+		"uploaderUserName": {
+			"type": "string",
+			"apiSummary": true,
+			"readOnly": true
 		},
 		"url": {
 			"type": "string",
