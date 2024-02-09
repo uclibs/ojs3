@@ -63,8 +63,5 @@ msgstr "Jour(s) de retard pour donner une réponse"
 msgid "plugins.reports.reviews.reviewOverdue"
 msgstr "Jour(s) de retard pour la remise de l'évaluation"
 
-msgid "plugins.reports.reviews.unconsidered"
-msgstr "Non considéré-e"
-
 msgid "plugins.reports.reviews.dateAcknowledged"
 msgstr "Date de l'accusé de réception (remerciement)"

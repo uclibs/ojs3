@@ -8,67 +8,82 @@
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class migrationTool
+ *
  * @ingroup tools
  */
 
-require(dirname(dirname(dirname(dirname(__FILE__)))) . '/tools/bootstrap.inc.php');
 
-class migrationTool extends CommandLineTool {
-	/** @var string Name (fully qualified) of migration class */
-	protected $class;
+require(dirname(__FILE__, 4) . '/tools/bootstrap.php');
 
-	/** @var string "up" or "down" */
-	protected $direction;
+class migrationTool extends \PKP\cliTool\CommandLineTool
+{
+    /** @var string Name (fully qualified) of migration class */
+    protected $class;
 
-	/**
-	 * Constructor
-	 */
-	public function __construct($argv = []) {
-		parent::__construct($argv);
+    /** @var string "up" or "down" */
+    protected $direction;
 
-		array_shift($argv); // Shift the tool name off the top
+    /**
+     * Constructor
+     */
+    public function __construct($argv = [])
+    {
+        parent::__construct($argv);
 
-		$this->class = array_shift($argv);
-		$this->direction = array_shift($argv);
+        array_shift($argv); // Shift the tool name off the top
 
-		// The source file/directory must be specified and exist.
-		if (empty($this->class)) {
-			$this->usage();
-			exit(2);
-		}
+        $this->class = array_shift($argv);
+        $this->direction = array_shift($argv);
 
-		// The migration direction.
-		if (!in_array($this->direction, ['up', 'down'])) {
-			$this->usage();
-			exit(3);
-		}
-	}
+        // The source file/directory must be specified and exist.
+        if (empty($this->class)) {
+            $this->usage();
+            exit(2);
+        }
 
-	/**
-	 * Print command usage information.
-	 */
-	public function usage() {
-		echo "Run a migration.\n\n"
-			. "Usage: {$this->scriptName} qualified.migration.name [up|down]\n\n";
-	}
+        // The migration direction.
+        if (!in_array($this->direction, ['up', 'down'])) {
+            $this->usage();
+            exit(3);
+        }
+    }
 
-	/**
-	 * Execute the specified migration.
-	 */
-	public function execute() {
-		try {
-			$migration = instantiate($this->class, ['Illuminate\Database\Migrations\Migration']);
-			if (!$migration) throw new Exception('Could not instantiate "' . $this->class . "\"!");
+    /**
+     * Print command usage information.
+     */
+    public function usage()
+    {
+        echo "Run a migration.\n\n"
+            . "Usage: {$this->scriptName} \\fully\\qualified\\migration\\Name [up|down]\n\n";
+    }
 
-			$direction = $this->direction;
-			$migration->$direction();
-		} catch (Exception $e) {
-			echo 'ERROR: ' . $e->getMessage() . "\n\n";
-			exit(2);
-		}
-	}
+    /**
+     * Log install message to stdout.
+     *
+     * @param string $message
+     */
+    public function log($message)
+    {
+        printf("[%s]\n", $message);
+    }
+
+    /**
+     * Execute the specified migration.
+     */
+    public function execute()
+    {
+        $upgrade = new \APP\install\Upgrade([]);
+        $upgrade->setLogger($this);
+        $migration = new $this->class($upgrade, []);
+        try {
+            $direction = $this->direction;
+            $migration->$direction();
+        } catch (Exception $e) {
+            echo 'ERROR: ' . $e->getMessage() . "\n\n";
+            exit(2);
+        }
+    }
 }
 
-$tool = new migrationTool(isset($argv) ? $argv : []);
+$tool = new migrationTool($argv ?? []);
 $tool->execute();
-

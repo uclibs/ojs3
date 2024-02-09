@@ -20,24 +20,19 @@
 		</tab>
 		<tab id="roles" label="{translate key="manager.roles"}">
 			{help file="users-and-roles" section="roles" class="pkp_help_tab"}
-			{capture assign=rolesUrl}{url router=$smarty.const.ROUTE_COMPONENT component="grid.settings.roles.UserGroupGridHandler" op="fetchGrid" escape=false}{/capture}
+			{capture assign=rolesUrl}{url router=\PKP\core\PKPApplication::ROUTE_COMPONENT component="grid.settings.roles.UserGroupGridHandler" op="fetchGrid" escape=false}{/capture}
 			{load_url_in_div id="roleGridContainer" url=$rolesUrl}
 		</tab>
 		{if $enableBulkEmails}
 		<tab id="notify" label="{translate key="manager.setup.notifyUsers"}">
-			<div v-if="queueId" role="alert">
-				<p v-if="completedJobs < totalJobs">
-					<spinner class="notifyUsers__progress__spinner"></spinner>
-					{translate key="manager.setup.notifyUsers.sending"}
-				</p>
-				<p v-else>
+			<div v-if="totalBulkJobs" role="alert">
+				<p>
 					<icon icon="check" :inline="true"></icon>
-					{translate key="manager.setup.notifyUsers.sent"}
+					{translate key="manager.setup.notifyUsers.queued"}
 					<button class="-linkButton" @click="reload">
 						{translate key="manager.setup.notifyUsers.sendAnother"}
 					</button>
 				</p>
-				<progress-bar :max="totalJobs" :min="0" :value="completedJobs" />
 			</div>
 			<notify-users-form v-else
 				v-bind="components.{$smarty.const.FORM_NOTIFY_USERS}"

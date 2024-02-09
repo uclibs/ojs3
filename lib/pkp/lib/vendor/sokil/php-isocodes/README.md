@@ -1,26 +1,35 @@
+# Stand With Ukraine
+
+[![SWUbanner](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/banner-direct.svg)](https://github.com/vshymanskyy/StandWithUkraine/blob/main/docs/README.md)
+
+----
+
 # PHP ISO Codes
 
-[![Build Status](https://travis-ci.org/sokil/php-isocodes.png?branch=master&1)](https://travis-ci.org/sokil/php-isocodes)
-[![Latest Stable Version](https://poser.pugx.org/sokil/php-isocodes/v/stable.png)](https://packagist.org/packages/sokil/php-isocodes)
+[![Continuous integration](https://github.com/sokil/php-isocodes/workflows/Continuous%20integration/badge.svg?branch=4.0)](https://github.com/sokil/php-isocodes/actions?query=workflow%3A%22Continuous+integration%22)
+[![Latest Stable Version](https://poser.pugx.org/sokil/php-isocodes/v/stable.png?1)](https://packagist.org/packages/sokil/php-isocodes)
 [![Coverage Status](https://coveralls.io/repos/sokil/php-isocodes/badge.png)](https://coveralls.io/r/sokil/php-isocodes)
 [![Total Downloads](http://img.shields.io/packagist/dt/sokil/php-isocodes.svg?1)](https://packagist.org/packages/sokil/php-isocodes)
 [![Daily Downloads](https://poser.pugx.org/sokil/php-isocodes/d/daily)](https://packagist.org/packages/sokil/php-isocodes/stats)
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/sokil/php-isocodes/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/sokil/php-isocodes/?branch=master)
 
 :star: This library used to get localized names of countries, currencies, languages and scripts.
 
 :package: Based on Python's [pycountry](https://pypi.python.org/pypi/pycountry) and Debian's [iso-codes](https://salsa.debian.org/iso-codes-team/iso-codes.git).
 
-:1234: Database version: iso-codes-4.5.0-99-g3feba234 from 2020-09-22 23:33
-
 :tongue: Current translation status: https://salsa.debian.org/iso-codes-team/iso-codes#status-of-translations
 
 ## Table of contents
 
-* [ISO Standards](#iso-standarts)
+* [ISO Standards](#iso-standards)
 * [Installation](#installation)
-* [Locale configuration](#locale-configuration)
-* [Manual database update](#manual-database-update)
+  * [Installation models](#installation-models)
+  * [Libraries with included database update](#libraries-with-included-database-update)
+  * [Library with manual database update](#library-with-manual-database-update)
+* [Translation drivers](#translation-drivers)
+  * [Gettext extension driver](#gettext-extension-driver)
+    * [Locale configuration](#locale-configuration)
+  * [Symfony Translation driver](#symfony-translation-driver)
+  * [Dummy driver](#dummy-driver)
 * [Usage](#usage)
   * [Locale configuration](#locale-configuration)
   * [Countries database (ISO 3166-1)](#countries-database-iso-3166-1)
@@ -42,14 +51,129 @@
 
 ## Installation
 
+* [Installation models](#installation-models)
+* [Libraries with included database update](#libraries-with-included-database-update)
+* [Library with manual database update](#library-with-manual-database-update)
+  
+### Installation models
+
+You may use this library in different modes:
+* `sokil/php-isocodes` - install library without database and messages and setup 
+  periodic updates of database and messages bt yourself with cron or inside CI/CD pipeline with `./bin/update_iso_codes_db.sh`
+* `sokil/php-isocodes-db-only` - if you do not need internationalisation, use 
+  this library. Database already inside. To update database just periodically update this library.
+* `sokil/php-isocodes-db-i18n` - if you need internationalisation, use
+  this library. Database and messages already inside. To update database 
+  just periodically update this library.
+
+### Libraries with included database update
+
+To install [library with database and i18n](https://github.com/sokil/php-isocodes-db-i18n):
+
+[![Latest Stable Version](https://poser.pugx.org/sokil/php-isocodes-db-i18n/v/stable.png)](https://packagist.org/packages/sokil/php-isocodes-db-i18n)
+[![Total Downloads](http://img.shields.io/packagist/dt/sokil/php-isocodes-db-i18n.svg?1)](https://packagist.org/packages/sokil/php-isocodes-db-i18n)
+[![Daily Downloads](https://poser.pugx.org/sokil/php-isocodes-db-i18n/d/daily)](https://packagist.org/packages/sokil/php-isocodes-db-i18n/stats)
+
+```
+composer require sokil/php-isocodes-db-i18n
+```
+
+You may also install [library with only database](https://github.com/sokil/php-isocodes-db-only) (no i18n will be available):
+
+[![Latest Stable Version](https://poser.pugx.org/sokil/php-isocodes-db-only/v/stable.png)](https://packagist.org/packages/sokil/php-isocodes-db-only)
+[![Total Downloads](http://img.shields.io/packagist/dt/sokil/php-isocodes-db-only.svg?1)](https://packagist.org/packages/sokil/php-isocodes-db-only)
+[![Daily Downloads](https://poser.pugx.org/sokil/php-isocodes-db-only/d/daily)](https://packagist.org/packages/sokil/php-isocodes-db-only/stats)
+
+```
+composer require sokil/php-isocodes-db-only
+```
+
+### Library with manual database update
+
 You can install library through Composer:
 ```
 composer require sokil/php-isocodes
 ```
 
-## Locale configuration
+Database and gettext files located in related packages inside `databases` and `messages` directories.
+This packages periodically updated with package version increment.
 
-Before using IsoCodes database you need to setup valid locale to get translations worked:
+If you want to update database more often, use script `./bin/update_iso_codes_db.sh`.
+Call this script by cron, during deploy process or when build your docker image.
+
+```
+./bin/update_iso_codes_db.sh {mode} {base_dir} {build_dir}
+```
+
+| Argument | Required | Description |
+| -------- | -------- | ----------- |
+| mode | Required | May be "all" or "db_only". In "all" mode update database (json files) and locallisation (po and mo files), in "db_only" only database will update |
+| base_dir| Required | Dir where to place database and messages |\
+| build_dir | Optional. Default: "/tmp/iso-codes-build" | Dir where source directory cloned and files original files processed. |
+
+Now you need to configure factory to use this directory:
+
+```php
+<?php
+
+$databaseBaseDir = '/var/isocodes';
+
+$isoCodes = new \Sokil\IsoCodes\IsoCodesFactory($databaseBaseDir);
+```
+
+## Translation drivers
+
+* [Gettext extension driver](#gettext-extension-driver)
+  * [Locale configuration](#locale-configuration)
+* [Symfony Translation driver](#symfony-translation-driver)
+* [Dummy driver](#dummy-driver)
+  
+Translation drivers required when need to get local names of iso entities.
+
+Translation driver must implement `Sokil\IsoCodes\TranslationDriver\TranslationDriverInterface`.
+
+Instance of driver may be passed to `IsoCodesFactory`. If it not passed, default `GettextExtensionDriver` will be used.
+
+```php
+<?php
+
+// gettext driver
+$isoCodes = new IsoCodesFactory();
+$isoCodes = new IsoCodesFactory(null, new GettextExtensionDriver());
+
+// symfony driver
+$driver = new SymfonyTranslationDriver();
+$driver->setLocale('uk_UA');
+
+$isoCodes = new IsoCodesFactory(
+    null,
+    $driver
+);
+
+// dummy driver
+$isoCodes = new IsoCodesFactory(
+    null,
+    new DummyDriver()
+);
+
+```
+
+### Gettext extension driver
+
+This is default translation driver. It requires `ext-gettext`.
+
+```php
+<?php
+
+// gettext driver
+$isoCodes = new IsoCodesFactory();
+$isoCodes = new IsoCodesFactory(null, new GettextExtensionDriver());
+```
+
+#### Locale configuration
+
+Before using IsoCodes database you need to setup valid locale to get translations worked, 
+because `ext-gettext` uses system local, configured by `setlocale`.
 
 ```php
 <?php
@@ -89,26 +213,32 @@ Generating locales...
 Generation complete.
 ```
 
-## Manual database update
-
-Database and related gettext files located inside this repo in `databases` and `messages` directories.
-This data periodically updated with package version increment.
-
-If you want to update database more often, use script `./bin/update_iso_codes_db.sh`.
-Call this script by cron, during deploy process or when build your docker image.
-
-```
-/path/to/project/vendor/sokil/php-isocodes/bin/update_iso_codes_db.sh /var/isocodes
-```
-
-Now you need to configure factory to use this directory:
+### Symfony Translation driver
 
 ```php
 <?php
 
-$databaseBaseDir = '/var/isocodes';
+$driver = new SymfonyTranslationDriver();
+$driver->setLocale('uk_UA');
 
-$isoCodes = new \Sokil\IsoCodes\IsoCodesFactory($databaseBaseDir);
+$isoCodes = new IsoCodesFactory(
+    null,
+    $driver
+);
+
+```
+
+### Dummy driver
+
+This driver may be used, when localisation of names does not require, and only database of codes is required.
+
+```php
+<?php
+
+$isoCodes = new IsoCodesFactory(
+    null,
+    new DummyDriver()
+);
 ```
 
 ## Usage

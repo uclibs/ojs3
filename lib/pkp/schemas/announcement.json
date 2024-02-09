@@ -3,7 +3,6 @@
 	"description": "An announcement or news item.",
 	"required": [
 		"assocType",
-		"assocId",
 		"title"
 	],
 	"properties": {
@@ -16,8 +15,11 @@
 		},
 		"assocId": {
 			"type": "integer",
-			"description": "The journal, press or preprint server ID.",
-			"apiSummary": true
+			"description": "The journal, press or preprint server ID. Null for site-level announcements.",
+			"apiSummary": true,
+			"validation": [
+				"nullable"
+			]
 		},
 		"assocType": {
 			"type": "integer",
@@ -37,6 +39,7 @@
 			"type": "string",
 			"description": "The date this announcement was posted.",
 			"apiSummary": true,
+			"writeDisabledInApi": true,
 			"validation": [
 				"nullable",
 				"date_format:Y-m-d H:i:s"
@@ -62,7 +65,34 @@
 		},
 		"id": {
 			"type": "integer",
+			"readOnly": true,
 			"apiSummary": true
+		},
+		"image": {
+			"type": "object",
+			"description": "The image to show with this announcement.",
+			"apiSummary": true,
+			"validation": [
+				"nullable"
+			],
+			"properties": {
+				"temporaryFileId": {
+					"type": "integer",
+					"writeOnly": true
+				},
+				"name": {
+					"type": "string"
+				},
+				"uploadName": {
+					"type": "string"
+				},
+				"dateUploaded": {
+					"type": "string"
+				},
+				"altText": {
+					"type": "string"
+				}
+			}
 		},
 		"title": {
 			"type": "string",
@@ -79,6 +109,13 @@
 			"validation": [
 				"nullable"
 			]
+		},
+		"url": {
+			"type": "string",
+			"format": "uri",
+			"readOnly": true,
+			"apiSummary": true,
+			"description": "The URL to the published announcement."
 		}
 	}
 }

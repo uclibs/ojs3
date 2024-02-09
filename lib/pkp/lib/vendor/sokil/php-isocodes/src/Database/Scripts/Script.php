@@ -1,9 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Sokil\IsoCodes\Database\Scripts;
 
 use Sokil\IsoCodes\Database\Scripts;
+use Sokil\IsoCodes\TranslationDriver\TranslatorInterface;
 
 class Script
 {
@@ -13,7 +15,7 @@ class Script
     private $name;
 
     /**
-     * @var string
+     * @var string|null
      */
     private $localName;
 
@@ -23,23 +25,26 @@ class Script
     private $alpha4;
 
     /**
-     * @var integer
+     * @var string
      */
     private $numericCode;
 
     /**
-     * Script constructor.
+     * @var TranslatorInterface
      */
+    private $translator;
+
     public function __construct(
+        TranslatorInterface $translator,
         string $name,
         string $alpha4,
-        int $numericCode
+        string $numericCode
     ) {
+        $this->translator = $translator;
         $this->name = $name;
         $this->alpha4 = $alpha4;
         $this->numericCode = $numericCode;
     }
-
 
     public function getName(): string
     {
@@ -49,7 +54,7 @@ class Script
     public function getLocalName(): string
     {
         if ($this->localName === null) {
-            $this->localName = dgettext(
+            $this->localName = $this->translator->translate(
                 Scripts::getISONumber(),
                 $this->name
             );
@@ -63,7 +68,7 @@ class Script
         return $this->alpha4;
     }
 
-    public function getNumericCode(): int
+    public function getNumericCode(): string
     {
         return $this->numericCode;
     }

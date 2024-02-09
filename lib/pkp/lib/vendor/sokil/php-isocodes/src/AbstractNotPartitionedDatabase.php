@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Sokil\IsoCodes;
@@ -11,6 +12,9 @@ abstract class AbstractNotPartitionedDatabase extends AbstractDatabase
     /**
      * Index to search by entry field's values
      *
+     * {indexedFieldName => {indexedFieldValue => entryObject}}
+     *
+     * @psalm-var Array<string, Array<string, object>>
      * @var object[][]
      */
     private $index;
@@ -26,6 +30,62 @@ abstract class AbstractNotPartitionedDatabase extends AbstractDatabase
         return [];
     }
 
+    private function buildIndex(): void
+    {
+        // init empty index
+        $this->index = [];
+
+        // get index definition
+        $indexedFields = $this->getIndexDefinition();
+
+        // build index for database
+        if (!empty($indexedFields)) {
+            // init all defined indexes
+            foreach ($this->getClusterIndex() as $entryArray) {
+                $entry = $this->arrayToEntry($entryArray);
+                foreach ($indexedFields as $indexName => $indexDefinition) {
+                    if (is_array($indexDefinition)) {
+                        // compound index
+                        // iteratively create hierarchy of array indexes
+                        $reference = &$this->index[$indexName];
+                        foreach ($indexDefinition as $indexDefinitionPart) {
+                            if (is_array($indexDefinitionPart)) {
+                                // limited length of field
+                                $indexDefinitionPartValue = substr(
+                                    $entryArray[$indexDefinitionPart[0]],
+                                    0,
+                                    $indexDefinitionPart[1]
+                                );
+                            } else {
+                                $indexDefinitionPartValue = $entryArray[$indexDefinitionPart];
+                            }
+
+                            if (!isset($reference[$indexDefinitionPartValue])) {
+                                $reference[$indexDefinitionPartValue] = [];
+                            }
+
+                            $reference = &$reference[$indexDefinitionPartValue];
+                        }
+
+                        // add value
+                        $reference = $entry;
+                    } else {
+                        // single index
+                        $indexName = $indexDefinition;
+
+                        // skip empty field
+                        if (empty($entryArray[$indexDefinition])) {
+                            continue;
+                        }
+
+                        // add to indexUA
+                        $this->index[$indexName][$entryArray[$indexDefinition]] = $entry;
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * @return mixed[]
      *
@@ -35,55 +95,7 @@ abstract class AbstractNotPartitionedDatabase extends AbstractDatabase
     {
         // build index
         if ($this->index === null) {
-            // init empty index
-            $this->index = [];
-
-            // get index definition
-            $indexedFields = $this->getIndexDefinition();
-
-            // build index for database
-            if (!empty($indexedFields)) {
-                // init all defined indexes
-                foreach ($this->getClusterIndex() as $entryArray) {
-                    $entry = $this->arrayToEntry($entryArray);
-                    foreach ($indexedFields as $indexName => $indexDefinition) {
-                        if (is_array($indexDefinition)) {
-                            // compound index
-
-                            // iteratively create hierarchy of array indexes
-                            $reference = &$this->index[$indexName];
-                            foreach ($indexDefinition as $indexDefinitionPart) {
-                                if (is_array($indexDefinitionPart)) {
-                                    // limited length of field
-                                    $indexDefinitionPartValue = substr(
-                                        $entryArray[$indexDefinitionPart[0]],
-                                        0,
-                                        $indexDefinitionPart[1]
-                                    );
-                                } else {
-                                    $indexDefinitionPartValue = $entryArray[$indexDefinitionPart];
-                                }
-                                if (!isset($reference[$indexDefinitionPartValue])) {
-                                    $reference[$indexDefinitionPartValue] = [];
-                                }
-                                $reference = &$reference[$indexDefinitionPartValue];
-                            }
-
-                            // add value
-                            $reference = $entry;
-                        } else {
-                            // single index
-                            $indexName = $indexDefinition;
-                            // skip empty field
-                            if (empty($entryArray[$indexDefinition])) {
-                                continue;
-                            }
-                            // add to indexUA
-                            $this->index[$indexName][$entryArray[$indexDefinition]] = $entry;
-                        }
-                    }
-                }
-            }
+            $this->buildIndex();
         }
 
         // get index
@@ -101,11 +113,13 @@ abstract class AbstractNotPartitionedDatabase extends AbstractDatabase
     }
 
     /**
-     * @param string|int $fieldValue
+     * @param string $indexedFieldName
+     * @param string $fieldValue
      *
-     * @return object|mixed[]|null
+     * @return null|object|object[] null when not found, object when found by single-field index,
+     *         object[] when found by compound index
      */
-    protected function find(string $indexedFieldName, $fieldValue)
+    protected function find(string $indexedFieldName, string $fieldValue)
     {
         $fieldIndex = $this->getIndex($indexedFieldName);
 

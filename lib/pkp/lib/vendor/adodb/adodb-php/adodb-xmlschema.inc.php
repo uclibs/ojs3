@@ -480,8 +480,14 @@ class dbTable extends dbObject {
 	function create( &$xmls ) {
 		$sql = array();
 
+		$tableExists = in_array($this->name, $xmls->dict->MetaTables());
 		// drop any existing indexes
-		if( is_array( $legacy_indexes = $xmls->dict->MetaIndexes( $this->name ) ) ) {
+		if ($tableExists) {
+			$legacy_indexes = $xmls->dict->MetaIndexes($this->name);
+		} else {
+			$legacy_indexes = false;
+		}
+		if( is_array( $legacy_indexes ) ) {
 			foreach( $legacy_indexes as $index => $index_details ) {
 				$sql[] = $xmls->dict->DropIndexSQL( $index, $this->name );
 			}
@@ -492,8 +498,13 @@ class dbTable extends dbObject {
 			unset( $this->fields[$field] );
 		}
 
+		if ($tableExists) {
+			$legacy_fields = $xmls->dict->MetaColumns($this->name);
+		} else {
+			$legacy_fields = false;
+		}
 		// if table exists
-		if( is_array( $legacy_fields = $xmls->dict->MetaColumns( $this->name ) ) ) {
+		if( is_array( $legacy_fields ) ) {
 			// drop table
 			if( $this->drop_table ) {
 				$sql[] = $xmls->dict->DropTableSQL( $this->name );

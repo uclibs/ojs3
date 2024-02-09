@@ -1,7 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Sokil\IsoCodes;
+
+use Sokil\IsoCodes\TranslationDriver\GettextExtensionDriver;
+use Sokil\IsoCodes\TranslationDriver\TranslationDriverInterface;
 
 /**
  * Abstract collection of ISO entries
@@ -11,12 +15,12 @@ abstract class AbstractDatabase implements \Iterator, \Countable
     /**
      * Default ath ISO databases
      */
-    const DATABASE_PATH = 'databases';
+    public const DATABASE_PATH = 'databases';
 
     /**
      * Default path to gettext localised messages
      */
-    const MESSAGES_PATH = 'messages';
+    public const MESSAGES_PATH = 'messages';
 
     /**
      * Path to directory with databases
@@ -26,33 +30,76 @@ abstract class AbstractDatabase implements \Iterator, \Countable
     protected $baseDirectory;
 
     /**
+     * @var string[][]
+     * @psalm-var Array<int, Array<string, string>>
+     *
      * Cluster index used for iteration by entries
      *
-     * @var string[][]
      */
     private $clusterIndex = [];
 
     /**
-     * @throws \Exception
+     * @var TranslationDriverInterface
      */
-    public function __construct(?string $baseDirectory = null)
-    {
-        if (empty($this->baseDirectory)) {
-            $this->baseDirectory = __DIR__ . '/../';
+    protected $translationDriver;
+
+    /**
+     * @param string|null $baseDirectory
+     * @param TranslationDriverInterface|null $translationDriver
+     *
+     * @throws \RuntimeException when base directory not specified and directory can not be located automatically
+     */
+    public function __construct(
+        string $baseDirectory = null,
+        TranslationDriverInterface $translationDriver = null
+    ) {
+        if (empty($baseDirectory)) {
+            // Require external database in "sokil/php-isocodes-db-*" packages
+            $suggestedBaseDirectories = [
+                // production mode, find in sibling directory "php-isocodes-db-i18n" or "php-isocodes-db-only"
+                __DIR__ . '/../../php-isocodes-db-i18n/',
+                __DIR__ . '/../../php-isocodes-db-only/',
+                // development mode, find in current vendor packages
+                __DIR__ . '/../vendor/sokil/php-isocodes-db-i18n/',
+                __DIR__ . '/../vendor/sokil/php-isocodes-db-only/',
+            ];
+
+            foreach ($suggestedBaseDirectories as $suggestedBaseDirectory) {
+                if (is_dir($suggestedBaseDirectory)) {
+                    $this->baseDirectory = $suggestedBaseDirectory;
+                    break;
+                }
+            }
+
+            if (empty($this->baseDirectory)) {
+                throw new \RuntimeException(
+                    sprintf(
+                        'Base directory not specified and directory can not be located automatically. Finding at %s',
+                        implode(', ', $suggestedBaseDirectories)
+                    )
+                );
+            }
         } else {
             $this->baseDirectory = rtrim($baseDirectory, '/') . '/';
         }
 
-        $this->bindGettextDomain();
+        $this->translationDriver = $translationDriver ?? new GettextExtensionDriver();
+
+        $this->translationDriver->configureDirectory(
+            $this->getISONumber(),
+            $this->getLocalMessagesDirPath()
+        );
     }
 
     /**
      * ISO Standard Number
+     *
+     * @psalm-pure
      */
     abstract public static function getISONumber(): string;
 
     /**
-     * @param mixed[] $entry
+     * @psalm-param Array<string, string> $entry
      *
      * @return object
      */
@@ -74,25 +121,6 @@ abstract class AbstractDatabase implements \Iterator, \Countable
     private function getLocalMessagesDirPath(): string
     {
         return $this->baseDirectory . self::MESSAGES_PATH;
-    }
-
-    /**
-     * Initialise domain of gettext translations
-     */
-    private function bindGettextDomain(): void
-    {
-        $isoNumber = $this->getISONumber();
-
-        // add gettext domain
-        \bindtextdomain(
-            $isoNumber,
-            $this->getLocalMessagesDirPath()
-        );
-
-        \bind_textdomain_codeset(
-            $isoNumber,
-            'UTF-8'
-        );
     }
 
     /**
@@ -137,16 +165,21 @@ abstract class AbstractDatabase implements \Iterator, \Countable
      * Builds array of entries.
      * Creates many entry objects in loop, use iterator instead.
      *
+     * @psalm-return Array<string, object>
      * @return object[]
      */
     public function toArray(): array
     {
-        return iterator_to_array($this);
+        /** @psalm-var Array<string, object> $array */
+        $array = iterator_to_array($this);
+
+        return $array;
     }
 
     /**
      * @return object
      */
+    #[\ReturnTypeWillChange]
     public function current()
     {
         return $this->arrayToEntry(current($this->clusterIndex));

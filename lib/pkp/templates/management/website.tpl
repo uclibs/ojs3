@@ -48,20 +48,22 @@
 		<tab id="setup" label="{translate key="navigation.setup"}">
 			{help file="settings/website-settings" section="setup" class="pkp_help_tab"}
 			<tabs :is-side-tabs="true" :track-history="true">
-				<tab id="information" label="{translate key="manager.website.information"}">
-					<pkp-form
-						v-bind="components.{$smarty.const.FORM_INFORMATION}"
-						@set="set"
-					/>
-				</tab>
+				{if $includeInformationForm}
+					<tab id="information" label="{translate key="manager.website.information"}">
+						<pkp-form
+							v-bind="components.{$smarty.const.FORM_INFORMATION}"
+							@set="set"
+						/>
+					</tab>
+				{/if}
 				<tab id="languages" label="{translate key="common.languages"}">
-					{capture assign=languagesUrl}{url router=$smarty.const.ROUTE_COMPONENT component="grid.settings.languages.ManageLanguageGridHandler" op="fetchGrid" escape=false}{/capture}
+					{capture assign=languagesUrl}{url router=\PKP\core\PKPApplication::ROUTE_COMPONENT component="grid.settings.languages.ManageLanguageGridHandler" op="fetchGrid" escape=false}{/capture}
 					{load_url_in_div id="languageGridContainer" url=$languagesUrl}
 				</tab>
 				<tab id="navigationMenus" label="{translate key="manager.navigationMenus"}">
-					{capture assign=navigationMenusGridUrl}{url router=$smarty.const.ROUTE_COMPONENT component="grid.navigationMenus.NavigationMenusGridHandler" op="fetchGrid" escape=false}{/capture}
+					{capture assign=navigationMenusGridUrl}{url router=\PKP\core\PKPApplication::ROUTE_COMPONENT component="grid.navigationMenus.NavigationMenusGridHandler" op="fetchGrid" escape=false}{/capture}
 					{load_url_in_div id="navigationMenuGridContainer" url=$navigationMenusGridUrl}
-					{capture assign=navigationMenuItemsGridUrl}{url router=$smarty.const.ROUTE_COMPONENT component="grid.navigationMenus.NavigationMenuItemsGridHandler" op="fetchGrid" escape=false}{/capture}
+					{capture assign=navigationMenuItemsGridUrl}{url router=\PKP\core\PKPApplication::ROUTE_COMPONENT component="grid.navigationMenus.NavigationMenuItemsGridHandler" op="fetchGrid" escape=false}{/capture}
 					{load_url_in_div id="navigationMenuItemsGridContainer" url=$navigationMenuItemsGridUrl}
 				</tab>
 				<tab id="announcements" label="{translate key="manager.setup.announcements"}">
@@ -70,6 +72,14 @@
 						@set="set"
 					/>
 				</tab>
+				{if $enableHighlights}
+				<tab id="highlights" label="{translate key="common.highlights"}">
+					<highlights-list-panel
+						v-bind="components.highlights"
+						@set="set"
+					></highlights-list-panel>
+				</tab>
+				{/if}
 				<tab id="lists" label="{translate key="manager.setup.lists"}">
 					<pkp-form
 						v-bind="components.{$smarty.const.FORM_LISTS}"
@@ -95,11 +105,11 @@
 			{help file="settings/website-settings" section="plugins" class="pkp_help_tab"}
 			<tabs :track-history="true">
 				<tab id="installedPlugins" label="{translate key="manager.plugins.installed"}">
-					{capture assign=pluginGridUrl}{url router=$smarty.const.ROUTE_COMPONENT component="grid.settings.plugins.SettingsPluginGridHandler" op="fetchGrid" escape=false}{/capture}
+					{capture assign=pluginGridUrl}{url router=\PKP\core\PKPApplication::ROUTE_COMPONENT component="grid.settings.plugins.SettingsPluginGridHandler" op="fetchGrid" escape=false}{/capture}
 					{load_url_in_div id="pluginGridContainer" url=$pluginGridUrl}
 				</tab>
 				<tab id="pluginGallery" label="{translate key="manager.plugins.pluginGallery"}">
-					{capture assign=pluginGalleryGridUrl}{url router=$smarty.const.ROUTE_COMPONENT component="grid.plugins.PluginGalleryGridHandler" op="fetchGrid" escape=false}{/capture}
+					{capture assign=pluginGalleryGridUrl}{url router=\PKP\core\PKPApplication::ROUTE_COMPONENT component="grid.plugins.PluginGalleryGridHandler" op="fetchGrid" escape=false}{/capture}
 					{load_url_in_div id="pluginGalleryGridContainer" url=$pluginGalleryGridUrl}
 				</tab>
 				{call_hook name="Template::Settings::website::plugins"}

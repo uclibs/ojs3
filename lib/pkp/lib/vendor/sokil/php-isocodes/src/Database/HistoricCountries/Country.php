@@ -1,9 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Sokil\IsoCodes\Database\HistoricCountries;
 
 use Sokil\IsoCodes\Database\HistoricCountries;
+use Sokil\IsoCodes\TranslationDriver\TranslatorInterface;
 
 class Country
 {
@@ -13,7 +15,7 @@ class Country
     private $name;
 
     /**
-     * @var string
+     * @var string|null
      */
     private $localName;
 
@@ -38,21 +40,25 @@ class Country
     private $withdrawalDate;
 
     /**
-     * @var integer|null
+     * @var string|null
      */
     public $numericCode;
 
     /**
-     * Country constructor.
+     * @var TranslatorInterface
      */
+    private $translator;
+
     public function __construct(
+        TranslatorInterface $translator,
         string $name,
         string $alpha4,
         string $alpha3,
         string $alpha2,
         string $withdrawalDate,
-        ?int $numericCode = null
+        ?string $numericCode = null
     ) {
+        $this->translator = $translator;
         $this->name = $name;
         $this->alpha4 = $alpha4;
         $this->alpha3 = $alpha3;
@@ -69,7 +75,7 @@ class Country
     public function getLocalName(): string
     {
         if ($this->localName === null) {
-            $this->localName = dgettext(
+            $this->localName = $this->translator->translate(
                 HistoricCountries::getISONumber(),
                 $this->name
             );
@@ -98,7 +104,7 @@ class Country
         return $this->withdrawalDate;
     }
 
-    public function getNumericCode(): ?int
+    public function getNumericCode(): ?string
     {
         return $this->numericCode;
     }
