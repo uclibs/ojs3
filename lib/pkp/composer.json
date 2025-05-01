@@ -14,7 +14,7 @@
 		"pimple/pimple": "3.*",
 		"laravel/framework": "^9.0",
 		"firebase/php-jwt": "5.*",
-		"adodb/adodb-php": "v5.20.18",
+		"adodb/adodb-php": "v5.22.9",
 		"gettext/gettext": "5.*",
 		"sokil/php-isocodes": "^4.1",
 		"doctrine/dbal": "^3.5",
